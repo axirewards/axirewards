@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import { supabase } from '../lib/supabaseClient'
+import { pointsToCurrency } from '../lib/pointsConversion'
 
 export default function Payout() {
   const [user, setUser] = useState(null)
@@ -9,11 +10,16 @@ export default function Payout() {
   const [payouts, setPayouts] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [walletMsg, setWalletMsg] = useState('')
+  const [pointsError, setPointsError] = useState('')
 
   useEffect(() => {
     async function fetchData() {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
-      if (!currentUser) return
+      if (!currentUser) {
+        setLoading(false)
+        return
+      }
 
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -21,10 +27,18 @@ export default function Payout() {
         .eq('email', currentUser.email)
         .single()
 
-      if (userError) console.error(userError)
-      else {
-        setUser(userData)
-        setWallet(userData.wallet_address || '')
+      if (userError) {
+        console.error(userError)
+        setLoading(false)
+        return
+      }
+
+      setUser(userData)
+      setWallet(userData.wallet_address || '')
+      if (!userData.wallet_address) {
+        setWalletMsg('Save your Polygon wallet in Profile section first.')
+      } else {
+        setWalletMsg('')
       }
 
       const { data: payoutData, error: payoutError } = await supabase
@@ -44,10 +58,18 @@ export default function Payout() {
   }, [])
 
   const handleRequestPayout = async () => {
-    if (!wallet || !pointsToRedeem) return
+    setPointsError('')
+    if (!wallet || !user || !user.wallet_address) {
+      setWalletMsg('Save your Polygon wallet in Profile section first.')
+      return
+    }
     const pointsNum = parseFloat(pointsToRedeem)
-    if (isNaN(pointsNum) || pointsNum <= 0 || pointsNum > user.points_balance) {
-      alert('Neteisingas taškų kiekis')
+    if (
+      isNaN(pointsNum) ||
+      pointsNum <= 0 ||
+      pointsNum > user.points_balance
+    ) {
+      setPointsError('Invalid points amount')
       return
     }
 
@@ -80,65 +102,117 @@ export default function Payout() {
       setUser(prev => ({ ...prev, points_balance: newBalance[0].new_balance }))
       setPayouts(prev => [payout, ...prev])
       setPointsToRedeem('')
-      alert('Payout request submitted!')
     } catch (err) {
       console.error(err)
-      alert('Klaida siunčiant payout request')
+      setPointsError('Error submitting payout request')
     } finally {
       setSubmitting(false)
     }
   }
 
-  if (loading) return <Layout><p className="text-center mt-10">Loading...</p></Layout>
+  // Calculate points to currency for input field and user's balance
+  const pointsInputNum = parseFloat(pointsToRedeem) || 0
+  const { usd: inputUsd, eur: inputEur } = pointsToCurrency(pointsInputNum)
+  const { usd: balanceUsd, eur: balanceEur } = pointsToCurrency(user?.points_balance || 0)
+
+  if (loading)
+    return (
+      <Layout>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="text-center text-lg text-primary animate-pulse">Loading payout...</p>
+        </div>
+      </Layout>
+    )
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
-        <h1 className="text-3xl font-bold text-primary">Payout</h1>
+      <div className="min-h-[80vh] flex flex-col justify-between">
+        <div className="max-w-3xl mx-auto w-full px-4 py-8 space-y-8">
+          <h1 className="text-3xl font-extrabold text-white text-center mb-8 drop-shadow">Payout</h1>
+          <div className="bg-card shadow-xl rounded-2xl p-6 space-y-6">
+            <div>
+              <p className="text-lg font-semibold text-accent mb-2">Your Points Balance</p>
+              <div className="flex items-baseline gap-3">
+                <span className="text-3xl font-extrabold text-white">{user.points_balance || 0}</span>
+                <span className="text-md text-gray-300">points</span>
+              </div>
+              <div className="mt-1 text-xs text-accent">
+                ≈ <span className="font-bold">{balanceUsd} USD</span> / <span className="font-bold">{balanceEur} EUR</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="text-sm font-semibold text-white mb-1 block">Polygon Wallet (USDT payouts)</label>
+                <input
+                  type="text"
+                  value={wallet}
+                  readOnly
+                  disabled
+                  className="w-full border border-gray-700 rounded-lg p-2 bg-black text-white opacity-80 cursor-not-allowed"
+                  placeholder="Save your Polygon wallet in Profile"
+                />
+                {walletMsg && (
+                  <span className="text-red-500 text-xs mt-1 block">{walletMsg}</span>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-white mb-1 block">Points to Redeem</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={user.points_balance || 0}
+                  placeholder="Enter points amount"
+                  className="w-full border border-gray-700 rounded-lg p-2 bg-black text-white"
+                  value={pointsToRedeem}
+                  onChange={(e) => setPointsToRedeem(e.target.value)}
+                  disabled={!wallet}
+                  autoComplete="off"
+                />
+                {pointsError && (
+                  <span className="text-red-500 text-xs mt-1 block">{pointsError}</span>
+                )}
+                <div className="mt-2 text-xs text-accent">
+                  {pointsInputNum > 0 && (
+                    <>
+                      ≈ <span className="font-bold">{inputUsd} USD</span> / <span className="font-bold">{inputEur} EUR</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <button
+                className={`bg-accent text-white px-6 py-2 rounded-lg font-bold shadow transition hover:bg-blue-700 disabled:opacity-50 mt-2`}
+                onClick={handleRequestPayout}
+                disabled={submitting || !wallet || !user?.points_balance || !pointsToRedeem}
+              >
+                {submitting ? 'Sending...' : 'Request Payout'}
+              </button>
+            </div>
+          </div>
 
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded p-4 space-y-4">
-          <p>Taškai balanse: <span className="font-semibold">{user.points_balance}</span></p>
-          <input
-            type="text"
-            placeholder="Įveskite wallet adresą"
-            className="w-full border border-gray-300 rounded p-2 dark:bg-gray-700 dark:text-white"
-            value={wallet}
-            onChange={(e) => setWallet(e.target.value)}
-          />
-          <input
-            type="number"
-            placeholder="Taškai konvertuoti į crypto"
-            className="w-full border border-gray-300 rounded p-2 dark:bg-gray-700 dark:text-white"
-            value={pointsToRedeem}
-            onChange={(e) => setPointsToRedeem(e.target.value)}
-          />
-          <button
-            className="bg-primary text-white px-4 py-2 rounded hover:bg-blue-700"
-            onClick={handleRequestPayout}
-            disabled={submitting}
-          >
-            {submitting ? 'Sending...' : 'Request Payout'}
-          </button>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded p-4">
-          <h2 className="text-xl font-semibold mb-2 text-primary">Paskutiniai payout requestai</h2>
-          {payouts.length === 0 ? (
-            <p>Nėra įrašų</p>
-          ) : (
-            <ul className="space-y-2">
-              {payouts.map((p) => (
-                <li key={p.id} className="border-b border-gray-200 dark:border-gray-700 py-2">
-                  <p>Taškai: {p.points_amount} | Crypto: {p.crypto_currency}</p>
-                  <p>Status: <span className="capitalize">{p.status}</span></p>
-                  <p>Wallet: {p.wallet_address}</p>
-                  <p className="text-xs text-gray-400">{new Date(p.requested_at).toLocaleString()}</p>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="bg-card shadow-xl rounded-2xl p-6">
+            <h2 className="text-xl font-bold mb-4 text-white">Recent Payout Requests</h2>
+            {payouts.length === 0 ? (
+              <p className="text-gray-400">No records found.</p>
+            ) : (
+              <ul className="space-y-2">
+                {payouts.map((p) => (
+                  <li key={p.id} className="border-b border-gray-900 py-2">
+                    <p className="text-white font-semibold">
+                      {p.points_amount} points | Crypto: {p.crypto_currency}
+                    </p>
+                    <p className="text-accent">Status: <span className="capitalize">{p.status}</span></p>
+                    <p className="text-gray-300">Wallet: {p.wallet_address}</p>
+                    <p className="text-xs text-gray-500">{new Date(p.requested_at).toLocaleString()}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
+      <style jsx>{`
+        .bg-card { background-color: #0B0B0B; }
+      `}</style>
     </Layout>
   )
 }
