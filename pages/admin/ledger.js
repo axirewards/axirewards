@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
 import { supabase } from '../../lib/supabaseClient'
+import { pointsToCurrency } from '../../lib/pointsConversion'
 
 export default function AdminLedger() {
   const [ledger, setLedger] = useState([])
@@ -10,6 +11,7 @@ export default function AdminLedger() {
   const [filterKind, setFilterKind] = useState('')
   const [userDetailsMap, setUserDetailsMap] = useState({})
   const [payoutsMap, setPayoutsMap] = useState({})
+  const [pointsInput, setPointsInput] = useState('')
 
   useEffect(() => {
     fetchUsers()
@@ -106,10 +108,38 @@ export default function AdminLedger() {
     )
   }
 
+  // Mini points-to-currency calculator
+  const renderPointsCalculator = () => {
+    let points = parseInt(pointsInput) || 0
+    const { usd, eur } = pointsToCurrency(points)
+    return (
+      <div className="bg-blue-50 dark:bg-gray-800 rounded p-4 mb-6 flex items-center justify-between shadow">
+        <div className="flex flex-col md:flex-row gap-4 w-full items-center">
+          <div className="text-lg font-semibold text-primary">Points Calculator</div>
+          <input
+            type="number"
+            placeholder="Enter points amount..."
+            value={pointsInput}
+            onChange={e => setPointsInput(e.target.value)}
+            className="border rounded p-2 w-36 dark:bg-gray-700 dark:text-white"
+            min={0}
+          />
+          <div className="flex flex-col gap-1 text-md text-gray-800 dark:text-gray-200 font-medium">
+            <span>{points} points = <span className="text-green-600">{usd} USD</span> / <span className="text-blue-700">{eur} EUR</span></span>
+            <span className="text-xs text-gray-500">1 point = $0.01</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <Layout admin>
       <div className="max-w-7xl mx-auto p-6">
         <h1 className="text-3xl font-bold text-primary mb-6">Admin Ledger</h1>
+
+        {/* Points calculator */}
+        {renderPointsCalculator()}
 
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <select
@@ -159,7 +189,12 @@ export default function AdminLedger() {
                   <tr key={user.id} className="border-b border-gray-200 dark:border-gray-700">
                     <td>{user.email}</td>
                     <td>{user.tier}</td>
-                    <td>{user.points_balance}</td>
+                    <td>
+                      {user.points_balance}
+                      <span className="block text-xs text-gray-500">
+                        ({pointsToCurrency(user.points_balance).usd} USD / {pointsToCurrency(user.points_balance).eur} EUR)
+                      </span>
+                    </td>
                     <td>{user.kyc_status}</td>
                     <td>{user.wallet_address || '-'}</td>
                     <td>
@@ -196,6 +231,7 @@ export default function AdminLedger() {
                 <th>User</th>
                 <th>Kind</th>
                 <th>Amount</th>
+                <th>Amount (USD/EUR)</th>
                 <th>Balance After</th>
                 <th>Source</th>
                 <th>Reference ID</th>
@@ -203,22 +239,28 @@ export default function AdminLedger() {
               </tr>
             </thead>
             <tbody>
-              {ledger.map((entry) => (
-                <tr key={entry.id} className="border-b border-gray-200 dark:border-gray-700">
-                  <td>
-                    {userDetailsMap[entry.user_id]?.email || entry.user?.email || 'N/A'}
-                    <div className="text-xs text-gray-500">
-                      Wallet: {userDetailsMap[entry.user_id]?.wallet_address || '-'}
-                    </div>
-                  </td>
-                  <td>{entry.kind}</td>
-                  <td>{entry.amount}</td>
-                  <td>{entry.balance_after}</td>
-                  <td>{entry.source}</td>
-                  <td>{entry.reference_id}</td>
-                  <td>{new Date(entry.created_at).toLocaleString()}</td>
-                </tr>
-              ))}
+              {ledger.map((entry) => {
+                const { usd, eur } = pointsToCurrency(entry.amount)
+                return (
+                  <tr key={entry.id} className="border-b border-gray-200 dark:border-gray-700">
+                    <td>
+                      {userDetailsMap[entry.user_id]?.email || entry.user?.email || 'N/A'}
+                      <div className="text-xs text-gray-500">
+                        Wallet: {userDetailsMap[entry.user_id]?.wallet_address || '-'}
+                      </div>
+                    </td>
+                    <td>{entry.kind}</td>
+                    <td>{entry.amount}</td>
+                    <td>
+                      <span className="text-green-700">{usd} USD</span> / <span className="text-blue-700">{eur} EUR</span>
+                    </td>
+                    <td>{entry.balance_after}</td>
+                    <td>{entry.source}</td>
+                    <td>{entry.reference_id}</td>
+                    <td>{new Date(entry.created_at).toLocaleString()}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
