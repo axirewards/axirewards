@@ -21,13 +21,23 @@ export default function Navbar({ user, balance = 0, onLogout }) {
   // Helper for active link
   const isActive = (path) => router.pathname === path
 
+  // Handle logo click to redirect to /dashboard
+  const handleLogoClick = (e) => {
+    e.preventDefault()
+    router.push('/dashboard')
+  }
+
   return (
     <nav className="bg-primary text-white px-2 py-3 shadow-xl border-b border-blue-900 sticky top-0 z-40 transition-all">
       <div className="container mx-auto flex items-center justify-between relative">
         {/* Logo kairėje - be teksto ir dar 10% didesnis */}
-        <Link href="/" className="flex items-center hover:opacity-90 transition">
+        <a
+          href="/dashboard"
+          className="flex items-center hover:opacity-90 transition cursor-pointer"
+          onClick={handleLogoClick}
+        >
           <img src="/icons/logo.png" alt="AxiRewards" className="w-18 h-18 drop-shadow" />
-        </Link>
+        </a>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
@@ -111,8 +121,8 @@ export default function Navbar({ user, balance = 0, onLogout }) {
       </div>
       {/* Animacijos & custom styles */}
       <style jsx>{`
-        .w-18 { width: 4.5rem; }
-        .h-18 { height: 4.5rem; }
+        .w-18 { width: 4.95rem; }
+        .h-18 { height: 4.95rem; }
         .animate-dropdownIn { animation: dropdownIn 0.25s ease; }
         @keyframes dropdownIn { from { opacity: 0; transform: translateY(-10px);} to { opacity: 1; transform: translateY(0);} }
         .animate-mobileMenuIn { animation: mobileMenuIn 0.35s cubic-bezier(.23,1,.32,1); }
