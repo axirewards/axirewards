@@ -108,11 +108,6 @@ export default function Dashboard({ setGlobalLoading }) {
     getData();
   }, [router]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
-  };
-
   // UI constants
   const cardClass = "bg-card rounded-2xl shadow-lg flex flex-col items-center animate-fade-in border border-gray-900";
   const gridCardClass = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10";
@@ -123,15 +118,9 @@ export default function Dashboard({ setGlobalLoading }) {
       <div className="flex flex-col items-center justify-center min-h-[90vh] max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-center justify-between w-full mb-8 gap-4">
-          <h1 className="text-4xl font-extrabold text-accent text-center md:text-left drop-shadow mb-3 md:mb-0">
+          <h1 className="text-4xl font-extrabold text-white text-center md:text-left drop-shadow mb-3 md:mb-0">
             Dashboard
           </h1>
-          <button
-            onClick={handleLogout}
-            className="rounded-lg bg-card px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-900 shadow-lg border border-gray-800"
-          >
-            Logout
-          </button>
         </div>
 
         {/* Stats Cards */}
