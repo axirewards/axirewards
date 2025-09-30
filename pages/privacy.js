@@ -40,7 +40,7 @@ export default function Privacy({ setGlobalLoading }) {
                 <b>Your Rights:</b> You may request access, correction, or deletion of your personal information at any time by contacting us at <a href="mailto:axirewards@gmail.com" className="underline hover:text-blue-700">axirewards@gmail.com</a>.
               </li>
               <li>
-                <b>International Users:</b> By using AxiRewards, you consent to the processing of your data in accordance with this policy, regardless of where you are located.
+                <b>International Users:</b> By using Axi Rewards, you consent to the processing of your data in accordance with this policy, regardless of where you are located.
               </li>
               <li>
                 <b>Policy Updates:</b> We may update this Privacy Policy from time to time. Changes will be posted on this page, and continued use of Axi Rewards means you accept the updated terms.
