@@ -5,6 +5,7 @@ import Layout from "../components/Layout";
 import UserStats from "../components/UserStats";
 import ProviderIframe from "../components/ProviderIFrame";
 import { supabase } from "../lib/supabaseClient";
+import { v4 as uuidv4 } from "uuid"; // npm install uuid
 
 export default function Dashboard() {
   const router = useRouter();
@@ -16,16 +17,15 @@ export default function Dashboard() {
   useEffect(() => {
     const getData = async () => {
       try {
-        // 1️⃣ Gauti prisijungusį vartotoją
         const { data: authData, error: authError } = await supabase.auth.getUser();
         if (authError || !authData.user) {
-          router.push("/"); // jei neautorizuotas – redirect
+          router.push("/");
           return;
         }
 
         const userEmail = authData.user.email;
 
-        // 2️⃣ Tikrinti ar vartotojas yra DB, jei ne – sukurti
+        // Check DB user
         let { data: userData, error: userError } = await supabase
           .from("users")
           .select("*")
@@ -33,42 +33,37 @@ export default function Dashboard() {
           .single();
 
         if (userError && userError.code === "PGRST116") {
-          // User not found, sukuriame
+          // User not found → create
+          const dummyPasswordHash = uuidv4(); // Safe NOT NULL value
           const { data: newUser, error: insertError } = await supabase
             .from("users")
-            .insert([{ email: userEmail, created_at: new Date() }])
+            .insert([{ email: userEmail, password_hash: dummyPasswordHash, created_at: new Date() }])
             .select()
             .single();
 
           if (insertError) {
             console.error("Error creating user profile:", insertError);
-            setError("Failed to create user profile.");
-            setLoading(false);
-            return;
+            setError("Failed to create user profile. Contact support.");
+            setUser({ email: userEmail }); // allow dashboard load
+          } else {
+            userData = newUser;
           }
-
-          userData = newUser;
         } else if (userError) {
           console.error(userError);
           setError("Failed to fetch user profile.");
-          setLoading(false);
-          return;
         }
 
         setUser(userData);
 
-        // 3️⃣ Gauti aktyvias offers
+        // Fetch active offers
         const { data: offerData, error: offerError } = await supabase
           .from("offers")
           .select("*")
           .eq("status", "active")
           .order("created_at", { ascending: false });
 
-        if (offerError) {
-          console.error(offerError);
-        } else {
-          setOffers(offerData || []);
-        }
+        if (offerError) console.error(offerError);
+        else setOffers(offerData || []);
 
       } catch (err) {
         console.error("Dashboard error:", err);
@@ -96,10 +91,51 @@ export default function Dashboard() {
     );
   }
 
-  if (error) {
-    return (
-      <Layout>
-        <div className="flex h-[70vh] items-center justify-center">
+  return (
+    <Layout>
+      <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
+        <h1 className="text-3xl font-extrabold text-primary">Dashboard</h1>
+        <button
+          onClick={handleLogout}
+          className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
+        >
+          Logout
+        </button>
+      </div>
+
+      {error && (
+        <p className="mb-4 text-red-500">{error}</p>
+      )}
+
+      {user && <UserStats user={user} />}
+
+      <div className="mt-10">
+        <h2 className="mb-6 text-2xl font-bold text-gray-800">Available Offers</h2>
+        {offers.length === 0 ? (
+          <p className="text-gray-500">No active offers right now. Check back later!</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {offers.map((offer) => (
+              <div
+                key={offer.id}
+                className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow hover:shadow-lg transition transform hover:-translate-y-1"
+              >
+                <div className="p-4 border-b border-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-800">{offer.title}</h3>
+                  <p className="text-sm text-gray-500">{offer.description}</p>
+                </div>
+                <ProviderIframe
+                  url={offer.iframe_url || `https://example-offerwall.com/${offer.id}`}
+                  height="500px"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+                    }        <div className="flex h-[70vh] items-center justify-center">
           <p className="text-lg text-red-500">{error}</p>
         </div>
       </Layout>
