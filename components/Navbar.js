@@ -10,7 +10,6 @@ export default function Navbar({ user, balance = 0, onLogout }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const handleDropdown = () => setDropdownOpen((v) => !v)
 
-  // Navigacijos nuorodos
   const links = [
     { href: '/dashboard', name: 'Dashboard' },
     { href: '/offers', name: 'Offers' },
@@ -18,17 +17,14 @@ export default function Navbar({ user, balance = 0, onLogout }) {
     { href: '/profile', name: 'Profile' },
   ]
 
-  // Helper for active link
   const isActive = (path) => router.pathname === path
-
-  // Handle logo click to redirect to /dashboard
   const handleLogoClick = (e) => {
     e.preventDefault()
     router.push('/dashboard')
   }
 
   return (
-    <nav className="bg-primary text-white px-2 py-3 shadow-xl border-b border-blue-900 sticky top-0 z-40 transition-all">
+    <nav className="bg-card text-white px-2 py-3 shadow-xl border-b border-blue-900 sticky top-0 z-40 transition-all">
       <div className="container mx-auto flex items-center justify-between relative">
         {/* Logo kairėje - be teksto ir dar 10% didesnis */}
         <a
@@ -99,7 +95,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
         </button>
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="absolute top-full left-0 w-full bg-primary text-white shadow-xl flex flex-col gap-2 py-4 z-50 animate-mobileMenuIn">
+          <div className="absolute top-full left-0 w-full bg-card text-white shadow-xl flex flex-col gap-2 py-4 z-50 animate-mobileMenuIn">
             <div className="flex items-center justify-center mb-2">
               <img src="/icons/logo.png" alt="AxiRewards" className="w-18 h-18 drop-shadow" />
             </div>
