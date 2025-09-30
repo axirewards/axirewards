@@ -7,7 +7,7 @@ export default function Terms() {
         <h1 className="text-3xl font-extrabold text-primary mb-6 text-center">Terms of Service</h1>
         <div className="text-primary text-lg max-w-2xl mx-auto space-y-6 text-left">
           <p>
-            Welcome to AxiRewards!
+            Welcome to Axi Rewards!
             By accessing or using our platform, you agree to be bound by these Terms of Service.
             Please read them carefully.
           </p>
