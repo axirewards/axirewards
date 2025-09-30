@@ -1,19 +1,27 @@
 import { Fragment } from 'react'
 import { Transition } from '@headlessui/react'
 
+/**
+ * MiniLoadingSpinner
+ * - Shows a full-screen loading spinner with brand accent
+ * - Uses globalLoading for smooth, centralized UX (as provided by _app.js)
+ * - No local loading logic, just props
+ * - Responsive, high z-index, pointer-events-none
+ */
+
 export default function MiniLoadingSpinner({ loading }) {
   return (
     <Transition
-      show={loading}
+      show={!!loading}
       as={Fragment}
-      enter="transition ease-out duration-400"
+      enter="transition-opacity transition-transform duration-400 ease-out"
       enterFrom="opacity-0 scale-90"
       enterTo="opacity-100 scale-100"
-      leave="transition ease-in duration-300"
+      leave="transition-opacity transition-transform duration-300 ease-in"
       leaveFrom="opacity-100 scale-100"
       leaveTo="opacity-0 scale-90"
     >
-      <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none">
+      <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none bg-black/30 backdrop-blur-sm">
         <div className="flex flex-col items-center">
           <div className="relative">
             <div className="w-16 h-16 rounded-full border-4 border-primary border-t-accent animate-spin bg-black/60 shadow-2xl"></div>
@@ -37,7 +45,9 @@ export default function MiniLoadingSpinner({ loading }) {
               </svg>
             </div>
           </div>
-          <span className="mt-5 text-accent font-bold text-lg animate-pulse drop-shadow text-center">Loading...</span>
+          <span className="mt-5 text-accent font-bold text-lg animate-pulse drop-shadow text-center">
+            Loading...
+          </span>
         </div>
       </div>
       <style jsx>{`
