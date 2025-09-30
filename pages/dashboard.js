@@ -103,6 +103,47 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {/* Error message */}
+      {error && (
+        <div className="flex h-[70vh] items-center justify-center">
+          <p className="text-lg text-red-500">{error}</p>
+        </div>
+      )}
+
+      {/* User Stats */}
+      {user && <UserStats user={user} />}
+
+      {/* Offers Section */}
+      <div className="mt-10">
+        <h2 className="mb-6 text-2xl font-bold text-gray-800">Available Offers</h2>
+        {offers.length === 0 ? (
+          <p className="text-gray-500">No active offers right now. Check back later!</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {offers.map((offer) => (
+              <div
+                key={offer.id}
+                className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow hover:shadow-lg transition transform hover:-translate-y-1"
+              >
+                <div className="p-4 border-b border-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-800">{offer.title}</h3>
+                  <p className="text-sm text-gray-500">{offer.description}</p>
+                </div>
+                <ProviderIframe
+                  url={offer.iframe_url || `https://example-offerwall.com/${offer.id}`}
+                  height="500px"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+}          Logout
+        </button>
+      </div>
+
       {error && (
         <p className="mb-4 text-red-500">{error}</p>
       )}
