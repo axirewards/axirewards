@@ -1,5 +1,5 @@
 import '../styles/globals.css'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabaseClient'
 
 function MyApp({ Component, pageProps }) {
   return <Component {...pageProps} supabase={supabase} />
