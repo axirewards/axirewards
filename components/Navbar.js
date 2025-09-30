@@ -20,6 +20,8 @@ export default function Navbar({ user, balance = 0, onLogout }) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const notificationCount = useNotifications(user)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const handleDropdown = () => setDropdownOpen((v) => !v)
 
   // Navigacijos nuorodos
   const links = [
@@ -43,14 +45,10 @@ export default function Navbar({ user, balance = 0, onLogout }) {
   // Helper for active link
   const isActive = (path) => router.pathname === path
 
-  // Dropdown animacijos
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const handleDropdown = () => setDropdownOpen((v) => !v)
-
   return (
     <nav className="bg-primary text-white px-2 py-3 shadow-xl border-b border-blue-900 sticky top-0 z-40 transition-all">
       <div className="container mx-auto flex items-center justify-between relative">
-        {/* Logo */}
+        {/* Logo kairėje */}
         <Link href="/" className="flex items-center gap-2 font-extrabold text-2xl tracking-tight hover:opacity-90 transition">
           <img src="/icons/logo.png" alt="AxiRewards" className="w-9 h-9 drop-shadow" />
           <span className="hidden sm:inline">AxiRewards</span>
@@ -72,21 +70,6 @@ export default function Navbar({ user, balance = 0, onLogout }) {
               {link.icon}
             </Link>
           ))}
-        </div>
-
-        {/* Avatar per centrą – dabar rodoma visiems tas pats logo */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-          <div className="flex flex-col items-center group">
-            <img
-              src="/icons/logo.png"
-              alt="AxiRewards Logo"
-              className="w-10 h-10 rounded-full object-cover border-2 border-accent shadow"
-              loading="lazy"
-            />
-            {user && (
-              <span className="text-xs mt-1 opacity-80 text-white hidden sm:block">{user.email}</span>
-            )}
-          </div>
         </div>
 
         {/* User Info & Dropdown */}
@@ -133,6 +116,10 @@ export default function Navbar({ user, balance = 0, onLogout }) {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="absolute top-full left-0 w-full bg-primary text-white shadow-xl flex flex-col gap-2 py-4 z-50 animate-mobileMenuIn">
+            <div className="flex items-center gap-2 px-6 mb-2">
+              <img src="/icons/logo.png" alt="AxiRewards" className="w-8 h-8 drop-shadow" />
+              <span className="font-bold text-lg">AxiRewards</span>
+            </div>
             {links.map((link) => (
               <Link
                 key={link.name}
