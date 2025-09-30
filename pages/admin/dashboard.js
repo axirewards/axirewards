@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
 import { supabase } from '../../lib/supabaseClient'
+import { isAdmin } from '../../lib/userUtils'
 
 export default function AdminDashboard() {
+  const router = useRouter()
   const [stats, setStats] = useState({
     users: 0,
     active_users: 0,
-    banned_users: 0, // Pridėta
+    banned_users: 0,
     offers: 0,
     completions: 0,
     payouts_pending: 0,
@@ -16,8 +19,40 @@ export default function AdminDashboard() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [user, setUser] = useState(null)
+  const [userChecked, setUserChecked] = useState(false)
+
+  // Admin check on mount
+  useEffect(() => {
+    async function checkAdmin() {
+      // Gauti supabase auth user
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser || !authUser.email) {
+        router.replace('/index')
+        return
+      }
+      // DB user pagal email
+      const { data: dbUser, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', authUser.email)
+        .single()
+      if (dbError || !dbUser) {
+        router.replace('/dashboard')
+        return
+      }
+      setUser(dbUser)
+      setUserChecked(true)
+      if (!isAdmin(dbUser)) {
+        router.replace('/dashboard')
+        return
+      }
+    }
+    checkAdmin()
+  }, [router])
 
   useEffect(() => {
+    if (!userChecked) return
     async function fetchStats() {
       try {
         setLoading(true)
@@ -101,52 +136,60 @@ export default function AdminDashboard() {
     }
 
     fetchStats()
-  }, [])
+  }, [userChecked])
+
+  // Kortelių click handleriai
+  const goToUsers = () => router.push('/admin/users')
+  const goToOffers = () => router.push('/admin/offers')
+  const goToLedger = () => router.push('/admin/ledger')
+  const goToPartners = () => router.push('/admin/partners')
+
+  // UI Helper
+  const cardClass = "bg-white dark:bg-gray-800 p-4 rounded shadow flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
 
   return (
     <Layout admin>
       <div className="max-w-6xl mx-auto p-6">
         <h1 className="text-3xl font-bold text-primary mb-6">Admin Dashboard</h1>
-
         {loading ? (
           <p>Loading stats...</p>
         ) : error ? (
           <p className="text-red-600 font-bold">{error}</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-6">
-            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow flex flex-col items-center">
+            <div className={cardClass} onClick={goToUsers}>
               <p className="text-gray-500">Users</p>
               <p className="text-2xl font-bold">{stats.users}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow flex flex-col items-center">
+            <div className={cardClass} onClick={goToUsers}>
               <p className="text-gray-500">Active Users</p>
               <p className="text-2xl font-bold">{stats.active_users}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow flex flex-col items-center">
+            <div className={cardClass} onClick={goToUsers}>
               <p className="text-gray-500">Banned Users</p>
               <p className="text-2xl font-bold text-red-500">{stats.banned_users}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow flex flex-col items-center">
+            <div className={cardClass} onClick={goToOffers}>
               <p className="text-gray-500">Active Offers</p>
               <p className="text-2xl font-bold">{stats.offers}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow flex flex-col items-center">
+            <div className={cardClass}>
               <p className="text-gray-500">Completions</p>
               <p className="text-2xl font-bold">{stats.completions}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow flex flex-col items-center">
+            <div className={cardClass} onClick={goToLedger}>
               <p className="text-gray-500">Payouts (Pending)</p>
               <p className="text-2xl font-bold text-yellow-600">{stats.payouts_pending}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow flex flex-col items-center">
+            <div className={cardClass} onClick={goToLedger}>
               <p className="text-gray-500">Payouts (Paid)</p>
               <p className="text-2xl font-bold text-green-600">{stats.payouts_paid}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow flex flex-col items-center">
+            <div className={cardClass} onClick={goToLedger}>
               <p className="text-gray-500">Total Payout Requests</p>
               <p className="text-2xl font-bold">{stats.payouts_total}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow flex flex-col items-center">
+            <div className={cardClass} onClick={goToPartners}>
               <p className="text-gray-500">Active Partners</p>
               <p className="text-2xl font-bold">{stats.active_partners}</p>
             </div>
