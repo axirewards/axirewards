@@ -1,61 +1,120 @@
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
 import { supabase } from '../../lib/supabaseClient'
+import { isAdmin } from '../../lib/userUtils'
 
 export default function AdminUserTracking() {
+  const router = useRouter()
   const [tracking, setTracking] = useState([])
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [user, setUser] = useState(null)
+  const [userChecked, setUserChecked] = useState(false)
   const [newToken, setNewToken] = useState({ user_id: '', tracking_token: '' })
+  const [searchToken, setSearchToken] = useState('')
+  const [searchEmail, setSearchEmail] = useState('')
 
+  // Admin check
   useEffect(() => {
+    async function checkAdmin() {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser || !authUser.email) {
+        router.replace('/index')
+        return
+      }
+      const { data: dbUser, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', authUser.email)
+        .single()
+      if (dbError || !dbUser || !isAdmin(dbUser)) {
+        router.replace('/dashboard')
+        return
+      }
+      setUser(dbUser)
+      setUserChecked(true)
+    }
+    checkAdmin()
+  }, [router])
+
+  // Fetch users and tracking data
+  useEffect(() => {
+    if (!userChecked) return
     fetchUsers()
     fetchTracking()
-  }, [])
+  }, [userChecked, searchToken, searchEmail])
 
   const fetchUsers = async () => {
     const { data, error } = await supabase.from('users').select('id,email').order('email', { ascending: true })
-    if (error) console.error('Error fetching users:', error)
+    if (error) setError('Error fetching users: ' + error.message)
     else setUsers(data)
   }
 
   const fetchTracking = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    let query = supabase
       .from('user_tracking')
       .select('*, user: user_id(email)')
       .order('created_at', { ascending: false })
+    if (searchToken) query = query.ilike('tracking_token', `%${searchToken}%`)
+    if (searchEmail) query = query.ilike('user.email', `%${searchEmail}%`)
+    const { data, error } = await query
     if (error) {
-      console.error('Error fetching tracking:', error)
+      setError('Error fetching tracking tokens: ' + error.message)
       setTracking([])
     } else {
       setTracking(data)
+      setError('')
     }
     setLoading(false)
   }
 
   const addTracking = async () => {
-    if (!newToken.user_id || !newToken.tracking_token) return
+    if (!newToken.user_id || !newToken.tracking_token) {
+      setError('User and tracking token are required')
+      return
+    }
+    // Check for duplicate tracking token
+    const { data: existing, error: checkError } = await supabase
+      .from('user_tracking')
+      .select('id')
+      .eq('tracking_token', newToken.tracking_token)
+      .single()
+    if (existing) {
+      setError('Tracking token already exists!')
+      return
+    }
     const { error } = await supabase.from('user_tracking').insert([newToken])
     if (error) {
-      console.error('Error adding tracking token:', error)
+      setError('Error adding tracking token: ' + error.message)
     } else {
       setNewToken({ user_id: '', tracking_token: '' })
       fetchTracking()
+      setError('')
     }
   }
 
   const deleteTracking = async (id) => {
+    if (!confirm('Delete this tracking token?')) return
     const { error } = await supabase.from('user_tracking').delete().eq('id', id)
-    if (error) console.error('Error deleting tracking token:', error)
-    else fetchTracking()
+    if (error) setError('Error deleting tracking token: ' + error.message)
+    else {
+      fetchTracking()
+      setError('')
+    }
   }
 
   return (
     <Layout admin>
       <div className="max-w-6xl mx-auto p-6">
         <h1 className="text-3xl font-bold text-primary mb-6">Admin User Tracking</h1>
+        {error && (
+          <div className="mb-4 text-red-600 font-bold">{error}</div>
+        )}
 
+        {/* Add tracking token */}
         <div className="mb-6 bg-gray-50 dark:bg-gray-800 p-4 rounded shadow">
           <h2 className="text-xl font-semibold mb-2">Add New Tracking Token</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -87,6 +146,24 @@ export default function AdminUserTracking() {
           </div>
         </div>
 
+        {/* Search/filter */}
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <input
+            type="text"
+            placeholder="Filter by token..."
+            value={searchToken}
+            onChange={e => setSearchToken(e.target.value)}
+            className="border rounded p-2 dark:bg-gray-700 dark:text-white"
+          />
+          <input
+            type="text"
+            placeholder="Filter by user email..."
+            value={searchEmail}
+            onChange={e => setSearchEmail(e.target.value)}
+            className="border rounded p-2 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+
         {loading ? (
           <p>Loading tracking tokens...</p>
         ) : (
@@ -104,7 +181,7 @@ export default function AdminUserTracking() {
                 {tracking.map((t) => (
                   <tr key={t.id} className="border-b border-gray-200 dark:border-gray-700">
                     <td className="py-2 px-4">{t.user?.email || 'N/A'}</td>
-                    <td className="py-2 px-4">{t.tracking_token}</td>
+                    <td className="py-2 px-4 font-mono text-sm">{t.tracking_token}</td>
                     <td className="py-2 px-4">{new Date(t.created_at).toLocaleString()}</td>
                     <td className="py-2 px-4">
                       <button
@@ -116,6 +193,13 @@ export default function AdminUserTracking() {
                     </td>
                   </tr>
                 ))}
+                {tracking.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-3 px-4 text-center text-gray-400">
+                      No tracking tokens found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -123,4 +207,4 @@ export default function AdminUserTracking() {
       </div>
     </Layout>
   )
-        }
+}
