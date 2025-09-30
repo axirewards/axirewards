@@ -2,7 +2,7 @@ import Image from 'next/image';
 
 export default function Footer() {
   return (
-    <footer className="bg-primary text-white py-6 mt-8 border-t border-blue-900 shadow-lg">
+    <footer className="bg-card text-white py-6 mt-8 border-t border-blue-900 shadow-lg">
       <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4 px-4">
         {/* Left: Nuorodos */}
         <div className="flex flex-wrap gap-6 text-sm">
