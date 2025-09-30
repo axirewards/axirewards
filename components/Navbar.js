@@ -1,45 +1,21 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { FaCoins } from 'react-icons/fa'
 import { FiMenu, FiX } from 'react-icons/fi'
 
-// Simulated notification count - replace with Supabase fetch
-const useNotifications = (user) => {
-  const [count, setCount] = useState(0)
-  useEffect(() => {
-    if (user) {
-      // pavyzdžiui, fetch iš supabase naujų payout requests, žinučių ar pan.
-      setCount(Math.floor(Math.random() * 3)) // demo
-    }
-  }, [user])
-  return count
-}
-
 export default function Navbar({ user, balance = 0, onLogout }) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
-  const notificationCount = useNotifications(user)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const handleDropdown = () => setDropdownOpen((v) => !v)
 
   // Navigacijos nuorodos
   const links = [
-    { href: '/dashboard', name: 'Dashboard', icon: null },
-    { href: '/offers', name: 'Offers', icon: null },
-    {
-      href: '/payout',
-      name: 'Payout',
-      icon: notificationCount > 0 ? (
-        <span className="relative">
-          {/* Notification badge */}
-          <span className="absolute -top-2 -right-2 bg-red-500 rounded-full text-xs px-2 py-0.5 text-white font-bold shadow animate-bounce">
-            {notificationCount}
-          </span>
-        </span>
-      ) : null,
-    },
-    { href: '/profile', name: 'Profile', icon: null },
+    { href: '/dashboard', name: 'Dashboard' },
+    { href: '/offers', name: 'Offers' },
+    { href: '/payout', name: 'Payout' },
+    { href: '/profile', name: 'Profile' },
   ]
 
   // Helper for active link
@@ -48,9 +24,9 @@ export default function Navbar({ user, balance = 0, onLogout }) {
   return (
     <nav className="bg-primary text-white px-2 py-3 shadow-xl border-b border-blue-900 sticky top-0 z-40 transition-all">
       <div className="container mx-auto flex items-center justify-between relative">
-        {/* Logo kairėje - be teksto ir gerokai didesnis */}
+        {/* Logo kairėje - be teksto ir dar 10% didesnis */}
         <Link href="/" className="flex items-center hover:opacity-90 transition">
-          <img src="/icons/logo.png" alt="AxiRewards" className="w-16 h-16 drop-shadow" />
+          <img src="/icons/logo.png" alt="AxiRewards" className="w-18 h-18 drop-shadow" />
         </Link>
 
         {/* Desktop Navigation */}
@@ -66,7 +42,6 @@ export default function Navbar({ user, balance = 0, onLogout }) {
               }`}
             >
               {link.name}
-              {link.icon}
             </Link>
           ))}
         </div>
@@ -116,7 +91,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
         {menuOpen && (
           <div className="absolute top-full left-0 w-full bg-primary text-white shadow-xl flex flex-col gap-2 py-4 z-50 animate-mobileMenuIn">
             <div className="flex items-center justify-center mb-2">
-              <img src="/icons/logo.png" alt="AxiRewards" className="w-16 h-16 drop-shadow" />
+              <img src="/icons/logo.png" alt="AxiRewards" className="w-18 h-18 drop-shadow" />
             </div>
             {links.map((link) => (
               <Link
@@ -128,7 +103,6 @@ export default function Navbar({ user, balance = 0, onLogout }) {
                 onClick={() => setMenuOpen(false)}
               >
                 {link.name}
-                {link.icon}
               </Link>
             ))}
             <button className="px-6 py-2 hover:bg-blue-900 text-left" onClick={onLogout}>Logout</button>
@@ -137,6 +111,8 @@ export default function Navbar({ user, balance = 0, onLogout }) {
       </div>
       {/* Animacijos & custom styles */}
       <style jsx>{`
+        .w-18 { width: 4.5rem; }
+        .h-18 { height: 4.5rem; }
         .animate-dropdownIn { animation: dropdownIn 0.25s ease; }
         @keyframes dropdownIn { from { opacity: 0; transform: translateY(-10px);} to { opacity: 1; transform: translateY(0);} }
         .animate-mobileMenuIn { animation: mobileMenuIn 0.35s cubic-bezier(.23,1,.32,1); }
