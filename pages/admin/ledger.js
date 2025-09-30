@@ -12,6 +12,11 @@ export default function AdminLedger() {
   const [userDetailsMap, setUserDetailsMap] = useState({})
   const [payoutsMap, setPayoutsMap] = useState({})
   const [pointsInput, setPointsInput] = useState('')
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [selectedLedger, setSelectedLedger] = useState(null)
+  const [showUserModal, setShowUserModal] = useState(false)
+  const [showLedgerModal, setShowLedgerModal] = useState(false)
+  const [copyStatus, setCopyStatus] = useState('')
 
   useEffect(() => {
     fetchUsers()
@@ -28,7 +33,6 @@ export default function AdminLedger() {
     fetchLedger()
   }, [filterUser, filterKind])
 
-  // Get all users with all info and wallet
   const fetchUsers = async () => {
     const { data, error } = await supabase
       .from('users')
@@ -38,7 +42,6 @@ export default function AdminLedger() {
     else setUsers(data || [])
   }
 
-  // Prepare map for user info by id for quick lookup
   const fetchUserDetailsMap = async (usersArr) => {
     const map = {}
     usersArr.forEach(u => {
@@ -47,7 +50,6 @@ export default function AdminLedger() {
     setUserDetailsMap(map)
   }
 
-  // Prepare payouts Map: {userId: [payouts]}
   const fetchPayoutsMap = async (usersArr) => {
     const userIds = usersArr.map(u => u.id)
     if (userIds.length === 0) {
@@ -62,7 +64,6 @@ export default function AdminLedger() {
       setPayoutsMap({})
       return
     }
-    // Group by user_id
     const payoutsGrouped = {}
     data.forEach(p => {
       if (!payoutsGrouped[p.user_id]) payoutsGrouped[p.user_id] = []
@@ -71,7 +72,6 @@ export default function AdminLedger() {
     setPayoutsMap(payoutsGrouped)
   }
 
-  // Ledger entries
   const fetchLedger = async () => {
     setLoading(true)
     let query = supabase
@@ -92,7 +92,6 @@ export default function AdminLedger() {
     setLoading(false)
   }
 
-  // Helper: show payout summary for user
   const getUserPayoutSummary = (userId) => {
     const payouts = payoutsMap[userId] || []
     if (payouts.length === 0) return '-'
@@ -108,7 +107,6 @@ export default function AdminLedger() {
     )
   }
 
-  // Mini points-to-currency calculator
   const renderPointsCalculator = () => {
     let points = parseInt(pointsInput) || 0
     const { usd, eur } = pointsToCurrency(points)
@@ -133,12 +131,119 @@ export default function AdminLedger() {
     )
   }
 
+  // Modal logic
+  const openUserModal = (user) => {
+    setSelectedUser(user)
+    setShowUserModal(true)
+    setCopyStatus('')
+  }
+  const closeUserModal = () => {
+    setShowUserModal(false)
+    setSelectedUser(null)
+    setCopyStatus('')
+  }
+
+  const openLedgerModal = (entry) => {
+    setSelectedLedger(entry)
+    setShowLedgerModal(true)
+    setCopyStatus('')
+  }
+  const closeLedgerModal = () => {
+    setShowLedgerModal(false)
+    setSelectedLedger(null)
+    setCopyStatus('')
+  }
+
+  const handleCopyWallet = (wallet) => {
+    if (!wallet) return
+    navigator.clipboard.writeText(wallet)
+      .then(() => setCopyStatus('Wallet copied!'))
+      .catch(() => setCopyStatus('Copy failed'))
+    setTimeout(() => setCopyStatus(''), 1500)
+  }
+
+  // User modal
+  const UserInfoModal = () => {
+    if (!selectedUser) return null
+    const { usd, eur } = pointsToCurrency(selectedUser.points_balance)
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-lg w-full p-8 border">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-primary">User Info</h2>
+            <button className="text-gray-400 hover:text-gray-600 text-xl" onClick={closeUserModal}>×</button>
+          </div>
+          <div className="mb-3"><span className="font-semibold">Email:</span> {selectedUser.email}</div>
+          <div><span className="font-semibold">Tier:</span> {selectedUser.tier}</div>
+          <div><span className="font-semibold">Points:</span> {selectedUser.points_balance} ({usd} USD / {eur} EUR)</div>
+          <div><span className="font-semibold">KYC:</span> {selectedUser.kyc_status}</div>
+          <div>
+            <span className="font-semibold">Wallet:</span>
+            <span className="ml-2 break-all bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono select-all cursor-pointer"
+              title="Click to copy"
+              onClick={() => handleCopyWallet(selectedUser.wallet_address)}>
+              {selectedUser.wallet_address || '-'}
+            </span>
+            {copyStatus && <span className="ml-2 text-green-600 text-xs">{copyStatus}</span>}
+          </div>
+          <div><span className="font-semibold">Last Login:</span> {selectedUser.last_login ? new Date(selectedUser.last_login).toLocaleString() : '-'}</div>
+          <div>
+            <span className="font-semibold">Status:</span> {selectedUser.is_banned ? <span className="text-red-600 font-bold">BANNED</span> : <span className="text-green-600 font-bold">ACTIVE</span>}
+            {selectedUser.is_banned && (
+              <div className="text-xs text-red-500">
+                Reason: {selectedUser.banned_reason || '-'}<br />
+                When: {selectedUser.banned_at ? new Date(selectedUser.banned_at).toLocaleString() : '-'}
+              </div>
+            )}
+          </div>
+          <div className="mt-3">
+            <span className="font-semibold">Payouts:</span>
+            <div>{getUserPayoutSummary(selectedUser.id)}</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Ledger modal
+  const LedgerInfoModal = () => {
+    if (!selectedLedger) return null
+    const { usd, eur } = pointsToCurrency(selectedLedger.amount)
+    const user = userDetailsMap[selectedLedger.user_id]
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-lg w-full p-8 border">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-primary">Ledger Entry Info</h2>
+            <button className="text-gray-400 hover:text-gray-600 text-xl" onClick={closeLedgerModal}>×</button>
+          </div>
+          <div>
+            <span className="font-semibold">User:</span> {user?.email || selectedLedger.user?.email || 'N/A'}
+          </div>
+          <div>
+            <span className="font-semibold">Wallet:</span>
+            <span className="ml-2 break-all bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono select-all cursor-pointer"
+              title="Click to copy"
+              onClick={() => handleCopyWallet(user?.wallet_address)}>
+              {user?.wallet_address || '-'}
+            </span>
+            {copyStatus && <span className="ml-2 text-green-600 text-xs">{copyStatus}</span>}
+          </div>
+          <div><span className="font-semibold">Kind:</span> {selectedLedger.kind}</div>
+          <div><span className="font-semibold">Amount:</span> {selectedLedger.amount} ({usd} USD / {eur} EUR)</div>
+          <div><span className="font-semibold">Balance After:</span> {selectedLedger.balance_after}</div>
+          <div><span className="font-semibold">Source:</span> {selectedLedger.source}</div>
+          <div><span className="font-semibold">Reference ID:</span> {selectedLedger.reference_id}</div>
+          <div><span className="font-semibold">Created At:</span> {new Date(selectedLedger.created_at).toLocaleString()}</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <Layout admin>
       <div className="max-w-7xl mx-auto p-6">
         <h1 className="text-3xl font-bold text-primary mb-6">Admin Ledger</h1>
-
-        {/* Points calculator */}
         {renderPointsCalculator()}
 
         <div className="flex flex-col md:flex-row gap-4 mb-4">
@@ -185,38 +290,53 @@ export default function AdminLedger() {
                 </tr>
               </thead>
               <tbody>
-                {users.map(user => (
-                  <tr key={user.id} className="border-b border-gray-200 dark:border-gray-700">
-                    <td>{user.email}</td>
-                    <td>{user.tier}</td>
-                    <td>
-                      {user.points_balance}
-                      <span className="block text-xs text-gray-500">
-                        ({pointsToCurrency(user.points_balance).usd} USD / {pointsToCurrency(user.points_balance).eur} EUR)
-                      </span>
-                    </td>
-                    <td>{user.kyc_status}</td>
-                    <td>{user.wallet_address || '-'}</td>
-                    <td>
-                      {user.is_banned
-                        ? <span className="text-red-600 font-bold">BANNED</span>
-                        : <span className="text-green-600 font-bold">ACTIVE</span>
-                      }
-                      {user.is_banned && (
-                        <div className="text-xs text-red-500">
-                          Reason: {user.banned_reason || '-'}<br />
-                          When: {user.banned_at ? new Date(user.banned_at).toLocaleString() : '-'}
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      {user.last_login ? new Date(user.last_login).toLocaleString() : '-'}
-                    </td>
-                    <td>
-                      {getUserPayoutSummary(user.id)}
-                    </td>
-                  </tr>
-                ))}
+                {users.map(user => {
+                  const { usd, eur } = pointsToCurrency(user.points_balance)
+                  return (
+                    <tr
+                      key={user.id}
+                      className="border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900"
+                      onClick={() => openUserModal(user)}
+                    >
+                      <td>{user.email}</td>
+                      <td>{user.tier}</td>
+                      <td>
+                        {user.points_balance}
+                        <span className="block text-xs text-gray-500">
+                          ({usd} USD / {eur} EUR)
+                        </span>
+                      </td>
+                      <td>{user.kyc_status}</td>
+                      <td>
+                        <span
+                          className="break-all bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono select-all cursor-pointer"
+                          title="Click to copy"
+                          onClick={e => { e.stopPropagation(); handleCopyWallet(user.wallet_address) }}>
+                          {user.wallet_address || '-'}
+                        </span>
+                        {copyStatus && <span className="ml-2 text-green-600 text-xs">{copyStatus}</span>}
+                      </td>
+                      <td>
+                        {user.is_banned
+                          ? <span className="text-red-600 font-bold">BANNED</span>
+                          : <span className="text-green-600 font-bold">ACTIVE</span>
+                        }
+                        {user.is_banned && (
+                          <div className="text-xs text-red-500">
+                            Reason: {user.banned_reason || '-'}<br />
+                            When: {user.banned_at ? new Date(user.banned_at).toLocaleString() : '-'}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        {user.last_login ? new Date(user.last_login).toLocaleString() : '-'}
+                      </td>
+                      <td>
+                        {getUserPayoutSummary(user.id)}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -241,12 +361,23 @@ export default function AdminLedger() {
             <tbody>
               {ledger.map((entry) => {
                 const { usd, eur } = pointsToCurrency(entry.amount)
+                const user = userDetailsMap[entry.user_id]
                 return (
-                  <tr key={entry.id} className="border-b border-gray-200 dark:border-gray-700">
+                  <tr
+                    key={entry.id}
+                    className="border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900"
+                    onClick={() => openLedgerModal(entry)}
+                  >
                     <td>
-                      {userDetailsMap[entry.user_id]?.email || entry.user?.email || 'N/A'}
+                      {user?.email || entry.user?.email || 'N/A'}
                       <div className="text-xs text-gray-500">
-                        Wallet: {userDetailsMap[entry.user_id]?.wallet_address || '-'}
+                        Wallet: <span
+                          className="break-all bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono select-all cursor-pointer"
+                          title="Click to copy"
+                          onClick={e => { e.stopPropagation(); handleCopyWallet(user?.wallet_address) }}>
+                          {user?.wallet_address || '-'}
+                        </span>
+                        {copyStatus && <span className="ml-2 text-green-600 text-xs">{copyStatus}</span>}
                       </div>
                     </td>
                     <td>{entry.kind}</td>
@@ -264,6 +395,10 @@ export default function AdminLedger() {
             </tbody>
           </table>
         </div>
+
+        {/* Modals */}
+        {showUserModal && <UserInfoModal />}
+        {showLedgerModal && <LedgerInfoModal />}
       </div>
     </Layout>
   )
