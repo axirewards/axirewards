@@ -147,7 +147,7 @@ export default function Payout({ setGlobalLoading }) {
             </div>
             <div className="flex flex-col gap-4">
               <div>
-                <label className="text-sm font-semibold text-white mb-1 block">Your Wallet (POLYGON payouts)</label>
+                <label className="text-sm font-semibold text-white mb-1 block">Your Wallet (POLYGON network payouts)</label>
                 <input
                   type="text"
                   value={wallet}
