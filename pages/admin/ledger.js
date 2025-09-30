@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
 import { supabase } from '../../lib/supabaseClient'
 import { pointsToCurrency } from '../../lib/pointsConversion'
+import { isAdmin } from '../../lib/userUtils'
 
 export default function AdminLedger() {
+  const router = useRouter()
   const [ledger, setLedger] = useState([])
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -19,10 +22,36 @@ export default function AdminLedger() {
   const [copyStatus, setCopyStatus] = useState('')
   const [payingOut, setPayingOut] = useState(false)
   const [payError, setPayError] = useState('')
+  const [adminUser, setAdminUser] = useState(null)
+  const [userChecked, setUserChecked] = useState(false)
+
+  // Admin check on mount
+  useEffect(() => {
+    async function checkAdmin() {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser || !authUser.email) {
+        router.replace('/index')
+        return
+      }
+      const { data: dbUser, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', authUser.email)
+        .single()
+      if (dbError || !dbUser || !isAdmin(dbUser)) {
+        router.replace('/dashboard')
+        return
+      }
+      setAdminUser(dbUser)
+      setUserChecked(true)
+    }
+    checkAdmin()
+  }, [router])
 
   useEffect(() => {
+    if (!userChecked) return
     fetchUsers()
-  }, [])
+  }, [userChecked])
 
   useEffect(() => {
     if (users.length) {
@@ -32,8 +61,9 @@ export default function AdminLedger() {
   }, [users])
 
   useEffect(() => {
+    if (!userChecked) return
     fetchLedger()
-  }, [filterUser, filterKind])
+  }, [filterUser, filterKind, userChecked])
 
   const fetchUsers = async () => {
     const { data, error } = await supabase
@@ -216,7 +246,7 @@ export default function AdminLedger() {
 
       // Log admin action
       await supabase.from('admin_logs').insert({
-        admin_user: 'admin', // Optionally pass current admin email here
+        admin_user: adminUser?.email || 'admin',
         action: 'payout_paid',
         details: { user_id: user.id, payout_id: payout.id, amount: selectedLedger.amount },
         created_at: new Date().toISOString(),
