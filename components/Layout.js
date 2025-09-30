@@ -17,6 +17,7 @@ export default function Layout({ children }) {
           role="main"
           className="
             flex-grow
+            min-h-[60vh]        // <-- čia garantuoja footer apačioje
             w-full
             max-w-7xl
             mx-auto
@@ -39,7 +40,6 @@ export default function Layout({ children }) {
         </main>
       </Transition>
       <Footer />
-      {/* Responsive background gradient for mobile/desktop */}
       <style jsx global>{`
         body {
           background-image: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #060a38 100%);
