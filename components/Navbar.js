@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { FaCoins } from 'react-icons/fa'
 import { FiMenu, FiX } from 'react-icons/fi'
-import { RiLogoutBoxRLine } from 'react-icons/ri' // logout icon
 
 export default function Navbar({ user, balance = 0, onLogout }) {
   const router = useRouter()
@@ -27,7 +26,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
   return (
     <nav className="bg-card text-white px-2 py-3 shadow-xl border-b border-blue-900 sticky top-0 z-40 transition-all">
       <div className="container mx-auto flex items-center justify-between relative">
-        {/* Logo kairėje */}
+        {/* Logo kairėje - be teksto ir dar 10% didesnis */}
         <a
           href="/dashboard"
           className="flex items-center hover:opacity-90 transition cursor-pointer"
@@ -53,9 +52,9 @@ export default function Navbar({ user, balance = 0, onLogout }) {
           ))}
         </div>
 
-        {/* User Info & Dropdown + Logout Icon */}
+        {/* User Info & Dropdown */}
         {user && (
-          <div className="flex items-center gap-4 relative">
+          <div className="flex items-center gap-4">
             <span className="flex items-center gap-2 bg-accent/30 px-3 py-1 rounded-lg text-sm shadow">
               <FaCoins className="text-yellow-300 animate-spin-slow" />
               <span className="font-bold">{balance}</span>
@@ -77,24 +76,12 @@ export default function Navbar({ user, balance = 0, onLogout }) {
                   <Link href="/profile" className="block px-4 py-2 hover:bg-blue-50 rounded">Profile</Link>
                   <Link href="/settings" className="block px-4 py-2 hover:bg-blue-50 rounded">Settings</Link>
                   <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 rounded flex items-center gap-2"
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 rounded"
                     onClick={onLogout}
-                  >
-                    <RiLogoutBoxRLine className="text-xl text-red-600" />
-                    Logout
-                  </button>
+                  >Logout</button>
                 </div>
               )}
             </div>
-            {/* Small logout icon top-right (desktop) */}
-            <button
-              onClick={onLogout}
-              className="absolute -top-2 -right-8 p-2 rounded-full bg-red-500 hover:bg-red-600 transition border border-red-700 flex items-center justify-center shadow"
-              aria-label="Logout"
-              title="Logout"
-            >
-              <RiLogoutBoxRLine className="text-xl text-white" />
-            </button>
           </div>
         )}
 
@@ -109,17 +96,8 @@ export default function Navbar({ user, balance = 0, onLogout }) {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="absolute top-full left-0 w-full bg-card text-white shadow-xl flex flex-col gap-2 py-4 z-50 animate-mobileMenuIn">
-            <div className="flex items-center justify-between mb-2 px-4">
+            <div className="flex items-center justify-center mb-2">
               <img src="/icons/logo.png" alt="AxiRewards" className="w-18 h-18 drop-shadow" />
-              {/* Mobile logout icon top-right */}
-              <button
-                onClick={onLogout}
-                className="p-2 rounded-full bg-red-500 hover:bg-red-600 transition border border-red-700 flex items-center justify-center shadow"
-                aria-label="Logout"
-                title="Logout"
-              >
-                <RiLogoutBoxRLine className="text-xl text-white" />
-              </button>
             </div>
             {links.map((link) => (
               <Link
@@ -133,15 +111,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
                 {link.name}
               </Link>
             ))}
-            {/* Logout icon + button for mobile (bottom) */}
-            <button
-              className="flex items-center gap-2 px-6 py-2 hover:bg-red-900/70 justify-center mt-2 rounded transition md:hidden"
-              onClick={onLogout}
-              aria-label="Logout"
-            >
-              <RiLogoutBoxRLine className="text-xl text-white" />
-              Logout
-            </button>
+            <button className="px-6 py-2 hover:bg-blue-900 text-left" onClick={onLogout}>Logout</button>
           </div>
         )}
       </div>
