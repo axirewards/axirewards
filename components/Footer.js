@@ -1,8 +1,14 @@
 import Image from 'next/image';
 
+/**
+ * Always sticks to the bottom of the page, regardless of content height.
+ * Uses bg-card (black), perfect for your WOW theme and layout.
+ * Remove mt-8 to ensure no extra margin pushes the footer up.
+ * If using Layout.js with flex-col min-h-screen and flex-grow on <main>, this will always stay at the bottom.
+ */
 export default function Footer() {
   return (
-    <footer className="bg-card text-white py-6 mt-8 border-t border-blue-900 shadow-lg">
+    <footer className="bg-card text-white py-6 border-t border-blue-900 shadow-lg w-full">
       <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4 px-4">
         {/* Left: Nuorodos */}
         <div className="flex flex-wrap gap-6 text-sm">
