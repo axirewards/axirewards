@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
-import ProviderIframe from '../components/ProviderIframe'
+import ProviderIframe from '../components/ProviderIFrame'
 import { supabase } from '../lib/supabaseClient'
 
 export default function Offers() {
