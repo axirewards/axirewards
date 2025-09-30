@@ -55,7 +55,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary via-blue-600 to-blue-900">
-      <div className="w-full max-w-md rounded-2xl bg-white/80 p-8 shadow-2xl backdrop-blur-lg border border-blue-100">
+      <div className="w-full max-w-md rounded-2xl bg-black/90 p-8 shadow-2xl backdrop-blur-lg border border-blue-100">
         {/* Logo */}
         <div className="mb-8 flex justify-center">
           <Image
@@ -70,12 +70,12 @@ export default function LoginPage() {
 
         {/* Status messages */}
         {errorMsg && (
-          <p className="mb-4 rounded bg-red-100 p-2 text-sm text-red-600 shadow animate-shake">
+          <p className="mb-4 rounded bg-red-900/80 p-2 text-sm text-red-100 shadow animate-shake">
             {errorMsg}
           </p>
         )}
         {infoMsg && (
-          <p className="mb-4 rounded bg-blue-100 p-2 text-sm text-primary shadow animate-fade-in">
+          <p className="mb-4 rounded bg-blue-900/80 p-2 text-sm text-blue-100 shadow animate-fade-in">
             {infoMsg}
           </p>
         )}
@@ -87,14 +87,14 @@ export default function LoginPage() {
             placeholder="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border border-blue-300 p-2 focus:outline-none focus:ring-2 focus:ring-primary bg-blue-50"
+            className="w-full rounded border border-blue-300 p-2 focus:outline-none focus:ring-2 focus:ring-primary bg-blue-950 text-blue-100 placeholder-blue-400"
             required
             autoComplete="email"
           />
           <button
             type="submit"
             disabled={loading}
-            className={`w-full rounded-lg border border-blue-400 py-2 text-blue-700 font-semibold hover:bg-blue-50 transition active:scale-95 disabled:opacity-50 shadow ${loading ? "cursor-wait" : ""}`}
+            className={`w-full rounded-lg border border-blue-400 py-2 text-blue-100 font-semibold hover:bg-blue-950 hover:text-blue-400 transition active:scale-95 disabled:opacity-50 shadow ${loading ? "cursor-wait" : ""}`}
           >
             {loading ? (
               <span className="animate-pulse">Sending Magic Link...</span>
@@ -106,15 +106,15 @@ export default function LoginPage() {
 
         {/* Divider */}
         <div className="mt-6 flex items-center">
-          <hr className="flex-1 border-gray-300" />
-          <span className="px-2 text-sm text-gray-400">or</span>
-          <hr className="flex-1 border-gray-300" />
+          <hr className="flex-1 border-blue-800" />
+          <span className="px-2 text-sm text-blue-400">or</span>
+          <hr className="flex-1 border-blue-800" />
         </div>
 
         {/* Google login */}
         <button
           onClick={handleGoogleLogin}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-red-500 py-2 text-white font-semibold hover:bg-red-600 active:scale-95 shadow transition"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-white font-semibold hover:bg-red-700 active:scale-95 shadow transition"
         >
           <svg
             className="h-5 w-5"
