@@ -30,7 +30,7 @@ export default function Terms({ setGlobalLoading }) {
                 <b>Account Registration:</b> You agree to provide accurate information and keep your account secure. Multiple accounts per individual are not permitted.
               </li>
               <li>
-                <b>Use of Service:</b> You may not use AxiRewards for any unlawful, fraudulent, or abusive purposes. All activity must comply with local laws.
+                <b>Use of Service:</b> You may not use Axi Rewards for any unlawful, fraudulent, or abusive purposes. All activity must comply with local laws.
               </li>
               <li>
                 <b>Rewards & Offers:</b> All rewards, payouts, and offers are subject to availability and may change at any time without notice. We reserve the right to modify or remove offers as needed.
@@ -48,7 +48,7 @@ export default function Terms({ setGlobalLoading }) {
                 <b>Limitation of Liability:</b> Axi Rewards is not liable for any damages or losses arising from the use of our platform. Use at your own risk.
               </li>
               <li>
-                <b>Changes to Terms:</b> We may update these Terms of Service at any time. Continued use of AxiRewards after changes means you accept the new terms.
+                <b>Changes to Terms:</b> We may update these Terms of Service at any time. Continued use of Axi Rewards after changes means you accept the new terms.
               </li>
               <li>
                 <b>Contact:</b> For questions or support, contact us at <a href="mailto:axirewards@gmail.com" className="underline hover:text-blue-700">axirewards@gmail.com</a>.
