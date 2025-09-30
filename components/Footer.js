@@ -19,7 +19,7 @@ export default function Footer() {
             className="opacity-80 hover:opacity-100"
             aria-label="Instagram"
           >
-            <Image src="/icons/instagram.svg" alt="Instagram" width={24} height={24} />
+            <Image src="/icons/instagram.png" alt="Instagram" width={24} height={24} />
           </a>
           <a
             href="https://twitter.com/axirewards"
@@ -28,14 +28,14 @@ export default function Footer() {
             className="opacity-80 hover:opacity-100"
             aria-label="Twitter"
           >
-            <Image src="/icons/twitter.svg" alt="Twitter" width={24} height={24} />
+            <Image src="/icons/twitter.png" alt="Twitter" width={24} height={24} />
           </a>
           <a
             href="mailto:support@axirewards.com"
             className="opacity-80 hover:opacity-100"
             aria-label="Email"
           >
-            <Image src="/icons/email.svg" alt="Email" width={24} height={24} />
+            <Image src="/icons/email.png" alt="Email" width={24} height={24} />
           </a>
         </div>
         {/* Right: Copyright */}
