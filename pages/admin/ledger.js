@@ -17,6 +17,8 @@ export default function AdminLedger() {
   const [showUserModal, setShowUserModal] = useState(false)
   const [showLedgerModal, setShowLedgerModal] = useState(false)
   const [copyStatus, setCopyStatus] = useState('')
+  const [payingOut, setPayingOut] = useState(false)
+  const [payError, setPayError] = useState('')
 
   useEffect(() => {
     fetchUsers()
@@ -131,7 +133,6 @@ export default function AdminLedger() {
     )
   }
 
-  // Modal logic
   const openUserModal = (user) => {
     setSelectedUser(user)
     setShowUserModal(true)
@@ -147,11 +148,13 @@ export default function AdminLedger() {
     setSelectedLedger(entry)
     setShowLedgerModal(true)
     setCopyStatus('')
+    setPayError('')
   }
   const closeLedgerModal = () => {
     setShowLedgerModal(false)
     setSelectedLedger(null)
     setCopyStatus('')
+    setPayError('')
   }
 
   const handleCopyWallet = (wallet) => {
@@ -160,6 +163,73 @@ export default function AdminLedger() {
       .then(() => setCopyStatus('Wallet copied!'))
       .catch(() => setCopyStatus('Copy failed'))
     setTimeout(() => setCopyStatus(''), 1500)
+  }
+
+  // Handle payout done (admin confirms payout is transferred)
+  const handleMarkPaidOut = async () => {
+    if (!selectedLedger) return
+    setPayingOut(true)
+    setPayError('')
+    try {
+      // Find related payout request
+      const { data: payout } = await supabase
+        .from('payouts')
+        .select('*')
+        .eq('user_id', selectedLedger.user_id)
+        .eq('points_amount', selectedLedger.amount)
+        .eq('status', 'pending')
+        .order('requested_at', { ascending: false })
+        .limit(1)
+        .single()
+      if (!payout) throw new Error('Payout request not found!')
+
+      // Update payout status to "paid"
+      const { error: payoutError } = await supabase
+        .from('payouts')
+        .update({ status: 'paid', processed_at: new Date().toISOString() })
+        .eq('id', payout.id)
+      if (payoutError) throw payoutError
+
+      // Update user points_balance
+      const user = userDetailsMap[selectedLedger.user_id]
+      const newBalance = Number(user.points_balance) - Number(selectedLedger.amount)
+      if (newBalance < 0) throw new Error('User does not have enough points!')
+      const { error: userError } = await supabase
+        .from('users')
+        .update({ points_balance: newBalance })
+        .eq('id', user.id)
+      if (userError) throw userError
+
+      // Add ledger entry for debit (for transparency)
+      const { error: ledgerError } = await supabase
+        .from('ledger')
+        .insert({
+          user_id: user.id,
+          kind: 'debit',
+          amount: selectedLedger.amount,
+          balance_after: newBalance,
+          source: 'admin payout',
+          reference_id: payout.id,
+          created_at: new Date().toISOString()
+        })
+      if (ledgerError) throw ledgerError
+
+      // Log admin action
+      await supabase.from('admin_logs').insert({
+        admin_user: 'admin', // Optionally pass current admin email here
+        action: 'payout_paid',
+        details: { user_id: user.id, payout_id: payout.id, amount: selectedLedger.amount },
+        created_at: new Date().toISOString(),
+      })
+
+      await fetchUsers()
+      await fetchLedger()
+      await fetchPayoutsMap(users)
+      closeLedgerModal()
+    } catch (err) {
+      setPayError('Error: ' + (err.message || 'Unknown'))
+    }
+    setPayingOut(false)
   }
 
   // User modal
@@ -210,6 +280,7 @@ export default function AdminLedger() {
     if (!selectedLedger) return null
     const { usd, eur } = pointsToCurrency(selectedLedger.amount)
     const user = userDetailsMap[selectedLedger.user_id]
+    const isPayout = selectedLedger.kind === 'payout'
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-lg w-full p-8 border">
@@ -235,6 +306,18 @@ export default function AdminLedger() {
           <div><span className="font-semibold">Source:</span> {selectedLedger.source}</div>
           <div><span className="font-semibold">Reference ID:</span> {selectedLedger.reference_id}</div>
           <div><span className="font-semibold">Created At:</span> {new Date(selectedLedger.created_at).toLocaleString()}</div>
+          {isPayout && (
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                className={`bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-bold ${payingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={handleMarkPaidOut}
+                disabled={payingOut}
+              >
+                Mark as Paid Out
+              </button>
+              {payError && <span className="text-red-500">{payError}</span>}
+            </div>
+          )}
         </div>
       </div>
     )
