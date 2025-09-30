@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import UserStats from '../components/UserStats'
 import ProviderIframe from '../components/ProviderIframe'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabaseClient'
 
 export default function Dashboard() {
   const [user, setUser] = useState(null)
