@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { isAdmin, isBanned } from '../lib/userUtils'
+import MiniLoadingSpinner from '../components/MiniLoadingSpinner'
 
 // Modal component for banned users
 function BannedModal({ reason, date, onClose }) {
@@ -50,11 +51,26 @@ function MyApp({ Component, pageProps }) {
   const [isBannedUser, setIsBannedUser] = useState(false)
   const [bannedInfo, setBannedInfo] = useState(null)
   const [showBannedModal, setShowBannedModal] = useState(false)
+  const [globalLoading, setGlobalLoading] = useState(false)
 
+  // --- GLOBAL ROUTING LOADING ---
+  useEffect(() => {
+    const handleStart = () => setGlobalLoading(true)
+    const handleStop = () => setGlobalLoading(false)
+    router.events.on('routeChangeStart', handleStart)
+    router.events.on('routeChangeComplete', handleStop)
+    router.events.on('routeChangeError', handleStop)
+    return () => {
+      router.events.off('routeChangeStart', handleStart)
+      router.events.off('routeChangeComplete', handleStop)
+      router.events.off('routeChangeError', handleStop)
+    }
+  }, [router])
+
+  // --- USER/BAN STATUS ---
   useEffect(() => {
     let ignore = false
     async function checkUserStatus() {
-      // 1. Get authenticated Supabase user
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
       if (authError || !authUser || !authUser.email) {
         setUser(null)
@@ -65,7 +81,6 @@ function MyApp({ Component, pageProps }) {
         return
       }
 
-      // 2. Query DB user by email (the central sync point)
       const { data: dbUser, error: dbError } = await supabase
         .from('users')
         .select('id,email,is_admin,is_banned,banned_reason,banned_at')
@@ -84,7 +99,6 @@ function MyApp({ Component, pageProps }) {
       setUser(dbUser)
       setIsAdminUser(isAdmin(dbUser))
       const banned = isBanned(dbUser)
-
       setIsBannedUser(banned)
 
       if (banned) {
@@ -93,7 +107,6 @@ function MyApp({ Component, pageProps }) {
           date: dbUser.banned_at ? new Date(dbUser.banned_at).toLocaleString() : 'Unknown date',
         })
         setShowBannedModal(true)
-        // Logout and reroute on banned
         await supabase.auth.signOut()
         router.replace({
           pathname: '/',
@@ -109,7 +122,7 @@ function MyApp({ Component, pageProps }) {
     return () => { ignore = true }
   }, [router])
 
-  // Show banned modal if redirected via URL
+  // --- BANNED MODAL REDIRECT ---
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
@@ -125,7 +138,6 @@ function MyApp({ Component, pageProps }) {
     }
   }, [])
 
-  // Modal close handler
   function handleModalClose() {
     setShowBannedModal(false)
     router.replace('/')
@@ -133,6 +145,7 @@ function MyApp({ Component, pageProps }) {
 
   return (
     <>
+      <MiniLoadingSpinner loading={globalLoading} />
       {showBannedModal && bannedInfo && (
         <BannedModal
           reason={bannedInfo.reason || 'No reason provided'}
@@ -147,6 +160,7 @@ function MyApp({ Component, pageProps }) {
         isAdmin={isAdminUser}
         isBanned={isBannedUser}
         bannedInfo={bannedInfo}
+        setGlobalLoading={setGlobalLoading} // <-- PASSED TO ALL PAGES
       />
     </>
   )
