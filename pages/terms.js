@@ -24,7 +24,7 @@ export default function Terms({ setGlobalLoading }) {
             </p>
             <ol className="list-decimal list-inside space-y-4">
               <li>
-                <b>Eligibility:</b> You must be at least 18 years old or the legal age of majority in your jurisdiction to use AxiRewards.
+                <b>Eligibility:</b> You must be at least 18 years old or the legal age of majority in your jurisdiction to use Axi Rewards.
               </li>
               <li>
                 <b>Account Registration:</b> You agree to provide accurate information and keep your account secure. Multiple accounts per individual are not permitted.
@@ -45,7 +45,7 @@ export default function Terms({ setGlobalLoading }) {
                 <b>Privacy:</b> Your information is handled according to our <a href="/privacy" className="underline hover:text-blue-700">Privacy Policy</a>.
               </li>
               <li>
-                <b>Limitation of Liability:</b> AxiRewards is not liable for any damages or losses arising from the use of our platform. Use at your own risk.
+                <b>Limitation of Liability:</b> Axi Rewards is not liable for any damages or losses arising from the use of our platform. Use at your own risk.
               </li>
               <li>
                 <b>Changes to Terms:</b> We may update these Terms of Service at any time. Continued use of AxiRewards after changes means you accept the new terms.
