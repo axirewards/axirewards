@@ -3,14 +3,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 
-type UserType = {
-  id: number
-  email: string
-  is_admin?: boolean
-  is_banned?: boolean
-  banned_reason?: string
-  banned_at?: string
-}
+// UserType type replacement
+// Comment: we use plain JS objects instead of TypeScript types
 
 function getEnvAdminEmail() {
   return (
@@ -20,7 +14,7 @@ function getEnvAdminEmail() {
   ).toLowerCase()
 }
 
-function isAdmin(user: UserType | null) {
+function isAdmin(user) {
   if (!user || !user.email) return false
   const envEmail = getEnvAdminEmail()
   return (
@@ -29,20 +23,12 @@ function isAdmin(user: UserType | null) {
   )
 }
 
-function isBanned(user: UserType | null) {
+function isBanned(user) {
   return user?.is_banned === true
 }
 
 // Modal component for banned users
-function BannedModal({
-  reason,
-  date,
-  onClose,
-}: {
-  reason: string
-  date: string
-  onClose: () => void
-}) {
+function BannedModal({ reason, date, onClose }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full p-8 border border-red-500 animate-fade-in">
@@ -82,10 +68,10 @@ function BannedModal({
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter()
-  const [user, setUser] = useState<UserType | null>(null)
+  const [user, setUser] = useState(null)
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [isBannedUser, setIsBannedUser] = useState(false)
-  const [bannedInfo, setBannedInfo] = useState<{ reason?: string; date?: string } | null>(null)
+  const [bannedInfo, setBannedInfo] = useState(null)
   const [showBannedModal, setShowBannedModal] = useState(false)
 
   useEffect(() => {
