@@ -3,7 +3,7 @@ import Layout from '../components/Layout'
 import { supabase } from '../lib/supabaseClient'
 import { pointsToCurrency } from '../lib/pointsConversion'
 
-export default function Payout() {
+export default function Payout({ setGlobalLoading }) {
   const [user, setUser] = useState(null)
   const [wallet, setWallet] = useState('')
   const [pointsToRedeem, setPointsToRedeem] = useState('')
@@ -14,10 +14,13 @@ export default function Payout() {
   const [pointsError, setPointsError] = useState('')
 
   useEffect(() => {
+    // Show MiniLoadingSpinner via globalLoading while fetching
+    if (typeof setGlobalLoading === "function") setGlobalLoading(true)
     async function fetchData() {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
       if (!currentUser) {
         setLoading(false)
+        if (typeof setGlobalLoading === "function") setGlobalLoading(false)
         return
       }
 
@@ -30,6 +33,7 @@ export default function Payout() {
       if (userError) {
         console.error(userError)
         setLoading(false)
+        if (typeof setGlobalLoading === "function") setGlobalLoading(false)
         return
       }
 
@@ -52,6 +56,7 @@ export default function Payout() {
       else setPayouts(payoutData)
 
       setLoading(false)
+      if (typeof setGlobalLoading === "function") setGlobalLoading(false)
     }
 
     fetchData()
