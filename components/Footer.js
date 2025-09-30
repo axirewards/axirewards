@@ -40,7 +40,7 @@ export default function Footer() {
         </div>
         {/* Right: Copyright */}
         <div className="text-xs opacity-70">
-          &copy; {new Date().getFullYear()} AxiRewards. All rights reserved.
+          &copy; {new Date().getFullYear()} Axi Rewards. All rights reserved.
         </div>
       </div>
     </footer>
