@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import ProviderIframe from '../components/ProviderIframe'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabaseClient'
 
 export default function Offers() {
   const [offers, setOffers] = useState([])
