@@ -16,35 +16,6 @@ const useNotifications = (user) => {
   return count
 }
 
-function getAvatar(user) {
-  if (!user) return null
-  // jei yra nuotrauka iš Google, naudok ją
-  if (user.avatar_url) {
-    return (
-      <img
-        src={user.avatar_url}
-        alt={user.email}
-        className="w-10 h-10 rounded-full object-cover border-2 border-accent shadow"
-        loading="lazy"
-      />
-    )
-  }
-  // jei ne, generuok inicialus
-  const initials = user.email
-    ? user.email
-        .split('@')[0]
-        .split('.')
-        .map((part) => part[0].toUpperCase())
-        .join('')
-        .slice(0, 2)
-    : 'A'
-  return (
-    <span className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center text-xl font-bold border-2 border-accent shadow">
-      {initials}
-    </span>
-  )
-}
-
 export default function Navbar({ user, balance = 0, onLogout }) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -81,7 +52,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
       <div className="container mx-auto flex items-center justify-between relative">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-extrabold text-2xl tracking-tight hover:opacity-90 transition">
-          <img src="/logo.svg" alt="AxiRewards" className="w-9 h-9 drop-shadow" />
+          <img src="/icons/logo.png" alt="AxiRewards" className="w-9 h-9 drop-shadow" />
           <span className="hidden sm:inline">AxiRewards</span>
         </Link>
 
@@ -103,14 +74,19 @@ export default function Navbar({ user, balance = 0, onLogout }) {
           ))}
         </div>
 
-        {/* Avatar per centrą */}
+        {/* Avatar per centrą – dabar rodoma visiems tas pats logo */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-          {user && (
-            <div className="flex flex-col items-center group">
-              {getAvatar(user)}
+          <div className="flex flex-col items-center group">
+            <img
+              src="/icons/logo.png"
+              alt="AxiRewards Logo"
+              className="w-10 h-10 rounded-full object-cover border-2 border-accent shadow"
+              loading="lazy"
+            />
+            {user && (
               <span className="text-xs mt-1 opacity-80 text-white hidden sm:block">{user.email}</span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* User Info & Dropdown */}
