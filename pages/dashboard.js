@@ -208,7 +208,14 @@ export default function Dashboard({ setGlobalLoading }) {
                       <ProviderIframe
                         url={offer.iframe_url || `https://example-offerwall.com/${offer.id}`}
                         height="400px"
-                        className="rounded-b-2xl bg-black"
+                        offer={{
+                          title: offer.title,
+                          description: offer.description,
+                          steps: offer.steps, // array if available
+                          payout_points: offer.payout_points || offer.points_reward,
+                          detailsUrl: offer.details_url,
+                          pointsTable: offer.pointsTable,
+                        }}
                       />
                     </div>
                   );
