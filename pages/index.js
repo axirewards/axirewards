@@ -1,7 +1,7 @@
-// pages/index.js
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,8 +31,11 @@ export default function LoginPage() {
       options: { emailRedirectTo: `${window.location.origin}/dashboard` },
     });
 
-    if (error) setErrorMsg(error.message);
-    else setInfoMsg("Check your email for the magic login link.");
+    if (error) {
+      setErrorMsg(error.message);
+    } else {
+      setInfoMsg("Check your email for the magic login link. If you don't see it, check your spam folder. Link is valid for 5 minutes.");
+    }
 
     setLoading(false);
   };
@@ -51,20 +54,28 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="mb-6 text-center text-2xl font-bold text-gray-800">
-          Welcome Back 👋
-        </h1>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary via-blue-600 to-blue-900">
+      <div className="w-full max-w-md rounded-2xl bg-white/80 p-8 shadow-2xl backdrop-blur-lg border border-blue-100">
+        {/* Logo */}
+        <div className="mb-8 flex justify-center">
+          <Image
+            src="/icons/logo.png"
+            alt="AxiRewards Logo"
+            width={96}
+            height={96}
+            className="drop-shadow-lg animate-fade-in"
+            priority
+          />
+        </div>
 
         {/* Status messages */}
         {errorMsg && (
-          <p className="mb-4 rounded bg-red-100 p-2 text-sm text-red-600">
+          <p className="mb-4 rounded bg-red-100 p-2 text-sm text-red-600 shadow animate-shake">
             {errorMsg}
           </p>
         )}
         {infoMsg && (
-          <p className="mb-4 rounded bg-green-100 p-2 text-sm text-green-600">
+          <p className="mb-4 rounded bg-blue-100 p-2 text-sm text-primary shadow animate-fade-in">
             {infoMsg}
           </p>
         )}
@@ -76,15 +87,20 @@ export default function LoginPage() {
             placeholder="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full rounded border border-blue-300 p-2 focus:outline-none focus:ring-2 focus:ring-primary bg-blue-50"
             required
+            autoComplete="email"
           />
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded border border-blue-400 py-2 text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+            className={`w-full rounded-lg border border-blue-400 py-2 text-blue-700 font-semibold hover:bg-blue-50 transition active:scale-95 disabled:opacity-50 shadow ${loading ? "cursor-wait" : ""}`}
           >
-            {loading ? "Sending..." : "Send Magic Link ✨"}
+            {loading ? (
+              <span className="animate-pulse">Sending Magic Link...</span>
+            ) : (
+              "Send Magic Link ✨"
+            )}
           </button>
         </form>
 
@@ -98,7 +114,7 @@ export default function LoginPage() {
         {/* Google login */}
         <button
           onClick={handleGoogleLogin}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded bg-red-500 py-2 text-white hover:bg-red-600"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-red-500 py-2 text-white font-semibold hover:bg-red-600 active:scale-95 shadow transition"
         >
           <svg
             className="h-5 w-5"
@@ -114,6 +130,18 @@ export default function LoginPage() {
           Sign in with Google
         </button>
       </div>
+      {/* Animacijos */}
+      <style jsx>{`
+        .animate-fade-in { animation: fadeIn 0.55s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        .animate-shake { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+          10%, 90% { transform: translateX(-1px);}
+          20%, 80% { transform: translateX(2px);}
+          30%, 50%, 70% { transform: translateX(-4px);}
+          40%, 60% { transform: translateX(4px);}
+        }
+      `}</style>
     </div>
   );
 }
