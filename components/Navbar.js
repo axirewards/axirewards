@@ -48,10 +48,9 @@ export default function Navbar({ user, balance = 0, onLogout }) {
   return (
     <nav className="bg-primary text-white px-2 py-3 shadow-xl border-b border-blue-900 sticky top-0 z-40 transition-all">
       <div className="container mx-auto flex items-center justify-between relative">
-        {/* Logo kairėje */}
-        <Link href="/" className="flex items-center gap-2 font-extrabold text-2xl tracking-tight hover:opacity-90 transition">
-          <img src="/icons/logo.png" alt="AxiRewards" className="w-9 h-9 drop-shadow" />
-          <span className="hidden sm:inline">AxiRewards</span>
+        {/* Logo kairėje - be teksto ir gerokai didesnis */}
+        <Link href="/" className="flex items-center hover:opacity-90 transition">
+          <img src="/icons/logo.png" alt="AxiRewards" className="w-16 h-16 drop-shadow" />
         </Link>
 
         {/* Desktop Navigation */}
@@ -116,9 +115,8 @@ export default function Navbar({ user, balance = 0, onLogout }) {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="absolute top-full left-0 w-full bg-primary text-white shadow-xl flex flex-col gap-2 py-4 z-50 animate-mobileMenuIn">
-            <div className="flex items-center gap-2 px-6 mb-2">
-              <img src="/icons/logo.png" alt="AxiRewards" className="w-8 h-8 drop-shadow" />
-              <span className="font-bold text-lg">AxiRewards</span>
+            <div className="flex items-center justify-center mb-2">
+              <img src="/icons/logo.png" alt="AxiRewards" className="w-16 h-16 drop-shadow" />
             </div>
             {links.map((link) => (
               <Link
