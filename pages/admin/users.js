@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
 import { supabase } from '../../lib/supabaseClient'
 import {
@@ -10,6 +11,7 @@ import {
 } from '../../lib/userUtils'
 
 export default function AdminUsers() {
+  const router = useRouter()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -19,46 +21,38 @@ export default function AdminUsers() {
   const [editEmail, setEditEmail] = useState('')
   const [adminUser, setAdminUser] = useState(null)
   const [emailEditLoading, setEmailEditLoading] = useState(false)
+  const [userChecked, setUserChecked] = useState(false)
+
+  // Admin check on mount
+  useEffect(() => {
+    async function checkAdmin() {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser || !authUser.email) {
+        router.replace('/index')
+        return
+      }
+      const { data: dbUser, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', authUser.email)
+        .single()
+      if (dbError || !dbUser || !isAdmin(dbUser)) {
+        router.replace('/dashboard')
+        return
+      }
+      setAdminUser(dbUser)
+      setUserChecked(true)
+    }
+    checkAdmin()
+  }, [router])
 
   useEffect(() => {
+    if (!userChecked) return
     fetchUsers()
-    fetchAdmin() // get current admin info for logging
-  }, [search])
-
-  const fetchAdmin = async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (!authUser || !authUser.email) return
-    const { data: dbUser } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', authUser.email)
-      .single()
-    setAdminUser(dbUser)
-  }
-
-  const fetchUsers = async () => {
-    setLoading(true)
-    let query = supabase.from('users').select('*').order('created_at', { ascending: false })
-
-    if (search) {
-      query = query.ilike('email', `%${search}%`)
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error('Error fetching users:', error)
-      setUsers([])
-    } else {
-      setUsers(data)
-    }
-
-    setLoading(false)
-  }
+  }, [search, userChecked])
 
   // Show user modal
   const openUserModal = async (user) => {
-    // Always fetch fresh user info
     try {
       const userData = await getUserByEmail(user.email)
       setSelectedUser(userData)
@@ -76,6 +70,22 @@ export default function AdminUsers() {
     setBanReason('')
     setEditEmail('')
     setEmailEditLoading(false)
+  }
+
+  const fetchUsers = async () => {
+    setLoading(true)
+    let query = supabase.from('users').select('*').order('created_at', { ascending: false })
+    if (search) {
+      query = query.ilike('email', `%${search}%`)
+    }
+    const { data, error } = await query
+    if (error) {
+      console.error('Error fetching users:', error)
+      setUsers([])
+    } else {
+      setUsers(data)
+    }
+    setLoading(false)
   }
 
   // Ban logic
