@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 import { isAdmin, isBanned } from '../lib/userUtils'
+import MiniLoadingSpinner from '../components/MiniLoadingSpinner'
 
 // Modal component for banned users
 function BannedModal({ reason, date, onClose }) {
@@ -50,6 +51,7 @@ function MyApp({ Component, pageProps }) {
   const [isBannedUser, setIsBannedUser] = useState(false)
   const [bannedInfo, setBannedInfo] = useState(null)
   const [showBannedModal, setShowBannedModal] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     let ignore = false
@@ -131,8 +133,23 @@ function MyApp({ Component, pageProps }) {
     router.replace('/')
   }
 
+  // Global route loading spinner (WOW lygis)
+  useEffect(() => {
+    const handleStart = () => setLoading(true)
+    const handleStop = () => setLoading(false)
+    router.events.on('routeChangeStart', handleStart)
+    router.events.on('routeChangeComplete', handleStop)
+    router.events.on('routeChangeError', handleStop)
+    return () => {
+      router.events.off('routeChangeStart', handleStart)
+      router.events.off('routeChangeComplete', handleStop)
+      router.events.off('routeChangeError', handleStop)
+    }
+  }, [router])
+
   return (
     <>
+      <MiniLoadingSpinner loading={loading} />
       {showBannedModal && bannedInfo && (
         <BannedModal
           reason={bannedInfo.reason || 'No reason provided'}
