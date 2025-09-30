@@ -10,24 +10,28 @@ export default function Layout({ children }) {
         appear
         show={true}
         enter="transition-opacity transition-transform duration-500 ease-in-out"
-        enterFrom="opacity-0 translate-y-6"
-        enterTo="opacity-100 translate-y-0"
+        enterFrom="opacity-0 translate-y-8 scale-95"
+        enterTo="opacity-100 translate-y-0 scale-100"
       >
         <main
           role="main"
           className="
             flex-grow
+            w-full
             max-w-7xl
             mx-auto
-            w-full
-            lg:px-8
-            md:px-6
+            px-2
             sm:px-4
+            md:px-6
+            lg:px-8
             py-6
             bg-background
             rounded-xl
             shadow-xl
-            transition hover:shadow-2xl focus:shadow-2xl
+            backdrop-blur-lg
+            transition
+            hover:shadow-2xl
+            focus:shadow-2xl
           "
           tabIndex={-1}
         >
@@ -35,6 +39,20 @@ export default function Layout({ children }) {
         </main>
       </Transition>
       <Footer />
+      {/* Responsive background gradient for mobile/desktop */}
+      <style jsx global>{`
+        body {
+          background-image: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #060a38 100%);
+          background-attachment: fixed;
+          background-size: cover;
+          background-repeat: no-repeat;
+        }
+        @media (max-width: 640px) {
+          body {
+            background-image: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 70%, #060a38 100%);
+          }
+        }
+      `}</style>
     </div>
   )
 }
