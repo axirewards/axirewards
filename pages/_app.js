@@ -54,8 +54,9 @@ function MyApp({ Component, pageProps }) {
   useEffect(() => {
     let ignore = false
     async function checkUserStatus() {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (!authUser) {
+      // 1. Get authenticated Supabase user
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+      if (authError || !authUser || !authUser.email) {
         setUser(null)
         setIsAdminUser(false)
         setIsBannedUser(false)
@@ -64,13 +65,14 @@ function MyApp({ Component, pageProps }) {
         return
       }
 
-      const { data: dbUser, error } = await supabase
+      // 2. Query DB user by email (the central sync point)
+      const { data: dbUser, error: dbError } = await supabase
         .from('users')
         .select('id,email,is_admin,is_banned,banned_reason,banned_at')
         .eq('email', authUser.email)
         .single()
 
-      if (error || !dbUser) {
+      if (dbError || !dbUser || !dbUser.email) {
         setUser(null)
         setIsAdminUser(false)
         setIsBannedUser(false)
@@ -80,13 +82,12 @@ function MyApp({ Component, pageProps }) {
       }
 
       setUser(dbUser)
-
-      // Admin check
       setIsAdminUser(isAdmin(dbUser))
+      const banned = isBanned(dbUser)
 
-      // Banned check
-      if (isBanned(dbUser)) {
-        setIsBannedUser(true)
+      setIsBannedUser(banned)
+
+      if (banned) {
         setBannedInfo({
           reason: dbUser.banned_reason || 'No reason provided',
           date: dbUser.banned_at ? new Date(dbUser.banned_at).toLocaleString() : 'Unknown date',
@@ -99,7 +100,6 @@ function MyApp({ Component, pageProps }) {
           query: { banned: 'true', reason: dbUser.banned_reason || '', date: dbUser.banned_at || '' },
         })
       } else {
-        setIsBannedUser(false)
         setBannedInfo(null)
         setShowBannedModal(false)
       }
@@ -109,7 +109,7 @@ function MyApp({ Component, pageProps }) {
     return () => { ignore = true }
   }, [router])
 
-  // Show banned modal if redirected
+  // Show banned modal if redirected via URL
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
