@@ -8,21 +8,74 @@ export default function AdminLedger() {
   const [loading, setLoading] = useState(true)
   const [filterUser, setFilterUser] = useState('')
   const [filterKind, setFilterKind] = useState('')
+  const [userDetailsMap, setUserDetailsMap] = useState({})
+  const [payoutsMap, setPayoutsMap] = useState({})
 
   useEffect(() => {
     fetchUsers()
+  }, [])
+
+  useEffect(() => {
+    if (users.length) {
+      fetchUserDetailsMap(users)
+      fetchPayoutsMap(users)
+    }
+  }, [users])
+
+  useEffect(() => {
     fetchLedger()
   }, [filterUser, filterKind])
 
+  // Get all users with all info and wallet
   const fetchUsers = async () => {
-    const { data, error } = await supabase.from('users').select('id,email').order('email', { ascending: true })
+    const { data, error } = await supabase
+      .from('users')
+      .select('id,email,tier,points_balance,kyc_status,wallet_address,is_banned,banned_reason,banned_at,last_login')
+      .order('email', { ascending: true })
     if (error) console.error('Error fetching users:', error)
-    else setUsers(data)
+    else setUsers(data || [])
   }
 
+  // Prepare map for user info by id for quick lookup
+  const fetchUserDetailsMap = async (usersArr) => {
+    const map = {}
+    usersArr.forEach(u => {
+      map[u.id] = u
+    })
+    setUserDetailsMap(map)
+  }
+
+  // Prepare payouts Map: {userId: [payouts]}
+  const fetchPayoutsMap = async (usersArr) => {
+    const userIds = usersArr.map(u => u.id)
+    if (userIds.length === 0) {
+      setPayoutsMap({})
+      return
+    }
+    const { data, error } = await supabase
+      .from('payouts')
+      .select('*')
+      .in('user_id', userIds)
+    if (error) {
+      setPayoutsMap({})
+      return
+    }
+    // Group by user_id
+    const payoutsGrouped = {}
+    data.forEach(p => {
+      if (!payoutsGrouped[p.user_id]) payoutsGrouped[p.user_id] = []
+      payoutsGrouped[p.user_id].push(p)
+    })
+    setPayoutsMap(payoutsGrouped)
+  }
+
+  // Ledger entries
   const fetchLedger = async () => {
     setLoading(true)
-    let query = supabase.from('ledger').select('*, user: user_id(email)').order('created_at', { ascending: false })
+    let query = supabase
+      .from('ledger')
+      .select('*, user: user_id(email)')
+      .order('created_at', { ascending: false })
 
     if (filterUser) query = query.eq('user_id', filterUser)
     if (filterKind) query = query.eq('kind', filterKind)
@@ -37,9 +90,25 @@ export default function AdminLedger() {
     setLoading(false)
   }
 
+  // Helper: show payout summary for user
+  const getUserPayoutSummary = (userId) => {
+    const payouts = payoutsMap[userId] || []
+    if (payouts.length === 0) return '-'
+    const totalRequested = payouts.reduce((sum, p) => sum + Number(p.points_amount || 0), 0)
+    const lastReq = payouts[0]
+    return (
+      <div>
+        <div><span className="font-semibold">Total Requested:</span> {totalRequested}</div>
+        <div><span className="font-semibold">Last Request:</span> {lastReq ? new Date(lastReq.requested_at).toLocaleString() : '-'}</div>
+        <div><span className="font-semibold">Last Status:</span> {lastReq ? lastReq.status : '-'}</div>
+        <div><span className="font-semibold">Last Wallet:</span> {lastReq ? lastReq.wallet_address : '-'}</div>
+      </div>
+    )
+  }
+
   return (
     <Layout admin>
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
         <h1 className="text-3xl font-bold text-primary mb-6">Admin Ledger</h1>
 
         <div className="flex flex-col md:flex-row gap-4 mb-4">
@@ -55,7 +124,6 @@ export default function AdminLedger() {
               </option>
             ))}
           </select>
-
           <select
             className="border rounded p-2 dark:bg-gray-800 dark:text-white"
             value={filterKind}
@@ -69,38 +137,91 @@ export default function AdminLedger() {
           </select>
         </div>
 
-        {loading ? (
-          <p>Loading ledger...</p>
-        ) : (
+        {/* Users summary table */}
+        <div className="mb-10">
+          <h2 className="text-xl font-semibold mb-2 text-primary">Users Overview</h2>
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white dark:bg-gray-800 shadow rounded">
+            <table className="min-w-full bg-white dark:bg-gray-800 shadow rounded mb-2">
               <thead className="bg-gray-100 dark:bg-gray-700">
                 <tr>
-                  <th className="py-2 px-4 text-left">User</th>
-                  <th className="py-2 px-4 text-left">Kind</th>
-                  <th className="py-2 px-4 text-left">Amount</th>
-                  <th className="py-2 px-4 text-left">Balance After</th>
-                  <th className="py-2 px-4 text-left">Source</th>
-                  <th className="py-2 px-4 text-left">Reference ID</th>
-                  <th className="py-2 px-4 text-left">Created At</th>
+                  <th>Email</th>
+                  <th>Tier</th>
+                  <th>Points</th>
+                  <th>KYC</th>
+                  <th>Wallet</th>
+                  <th>Banned</th>
+                  <th>Last Login</th>
+                  <th>Payouts</th>
                 </tr>
               </thead>
               <tbody>
-                {ledger.map((entry) => (
-                  <tr key={entry.id} className="border-b border-gray-200 dark:border-gray-700">
-                    <td className="py-2 px-4">{entry.user?.email || 'N/A'}</td>
-                    <td className="py-2 px-4">{entry.kind}</td>
-                    <td className="py-2 px-4">{entry.amount}</td>
-                    <td className="py-2 px-4">{entry.balance_after}</td>
-                    <td className="py-2 px-4">{entry.source}</td>
-                    <td className="py-2 px-4">{entry.reference_id}</td>
-                    <td className="py-2 px-4">{new Date(entry.created_at).toLocaleString()}</td>
+                {users.map(user => (
+                  <tr key={user.id} className="border-b border-gray-200 dark:border-gray-700">
+                    <td>{user.email}</td>
+                    <td>{user.tier}</td>
+                    <td>{user.points_balance}</td>
+                    <td>{user.kyc_status}</td>
+                    <td>{user.wallet_address || '-'}</td>
+                    <td>
+                      {user.is_banned
+                        ? <span className="text-red-600 font-bold">BANNED</span>
+                        : <span className="text-green-600 font-bold">ACTIVE</span>
+                      }
+                      {user.is_banned && (
+                        <div className="text-xs text-red-500">
+                          Reason: {user.banned_reason || '-'}<br />
+                          When: {user.banned_at ? new Date(user.banned_at).toLocaleString() : '-'}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {user.last_login ? new Date(user.last_login).toLocaleString() : '-'}
+                    </td>
+                    <td>
+                      {getUserPayoutSummary(user.id)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
+        </div>
+
+        {/* Ledger entries table */}
+        <div className="overflow-x-auto">
+          <h2 className="text-xl font-semibold mb-2 text-primary">Ledger Entries</h2>
+          <table className="min-w-full bg-white dark:bg-gray-800 shadow rounded">
+            <thead className="bg-gray-100 dark:bg-gray-700">
+              <tr>
+                <th>User</th>
+                <th>Kind</th>
+                <th>Amount</th>
+                <th>Balance After</th>
+                <th>Source</th>
+                <th>Reference ID</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ledger.map((entry) => (
+                <tr key={entry.id} className="border-b border-gray-200 dark:border-gray-700">
+                  <td>
+                    {userDetailsMap[entry.user_id]?.email || entry.user?.email || 'N/A'}
+                    <div className="text-xs text-gray-500">
+                      Wallet: {userDetailsMap[entry.user_id]?.wallet_address || '-'}
+                    </div>
+                  </td>
+                  <td>{entry.kind}</td>
+                  <td>{entry.amount}</td>
+                  <td>{entry.balance_after}</td>
+                  <td>{entry.source}</td>
+                  <td>{entry.reference_id}</td>
+                  <td>{new Date(entry.created_at).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </Layout>
   )
