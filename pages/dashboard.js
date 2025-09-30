@@ -6,17 +6,20 @@ import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
-export default function Dashboard() {
+// Receive setGlobalLoading from pageProps (from _app.js)
+export default function Dashboard({ setGlobalLoading }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [offers, setOffers] = useState([]);
   const [ledger, setLedger] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [streak, setStreak] = useState(0);
   const [completions, setCompletions] = useState({}); // {offerId: completedCount}
 
   useEffect(() => {
+    // Set global loading spinner ON
+    if (typeof setGlobalLoading === "function") setGlobalLoading(true);
+
     const getData = async () => {
       try {
         const { data: authData, error: authError } = await supabase.auth.getUser();
@@ -107,11 +110,13 @@ export default function Dashboard() {
         console.error("Dashboard error:", err);
         setError("Something went wrong.");
       } finally {
-        setLoading(false);
+        // Set global loading spinner OFF
+        if (typeof setGlobalLoading === "function") setGlobalLoading(false);
       }
     };
 
     getData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]); // keep only [router] dependency
 
   const handleLogout = async () => {
@@ -119,15 +124,8 @@ export default function Dashboard() {
     router.push("/");
   };
 
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex h-[70vh] items-center justify-center">
-          <p className="animate-pulse text-lg text-gray-600">Loading your dashboard...</p>
-        </div>
-      </Layout>
-    );
-  }
+  // Local loading state & spinner removed!
+  // Render error if needed, otherwise dashboard as normal.
 
   return (
     <Layout>
