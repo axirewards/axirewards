@@ -43,7 +43,7 @@ export default function Privacy({ setGlobalLoading }) {
                 <b>International Users:</b> By using AxiRewards, you consent to the processing of your data in accordance with this policy, regardless of where you are located.
               </li>
               <li>
-                <b>Policy Updates:</b> We may update this Privacy Policy from time to time. Changes will be posted on this page, and continued use of AxiRewards means you accept the updated terms.
+                <b>Policy Updates:</b> We may update this Privacy Policy from time to time. Changes will be posted on this page, and continued use of Axi Rewards means you accept the updated terms.
               </li>
             </ol>
             <p className="text-center mt-8 text-sm text-blue-800">
