@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { FaCoins } from 'react-icons/fa'
 import { FiMenu, FiX } from 'react-icons/fi'
+import { RiLogoutBoxRLine } from 'react-icons/ri' // logout icon
 
 export default function Navbar({ user, balance = 0, onLogout }) {
   const router = useRouter()
@@ -26,7 +27,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
   return (
     <nav className="bg-card text-white px-2 py-3 shadow-xl border-b border-blue-900 sticky top-0 z-40 transition-all">
       <div className="container mx-auto flex items-center justify-between relative">
-        {/* Logo kairėje - be teksto ir dar 10% didesnis */}
+        {/* Logo kairėje */}
         <a
           href="/dashboard"
           className="flex items-center hover:opacity-90 transition cursor-pointer"
@@ -52,7 +53,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
           ))}
         </div>
 
-        {/* User Info & Dropdown */}
+        {/* User Info & Dropdown + Logout Icon */}
         {user && (
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-2 bg-accent/30 px-3 py-1 rounded-lg text-sm shadow">
@@ -76,12 +77,25 @@ export default function Navbar({ user, balance = 0, onLogout }) {
                   <Link href="/profile" className="block px-4 py-2 hover:bg-blue-50 rounded">Profile</Link>
                   <Link href="/settings" className="block px-4 py-2 hover:bg-blue-50 rounded">Settings</Link>
                   <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 rounded"
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 rounded flex items-center gap-2"
                     onClick={onLogout}
-                  >Logout</button>
+                  >
+                    <RiLogoutBoxRLine className="text-xl text-red-600" />
+                    Logout
+                  </button>
                 </div>
               )}
             </div>
+            {/* Small logout icon top-right */}
+            <button
+              onClick={onLogout}
+              className="ml-2 p-2 rounded-full hover:bg-red-900/70 transition border border-transparent flex items-center justify-center"
+              aria-label="Logout"
+              title="Logout"
+              style={{ position: 'absolute', top: 14, right: 18 }}
+            >
+              <RiLogoutBoxRLine className="text-2xl text-red-500 hover:text-white transition" />
+            </button>
           </div>
         )}
 
@@ -111,7 +125,15 @@ export default function Navbar({ user, balance = 0, onLogout }) {
                 {link.name}
               </Link>
             ))}
-            <button className="px-6 py-2 hover:bg-blue-900 text-left" onClick={onLogout}>Logout</button>
+            {/* Logout icon + button for mobile */}
+            <button
+              className="flex items-center gap-2 px-6 py-2 hover:bg-red-900/70 justify-center mt-2 rounded transition"
+              onClick={onLogout}
+              aria-label="Logout"
+            >
+              <RiLogoutBoxRLine className="text-xl text-red-500" />
+              Logout
+            </button>
           </div>
         )}
       </div>
