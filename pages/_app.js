@@ -2,30 +2,7 @@ import '../styles/globals.css'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
-
-// UserType type replacement
-// Comment: we use plain JS objects instead of TypeScript types
-
-function getEnvAdminEmail() {
-  return (
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL ||
-    process.env.ADMIN_EMAIL ||
-    ''
-  ).toLowerCase()
-}
-
-function isAdmin(user) {
-  if (!user || !user.email) return false
-  const envEmail = getEnvAdminEmail()
-  return (
-    (user.is_admin === true) ||
-    (user.email?.toLowerCase() === envEmail)
-  )
-}
-
-function isBanned(user) {
-  return user?.is_banned === true
-}
+import { isAdmin, isBanned } from '../lib/userUtils'
 
 // Modal component for banned users
 function BannedModal({ reason, date, onClose }) {
@@ -105,8 +82,7 @@ function MyApp({ Component, pageProps }) {
       setUser(dbUser)
 
       // Admin check
-      const isAdminNow = isAdmin(dbUser)
-      setIsAdminUser(isAdminNow)
+      setIsAdminUser(isAdmin(dbUser))
 
       // Banned check
       if (isBanned(dbUser)) {
@@ -152,7 +128,6 @@ function MyApp({ Component, pageProps }) {
   // Modal close handler
   function handleModalClose() {
     setShowBannedModal(false)
-    // Optionally redirect to support page or home
     router.replace('/')
   }
 
