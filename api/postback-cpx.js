@@ -104,10 +104,10 @@ export default async function handler(req, res) {
         .eq('id', existing.id);
 
       // Deduct points via RPC (for reversals)
-      const { error: rpcError } = await supabase.rpc('decrement_user_points', {
+      const { error: rpcError } = await supabase.rpc('debit_user_points_for_payout', {
         uid: existing.user_id,
         pts: existing.credited_points,
-        ref_completion: existing.id,
+        ref_payout: existing.id, // use ref_payout per your SQL function
       });
 
       if (rpcError) throw rpcError;
@@ -177,10 +177,10 @@ export default async function handler(req, res) {
     // --- Credit or deduct points atomically based on status ---
     if (status === '2') {
       // Reversed: Deduct
-      const { error: rpcError } = await supabase.rpc('decrement_user_points', {
+      const { error: rpcError } = await supabase.rpc('debit_user_points_for_payout', {
         uid: user.id,
         pts: amountLocal,
-        ref_completion: completion.id,
+        ref_payout: completion.id,
       });
       if (rpcError) throw rpcError;
       return res
