@@ -48,7 +48,7 @@ export default function CpxOfferwall({ appId = "29422", height = "900px" }) {
 
         // Calculate secure hash (md5 of `${userId}-${cpx_secure_hash}`)
         // You need to set NEXT_PUBLIC_CPX_SECURE_HASH in your .env!
-        const cpxSecret = process.env.NEXT_PUBLIC_CPX_SECURE_HASH || ""
+        const cpxSecret = process.env.CPX_SECURE_HASH || ""
         if (userData?.id && cpxSecret) {
           // Import crypto only in browser
           import('crypto-js/md5').then(md5 => {
