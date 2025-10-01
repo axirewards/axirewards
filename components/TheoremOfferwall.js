@@ -2,16 +2,22 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 /**
- * TheoremReach Offerwall Component
- * - 100% per official docs: https://theoremreach.com/docs/web
- * - Uses AXI user ID as "user_id" (external identifier).
- * - iframe src: https://theoremreach.com/surveys/24198/{user_id}
+ * TheoremReach Offerwall Component (Direct Integration per official docs)
+ * - Uses TheoremReach Direct link, not /surveys/{appId}/{userId} (deprecated for direct iframe usage)
+ * - iframe src: https://theoremreach.com/respondent_entry/direct?api_key={API_KEY}&user_id={USER_ID}&transaction_id={TRANSACTION_ID}
  * - All UI/UX, styling, and size kept identical for provider consistency.
+ * - transaction_id is random per open for best tracking (recommended by TheoremReach docs)
  */
 
-export default function TheoremOfferwall({ appId = "24198", height = "700px" }) {
+function generateTransactionId() {
+  // Simple random uuid-like generator for transaction_id (can use uuidv4 if you like)
+  return 'TR-' + Math.random().toString(36).substr(2, 16) + '-' + Date.now();
+}
+
+export default function TheoremOfferwall({ apiKey = "287ecc00fbe5323d0ac137f56c39", height = "700px" }) {
   const [userId, setUserId] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [transactionId, setTransactionId] = useState(null)
 
   useEffect(() => {
     async function fetchUser() {
@@ -32,14 +38,16 @@ export default function TheoremOfferwall({ appId = "24198", height = "700px" }) 
         return
       }
       setUserId(userData.id)
+      setTransactionId(generateTransactionId())
       setLoading(false)
     }
     fetchUser()
   }, [])
 
-  // TheoremReach offerwall URL: https://theoremreach.com/surveys/{appId}/{userId}
-  const theoremUrl = userId
-    ? `https://theoremreach.com/surveys/${appId}/${encodeURIComponent(userId)}`
+  // TheoremReach direct offerwall URL:
+  // https://theoremreach.com/respondent_entry/direct?api_key={apiKey}&user_id={userId}&transaction_id={transactionId}
+  const theoremUrl = userId && transactionId
+    ? `https://theoremreach.com/respondent_entry/direct?api_key=${encodeURIComponent(apiKey)}&user_id=${encodeURIComponent(userId)}&transaction_id=${encodeURIComponent(transactionId)}`
     : null
 
   return (
@@ -88,7 +96,7 @@ export default function TheoremOfferwall({ appId = "24198", height = "700px" }) 
             <span className="text-red-500 font-bold text-md">Please log in to view offers.</span>
           </div>
         )}
-        {!loading && userId && (
+        {!loading && userId && theoremUrl && (
           <iframe
             src={theoremUrl}
             title="TheoremReach Offerwall"
