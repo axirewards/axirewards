@@ -1,35 +1,47 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
-export default function AyetOfferwall({ adSlot = "23274", height = "700px" }) {
+/**
+ * Ayet Studios Offerwall Component
+ * - Implements Ayet offerwall integration per https://docs.ayetstudios.com/v/product-docs/offerwall/web-integrations/web-offerwall
+ * - Uses AXI user ID as the externalIdentifier (required for postback rewards)
+ * - Uses the latest AXI adSlot: 23280 (update if Ayet dashboard changes)
+ * - UI/UX, dimensions, style, branding kept identical for provider consistency
+ * - Handles loading, login state, and secure user lookup
+ * - 1:1 iframe URL format: https://offerwall.ayet.io/offers?adSlot=23280&externalIdentifier={YOUR_USER_IDENTIFIER}
+ */
+
+export default function AyetOfferwall({ adSlot = "23280", height = "700px" }) {
   const [userId, setUserId] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchUser() {
+      // Get current logged in user from Supabase Auth
       const { data: { user: currentUser } } = await supabase.auth.getUser()
       if (!currentUser) {
         setLoading(false)
         return
       }
+      // Find user's AXI id in DB by email
       const { data: userData, error } = await supabase
         .from('users')
         .select('id')
         .eq('email', currentUser.email)
         .single()
-      if (error) {
+      if (error || !userData?.id) {
         setLoading(false)
         return
       }
-      setUserId(userData?.id)
+      setUserId(userData.id)
       setLoading(false)
     }
     fetchUser()
   }, [])
 
-  // Ayet offerwall URL
+  // Ayet offerwall URL per docs: https://offerwall.ayet.io/offers?adSlot=23280&externalIdentifier={userId}
   const ayetUrl = userId
-    ? `https://offerwall.ayet.io/offers?adSlot=${adSlot}&externalIdentifier=${userId}`
+    ? `https://offerwall.ayet.io/offers?adSlot=${adSlot}&externalIdentifier=${encodeURIComponent(userId)}`
     : null
 
   return (
@@ -92,6 +104,7 @@ export default function AyetOfferwall({ adSlot = "23274", height = "700px" }) {
               zoom: 1,
             }}
             allow="fullscreen"
+            sandbox="allow-top-navigation allow-scripts allow-same-origin allow-forms"
           />
         )}
       </div>
