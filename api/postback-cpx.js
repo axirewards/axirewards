@@ -6,12 +6,19 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
   // Accept both GET and POST for CPX compatibility
-  const method = req.method;
   let payload = {};
   try {
-    if (method === 'POST') {
-      payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    } else if (method === 'GET') {
+    if (req.method === 'POST') {
+      if (typeof req.body === 'string') {
+        try {
+          payload = JSON.parse(req.body);
+        } catch (e) {
+          payload = req.body;
+        }
+      } else {
+        payload = req.body;
+      }
+    } else if (req.method === 'GET') {
       payload = req.query;
     } else {
       return res.status(405).send('Method Not Allowed');
@@ -20,13 +27,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid payload format' });
   }
 
-  // Extract required CPX fields
-  const userIdRaw = payload.user_id;
-  const transactionId = payload.trans_id;
-  const offerIdPartner = payload.offer_id;
-  const amountLocal = parseFloat(payload.amount_local || 0);
-  const amountUsd = parseFloat(payload.amount_usd || 0);
-  const status = payload.status; // 1 = credited, 2 = reversed
+  // Extract and sanitize CPX fields
+  const userIdRaw = parseInt(payload.user_id);
+  const transactionId = (payload.trans_id || '').toString();
+  const offerIdPartner = (payload.offer_id || '').toString();
+  const amountLocal = Math.floor(Number(payload.amount_local) || 0); // Floor, always integer points
+  const amountUsd = Number(payload.amount_usd) || 0;
+  const status = String(payload.status); // 1 = credited, 2 = reversed
   const ip =
     payload.ip_click ||
     req.headers['x-forwarded-for'] ||
@@ -62,7 +69,6 @@ export default async function handler(req, res) {
       },
     ]);
   } catch (e) {
-    // Don't block main flow if audit log fails, but log error
     console.error('Failed to log postback:', e);
   }
 
@@ -91,7 +97,7 @@ export default async function handler(req, res) {
       .single();
 
     // If status=2 (reversed), update completion and deduct points
-    if (existing && String(status) === '2') {
+    if (existing && status === '2') {
       await supabase
         .from('completions')
         .update({ status: 'reversed' })
@@ -149,10 +155,6 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Offer not found' });
     }
 
-    // --- Points calculation and rounding ---
-    // Policy: always floor, never partial points (100 points = $1)
-    const points = Math.floor(amountLocal);
-
     // --- Insert credited completion ---
     const { data: completion, error: completionError } = await supabase
       .from('completions')
@@ -161,8 +163,8 @@ export default async function handler(req, res) {
         offer_id: offer.id,
         partner_id: partner.id,
         partner_callback_id: transactionId,
-        credited_points: points,
-        status: String(status) === '2' ? 'reversed' : 'credited',
+        credited_points: amountLocal,
+        status: status === '2' ? 'reversed' : 'credited',
         ip: ip,
         device_info: {},
         country: country,
@@ -173,11 +175,11 @@ export default async function handler(req, res) {
     if (completionError) throw completionError;
 
     // --- Credit or deduct points atomically based on status ---
-    if (String(status) === '2') {
+    if (status === '2') {
       // Reversed: Deduct
       const { error: rpcError } = await supabase.rpc('decrement_user_points', {
         uid: user.id,
-        pts: points,
+        pts: amountLocal,
         ref_completion: completion.id,
       });
       if (rpcError) throw rpcError;
@@ -188,17 +190,22 @@ export default async function handler(req, res) {
       // Credited: Add
       const { data: newBalance, error: rpcError } = await supabase.rpc(
         'increment_user_points',
-        { uid: user.id, pts: points, ref_completion: completion.id }
+        { uid: user.id, pts: amountLocal, ref_completion: completion.id }
       );
       if (rpcError) throw rpcError;
+      // Defensive: check array and field
+      const creditedBalance =
+        Array.isArray(newBalance) && newBalance.length > 0
+          ? newBalance[0]?.new_balance
+          : null;
       return res.status(200).json({
         status: 'credited',
-        new_balance: newBalance?.[0]?.new_balance,
+        new_balance: creditedBalance,
         completion_id: completion.id,
       });
     }
   } catch (err) {
-    console.error(err);
+    console.error('CPX postback error:', err);
     return res
       .status(500)
       .json({ error: 'Internal server error', details: err.message });
