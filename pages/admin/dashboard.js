@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
+import AdminNavbar from '../../components/AdminNavbar'
 import { supabase } from '../../lib/supabaseClient'
 import { isAdmin } from '../../lib/userUtils'
-import Footer from '../../components/Footer'
 
 export default function AdminDashboard({ setGlobalLoading }) {
   const router = useRouter()
@@ -209,6 +209,7 @@ export default function AdminDashboard({ setGlobalLoading }) {
 
   return (
     <Layout admin>
+      <AdminNavbar user={user} />
       <div className="min-h-screen flex flex-col justify-between">
         <div className="max-w-6xl mx-auto w-full p-6 flex-grow">
           <h1 className="text-3xl font-bold text-primary mb-6">Admin Dashboard</h1>
@@ -271,7 +272,6 @@ export default function AdminDashboard({ setGlobalLoading }) {
             For more user details see <span className="font-semibold text-blue-600">Admin Users</span> tab.
           </div>
         </div>
-        <Footer />
         {/* Banner Modal */}
         {showBannerModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
