@@ -50,10 +50,16 @@ export default function Dashboard({ setGlobalLoading }) {
         }
         setUser(userData);
 
-        // Get active offers
+        // Get active offers (now fetch extended fields for UI/UX)
         const { data: offerData, error: offerError } = await supabase
           .from("offers")
-          .select("*")
+          .select(`
+            *,
+            steps,
+            details_url,
+            points_table,
+            image_url
+          `)
           .eq("status", "active")
           .order("created_at", { ascending: false });
         if (offerError) console.error(offerError);
@@ -86,7 +92,7 @@ export default function Dashboard({ setGlobalLoading }) {
         // Fetch completions
         const { data: completionData, error: completionError } = await supabase
           .from("completions")
-          .select("offer_id,status,points_earned")
+          .select("offer_id,status,points_earned,completion_steps")
           .eq("user_id", userData.id);
 
         if (!completionError && completionData) {
@@ -182,7 +188,7 @@ export default function Dashboard({ setGlobalLoading }) {
               <div className="flex gap-6 pb-2 min-w-[350px] snap-x snap-mandatory">
                 {offers.map((offer, idx) => {
                   const earnedPoints = completions[offer.id] || 0;
-                  const completionPercent = Math.min((earnedPoints / (offer.points_reward || 1)) * 100, 100);
+                  const completionPercent = Math.min((earnedPoints / (offer.points_reward || offer.payout_points || 1)) * 100, 100);
                   return (
                     <div
                       key={offer.id}
@@ -192,6 +198,14 @@ export default function Dashboard({ setGlobalLoading }) {
                       }
                     >
                       <div className="p-4 border-b border-gray-800">
+                        {/* Optional offer cover image */}
+                        {offer.image_url && (
+                          <img
+                            src={offer.image_url}
+                            alt={offer.title}
+                            className="w-full max-h-40 object-cover rounded mb-3 shadow"
+                          />
+                        )}
                         <h3 className="text-lg font-semibold text-accent mb-1">{offer.title}</h3>
                         <p className="text-sm text-white/80 mb-2">{offer.description}</p>
                         <div className="w-full bg-gray-700 rounded-full h-2 relative group">
@@ -200,7 +214,7 @@ export default function Dashboard({ setGlobalLoading }) {
                             style={{ width: `${completionPercent}%` }}
                           />
                           <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 text-xs text-accent opacity-0 group-hover:opacity-100 transition">
-                            {earnedPoints} / {offer.points_reward || 1} points
+                            {earnedPoints} / {offer.points_reward || offer.payout_points || 1} points
                           </span>
                         </div>
                         <p className="text-xs text-accent mt-1">{completionPercent.toFixed(0)}% completed</p>
@@ -211,10 +225,11 @@ export default function Dashboard({ setGlobalLoading }) {
                         offer={{
                           title: offer.title,
                           description: offer.description,
-                          steps: offer.steps, // array if available
+                          steps: Array.isArray(offer.steps) ? offer.steps : (offer.steps ? JSON.parse(offer.steps) : []),
                           payout_points: offer.payout_points || offer.points_reward,
                           detailsUrl: offer.details_url,
-                          pointsTable: offer.pointsTable,
+                          pointsTable: Array.isArray(offer.points_table) ? offer.points_table : (offer.points_table ? JSON.parse(offer.points_table) : undefined),
+                          imageUrl: offer.image_url
                         }}
                       />
                     </div>
