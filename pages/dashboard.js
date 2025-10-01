@@ -226,7 +226,7 @@ export default function Dashboard({ setGlobalLoading }) {
                   <BitLabsOfferwall apiKey={OFFERWALLS.find(w => w.key === "bitlabs").apiKey} height="700px" />
                 )}
                 {activeOfferwall === "cpx" && (
-                  <CpxOfferwall appId={OFFERWALLS.find(w => w.key === "cpx").appId} height="900px" />
+                  <CpxOfferwall appId={OFFERWALLS.find(w => w.key === "cpx").appId} height="700px" />
                 )}
                 {/* Future: add other offerwall components here */}
               </div>
