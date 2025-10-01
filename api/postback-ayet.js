@@ -18,15 +18,28 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid payload format' });
   }
 
-  // Ayet postback required params (see Ayet documentation):
-  // externalIdentifier: your user id
-  // offerIdPartner: Ayet offer id
-  // partner_callback_id: unique transaction id for idempotency
-  // points: points awarded (integer or decimal)
-  const userIdRaw = payload.externalIdentifier;
-  const offerIdPartner = payload.offerIdPartner || payload.offer_id_partner;
-  const transactionId = payload.partner_callback_id || payload.transactionId || payload.offer_callback_id;
-  const points = parseFloat(payload.points || payload.credited_points || 0);
+  // Ayet postback parameter mapping (accept all common variations!)
+  const userIdRaw =
+    payload.externalIdentifier ||
+    payload.uid ||
+    payload.user_id;
+  const offerIdPartner =
+    payload.offerIdPartner ||
+    payload.offer_id_partner ||
+    payload.offer_id;
+  const transactionId =
+    payload.partner_callback_id ||
+    payload.transactionId ||
+    payload.offer_callback_id ||
+    payload.transaction_id;
+  const points = parseFloat(
+    payload.points ||
+    payload.credited_points ||
+    payload.currency_amount ||
+    payload.currency ||
+    payload.amount ||
+    0
+  );
   const country = payload.country || 'ALL';
   const ip = payload.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
   const userAgent = payload.user_agent || req.headers['user-agent'] || '';
@@ -107,7 +120,11 @@ export default async function handler(req, res) {
 
     if (rpcError) throw rpcError;
 
-    return res.status(200).json({ status: 'ok', new_balance: newBalance?.[0]?.new_balance, completion_id: completion.id });
+    return res.status(200).json({
+      status: 'ok',
+      new_balance: newBalance?.[0]?.new_balance,
+      completion_id: completion.id
+    });
   } catch (err) {
     console.error('Ayet postback error:', err);
     return res.status(500).json({ error: 'Internal server error', details: err.message });
