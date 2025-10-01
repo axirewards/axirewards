@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
 import { supabase } from '../../lib/supabaseClient'
-import Footer from '../../components/Footer'
 
 export default function AdminPayout({ setGlobalLoading }) {
   const [payouts, setPayouts] = useState([])
@@ -90,20 +89,19 @@ export default function AdminPayout({ setGlobalLoading }) {
 
   // UI helpers
   const payoutRowClass = "border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 transition"
-  const cardClass = "bg-white dark:bg-gray-800 p-4 rounded shadow flex flex-col items-center"
   const modalClass = "bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-lg w-full p-8 border border-blue-600 relative animate-fade-in"
 
   return (
     <Layout admin>
-      <div className="min-h-screen flex flex-col justify-between">
-        <div className="max-w-7xl mx-auto w-full p-6 flex-grow">
+      <div className="min-h-screen flex flex-col">
+        <div className="max-w-7xl mx-auto w-full p-6 flex-grow flex flex-col">
           <h1 className="text-3xl font-bold text-primary mb-6">Admin Payout Management</h1>
           {loading ? (
             <p className="animate-pulse text-primary text-center">Loading payout requests...</p>
           ) : error ? (
             <p className="text-red-600 font-bold text-center">{error}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto flex-grow">
               <table className="min-w-full bg-white dark:bg-gray-800 shadow rounded">
                 <thead className="bg-gray-100 dark:bg-gray-700">
                   <tr>
@@ -152,7 +150,6 @@ export default function AdminPayout({ setGlobalLoading }) {
             </div>
           )}
         </div>
-        <Footer />
         {/* Modal payout info */}
         {selectedPayout && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
