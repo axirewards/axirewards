@@ -5,7 +5,6 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
-  // Accept both GET and POST for CPX compatibility
   let payload = {};
   try {
     if (req.method === 'POST') {
@@ -27,18 +26,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid payload format' });
   }
 
-  // Extract and sanitize CPX fields
+  // Extract CPX fields
   const userIdRaw = parseInt(payload.user_id);
   const transactionId = (payload.trans_id || '').toString();
   const offerIdPartner = (payload.offer_id || '').toString();
-  const amountLocal = Math.floor(Number(payload.amount_local) || 0); // Floor, always integer points
+  const amountLocal = Math.floor(Number(payload.amount_local) || 0);
   const amountUsd = Number(payload.amount_usd) || 0;
-  const status = String(payload.status); // 1 = credited, 2 = reversed
-  const ip =
-    payload.ip_click ||
-    req.headers['x-forwarded-for'] ||
-    req.socket?.remoteAddress ||
-    '';
+  const status = String(payload.status);
+  const ip = payload.ip_click || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
   const country = payload.country || 'ALL';
 
   // Validate required CPX params
@@ -50,12 +45,10 @@ export default async function handler(req, res) {
     isNaN(amountUsd) ||
     !status
   ) {
-    return res
-      .status(400)
-      .json({ error: 'Missing required CPX parameters', payload });
+    return res.status(400).json({ error: 'Missing required CPX parameters', payload });
   }
 
-  // Insert into postback_logs for audit trail
+  // Insert into postback_logs
   try {
     await supabase.from('postback_logs').insert([
       {
@@ -73,94 +66,80 @@ export default async function handler(req, res) {
   }
 
   try {
-    // --- Webhook rate limiting: max 5 per user per minute ---
+    // Rate limiting
     const { count: rateCount, error: rateError } = await supabase
       .from('completions')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userIdRaw)
       .gte('created_at', new Date(Date.now() - 60 * 1000).toISOString());
-
-    if (rateError) {
-      console.error('Rate limit check failed:', rateError);
-    }
+    if (rateError) console.error('Rate limit check failed:', rateError);
     if (rateCount !== null && rateCount > 5) {
-      return res
-        .status(429)
-        .json({ error: 'Rate limit exceeded: max 5 per minute per user.' });
+      return res.status(429).json({ error: 'Rate limit exceeded: max 5 per minute per user.' });
     }
 
-    // --- Idempotency check ---
+    // Idempotency check
     const { data: existing, error: checkError } = await supabase
       .from('completions')
       .select('*')
       .eq('partner_callback_id', transactionId)
       .single();
 
-    // If status=2 (reversed), update completion and deduct points
     if (existing && status === '2') {
-      await supabase
-        .from('completions')
-        .update({ status: 'reversed' })
-        .eq('id', existing.id);
-
-      // Deduct points via RPC (for reversals)
+      await supabase.from('completions').update({ status: 'reversed' }).eq('id', existing.id);
       const { error: rpcError } = await supabase.rpc('debit_user_points_for_payout', {
         uid: existing.user_id,
         pts: existing.credited_points,
-        ref_payout: existing.id, // use ref_payout per your SQL function
+        ref_payout: existing.id,
       });
-
       if (rpcError) throw rpcError;
-
-      return res
-        .status(200)
-        .json({ status: 'reversed', completion_id: existing.id });
+      return res.status(200).json({ status: 'reversed', completion_id: existing.id });
     }
 
-    // If already credited and not reversal, just acknowledge
     if (existing) {
-      return res
-        .status(200)
-        .json({ status: 'already_processed', completion_id: existing.id });
+      return res.status(200).json({ status: 'already_processed', completion_id: existing.id });
     }
 
-    // --- Fetch user ---
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userIdRaw)
-      .single();
-    if (userError || !user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    // Fetch user
+    const { data: user, error: userError } = await supabase.from('users').select('*').eq('id', userIdRaw).single();
+    if (userError || !user) return res.status(404).json({ error: 'User not found' });
 
-    // --- Fetch partner (cpx) ---
-    const { data: partner, error: partnerError } = await supabase
-      .from('partners')
-      .select('*')
-      .eq('code', 'cpx')
-      .single();
-    if (partnerError || !partner) {
-      return res.status(404).json({ error: 'Partner not found' });
-    }
+    // Fetch partner (cpx)
+    const { data: partner, error: partnerError } = await supabase.from('partners').select('*').eq('code', 'cpx').single();
+    if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' });
 
-    // --- Fetch offer (by partner offer id) ---
-    const { data: offer, error: offerError } = await supabase
+    // Fetch offer (by partner offer id)
+    let { data: offer, error: offerError } = await supabase
       .from('offers')
       .select('*')
       .eq('offer_id_partner', offerIdPartner)
       .eq('partner_id', partner.id)
       .single();
+
+    // If offer does not exist, create it automatically!
     if (offerError || !offer) {
-      return res.status(404).json({ error: 'Offer not found' });
+      const { data: createdOffer, error: createError } = await supabase
+        .from('offers')
+        .insert({
+          partner_id: partner.id,
+          offer_id_partner: offerIdPartner,
+          title: `CPX offer ${offerIdPartner}`,
+          country: country,
+          status: 'active',
+        })
+        .select()
+        .single();
+      if (createError || !createdOffer) {
+        return res.status(500).json({ error: 'Failed to create offer automatically', details: createError?.message });
+      }
+      offer = createdOffer;
     }
 
-    // --- Insert credited completion ---
+    // Insert credited completion
     const { data: completion, error: completionError } = await supabase
       .from('completions')
       .insert({
         user_id: user.id,
-        offer_id: offer.id,
+        offer_id: offer.id, // <--- TEISINGAI! DB offers.id
         partner_id: partner.id,
         partner_callback_id: transactionId,
         credited_points: amountLocal,
@@ -174,26 +153,21 @@ export default async function handler(req, res) {
 
     if (completionError) throw completionError;
 
-    // --- Credit or deduct points atomically based on status ---
+    // Credit or deduct points
     if (status === '2') {
-      // Reversed: Deduct
       const { error: rpcError } = await supabase.rpc('debit_user_points_for_payout', {
         uid: user.id,
         pts: amountLocal,
         ref_payout: completion.id,
       });
       if (rpcError) throw rpcError;
-      return res
-        .status(200)
-        .json({ status: 'reversed', completion_id: completion.id });
+      return res.status(200).json({ status: 'reversed', completion_id: completion.id });
     } else {
-      // Credited: Add
       const { data: newBalance, error: rpcError } = await supabase.rpc(
         'increment_user_points',
         { uid: user.id, pts: amountLocal, ref_completion: completion.id }
       );
       if (rpcError) throw rpcError;
-      // Defensive: check array and field
       const creditedBalance =
         Array.isArray(newBalance) && newBalance.length > 0
           ? newBalance[0]?.new_balance
@@ -206,8 +180,6 @@ export default async function handler(req, res) {
     }
   } catch (err) {
     console.error('CPX postback error:', err);
-    return res
-      .status(500)
-      .json({ error: 'Internal server error', details: err.message });
+    return res.status(500).json({ error: 'Internal server error', details: err.message });
   }
 }
