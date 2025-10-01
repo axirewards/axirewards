@@ -48,8 +48,7 @@ export default function Earn() {
 
   return (
     <Layout>
-      {/* AxiRewards identiškas background */}
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-blue-gradient">
+      <div className="min-h-[80vh] w-full flex flex-col items-center justify-center">
         <div className="w-full max-w-6xl py-12 px-2 sm:px-4 md:px-6">
           <h1 className="text-4xl md:text-5xl font-extrabold text-white text-center mb-12 drop-shadow-xl tracking-tight">
             Earn Rewards
