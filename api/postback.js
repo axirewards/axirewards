@@ -6,13 +6,40 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const PROVIDERS = {
   ayet: {
-    secret: process.env.POSTBACK_SECRET_AYET
+    secret: process.env.POSTBACK_SECRET_AYET,
+    getUserId: payload => payload.externalIdentifier, // Ayet: user.id
+    getOfferId: payload => payload.offerIdPartner || payload.offer_id_partner,
+    getPoints: payload => parseFloat(payload.points || payload.credited_points || 0),
+    getCallbackId: payload => payload.partner_callback_id || payload.transactionId || payload.offer_callback_id,
+    map: payload => ({
+      country: payload.country || 'ALL',
+      device_info: payload.device_info || {},
+      status: 'credited',
+      user_agent: payload.user_agent || '',
+      ip: payload.ip || '',
+    }),
+  },
+  bitlabs: {
+    secret: process.env.POSTBACK_SECRET_BITLABS,
+    getUserId: payload => payload.uid, // BitLabs: user.id
+    getOfferId: payload => payload.survey_id || payload.offer_id_partner || null,
+    getPoints: payload => parseFloat(payload.points || payload.credited_points || payload.reward || 0),
+    getCallbackId: payload => payload.transaction_id || payload.partner_callback_id || payload.offer_callback_id,
+    map: payload => ({
+      country: payload.country || payload.geo || 'ALL',
+      device_info: payload.device_info || {},
+      status: 'credited',
+      user_agent: payload.user_agent || '',
+      ip: payload.ip || '',
+    }),
   },
   cpx: {
-    secret: process.env.POSTBACK_SECRET_CPX
+    secret: process.env.POSTBACK_SECRET_CPX,
+    // TODO: add mapping if/when needed
   },
   offertoro: {
-    secret: process.env.POSTBACK_SECRET_OFFERTORO
+    secret: process.env.POSTBACK_SECRET_OFFERTORO,
+    // TODO: add mapping if/when needed
   }
 };
 
@@ -21,37 +48,41 @@ export default async function handler(req, res) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  const payload = req.body;
+  // Accept JSON or urlencoded
+  const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 
-  const providerCode = payload.provider?.toLowerCase();
+  // Detect provider: get from payload.provider or fallback to referer checks
+  const providerCode = (payload.provider || payload.source || '').toLowerCase();
   if (!providerCode || !PROVIDERS[providerCode]) {
     return res.status(400).json({ error: 'Unknown provider' });
   }
 
-  const providerSecret = PROVIDERS[providerCode].secret;
-  const receivedSecret = payload.secret;
+  const provider = PROVIDERS[providerCode];
 
-  if (!receivedSecret || receivedSecret !== providerSecret) {
+  // Secret validation
+  const providerSecret = provider.secret;
+  const receivedSecret = payload.secret;
+  if (!providerSecret || !receivedSecret || receivedSecret !== providerSecret) {
     return res.status(403).json({ error: 'Invalid secret' });
   }
 
-  const partnerCallbackId = payload.offer_callback_id;
-  const userEmail = payload.user_email;
-  const offerIdPartner = payload.offer_id_partner;
-  const points = parseFloat(payload.points || 0);
-  const country = payload.country || 'ALL';
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  const userAgent = req.headers['user-agent'] || '';
+  // --- Unified multiprovider extraction ---
+  const userIdRaw = provider.getUserId(payload);
+  const offerIdPartner = provider.getOfferId(payload);
+  const points = provider.getPoints(payload);
+  const partnerCallbackId = provider.getCallbackId(payload);
+  const extra = provider.map(payload);
 
-  if (!userEmail || !partnerCallbackId || !offerIdPartner || points <= 0) {
+  // Validate required fields
+  if (!userIdRaw || !partnerCallbackId || !offerIdPartner || points <= 0) {
     return res.status(400).json({ error: 'Missing required parameters' });
   }
 
   try {
-    // Check if completion already exists (idempotency)
+    // Check idempotency: completions.partner_callback_id
     const { data: existing, error: checkError } = await supabase
       .from('completions')
-      .select('*')
+      .select('id')
       .eq('partner_callback_id', partnerCallbackId)
       .single();
 
@@ -59,37 +90,37 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'already_processed' });
     }
 
-    // Fetch user
-    const { data: user } = await supabase
+    // Fetch user (by id, not email!)
+    const { data: user, error: userError } = await supabase
       .from('users')
       .select('*')
-      .eq('email', userEmail)
+      .eq('id', userIdRaw)
       .single();
 
-    if (!user) {
+    if (userError || !user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     // Fetch partner
-    const { data: partner } = await supabase
+    const { data: partner, error: partnerError } = await supabase
       .from('partners')
       .select('*')
       .eq('code', providerCode)
       .single();
 
-    if (!partner) {
+    if (partnerError || !partner) {
       return res.status(404).json({ error: 'Partner not found' });
     }
 
-    // Fetch offer
-    const { data: offer } = await supabase
+    // Fetch offer (by partner offer id)
+    const { data: offer, error: offerError } = await supabase
       .from('offers')
       .select('*')
       .eq('offer_id_partner', offerIdPartner)
       .eq('partner_id', partner.id)
       .single();
 
-    if (!offer) {
+    if (offerError || !offer) {
       return res.status(404).json({ error: 'Offer not found' });
     }
 
@@ -102,11 +133,11 @@ export default async function handler(req, res) {
         partner_id: partner.id,
         partner_callback_id: partnerCallbackId,
         credited_points: points,
-        status: 'credited',
-        ip: ip,
-        user_agent: userAgent,
-        device_info: payload.device_info || {},
-        country: country
+        status: extra.status,
+        ip: extra.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '',
+        user_agent: extra.user_agent || req.headers['user-agent'] || '',
+        device_info: extra.device_info,
+        country: extra.country
       })
       .select()
       .single();
