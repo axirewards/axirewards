@@ -134,13 +134,13 @@ export default function Payout({ setGlobalLoading }) {
       <div className="min-h-[80vh] flex flex-col justify-between">
         <div className="max-w-3xl mx-auto w-full px-4 py-8 space-y-8 relative">
           <h1 className="text-3xl font-extrabold text-white text-center mb-8 drop-shadow">Payout</h1>
-          {/* Minimum withdrawal badge */}
-          <div className="absolute top-4 right-4 z-10">
-            <span className="bg-white px-3 py-1 rounded-lg shadow text-xs font-bold text-red-600 border border-red-300 select-none">
-              Minimum withdrawal amount = 100 points
-            </span>
-          </div>
-          <div className="bg-card shadow-xl rounded-2xl p-6 space-y-6">
+          <div className="bg-card shadow-xl rounded-2xl p-6 space-y-6 relative">
+            {/* Minimum withdrawal badge - INSIDE CONTAINER */}
+            <div className="absolute top-4 right-4 z-10">
+              <span className="bg-white px-3 py-1 rounded-lg shadow text-xs font-bold text-red-600 border border-red-300 select-none">
+                Minimum withdrawal amount = 100 points
+              </span>
+            </div>
             <div>
               <p className="text-lg font-semibold text-accent mb-2">Your Points Balance</p>
               <div className="flex items-baseline gap-3">
