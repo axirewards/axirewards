@@ -2,7 +2,6 @@ import { useRouter } from 'next/router'
 import Layout from '../components/Layout'
 import { useState } from 'react'
 
-// Tik 3 pagrindinės kategorijos, pritaikytos projektui
 const categories = [
   {
     key: 'surveys',
@@ -49,10 +48,9 @@ export default function Earn() {
 
   return (
     <Layout>
-      {/* Fonas fullscreen, permatomas/tamsus, be tarpų */}
-      <div className="absolute inset-0 min-h-screen w-screen flex flex-col justify-center items-center bg-gradient-to-br from-[#111927cc] to-[#18181bcc] pointer-events-none -z-10" aria-hidden="true" />
-      <div className="relative w-full flex flex-col items-center justify-center min-h-screen px-2 sm:px-4 md:px-6">
-        <div className="w-full max-w-6xl py-12">
+      {/* AxiRewards identiškas background */}
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-blue-gradient">
+        <div className="w-full max-w-6xl py-12 px-2 sm:px-4 md:px-6">
           <h1 className="text-4xl md:text-5xl font-extrabold text-white text-center mb-12 drop-shadow-xl tracking-tight">
             Earn Rewards
           </h1>
@@ -80,14 +78,12 @@ export default function Earn() {
                 </div>
                 <span className="text-2xl md:text-3xl font-bold text-white drop-shadow mb-3">{cat.name}</span>
                 <span className="text-base text-white/80 text-center px-2">{cat.description}</span>
-                {/* Jokių tooltips, tik animacija */}
               </button>
             ))}
           </div>
         </div>
       </div>
       <style jsx>{`
-        /* Axirewards style overrides */
         .focus\:ring-accent:focus { box-shadow: 0 0 0 4px #38bdf8; }
         .shadow-accent { box-shadow: 0 6px 40px #38bdf833, 0 1.5px 6px #0B0B0B; }
         @media (max-width: 640px) {
