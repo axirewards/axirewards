@@ -1,11 +1,18 @@
 import Navbar from './Navbar'
 import Footer from './Footer'
 import BannerAads from './BannerAads'
+import BannerAadsLeft from './BannerAadsLeft'
+import BannerAadsRight from './BannerAadsRight'
 import { Transition } from '@headlessui/react'
 
 export default function Layout({ children }) {
   return (
-    <div className="min-h-screen flex flex-col bg-background font-sans">
+    <div className="min-h-screen flex flex-col bg-background font-sans relative">
+      {/* Left Banner */}
+      <BannerAadsLeft />
+      {/* Right Banner */}
+      <BannerAadsRight />
+      {/* Main Content */}
       <Navbar />
       <Transition
         appear
@@ -40,6 +47,7 @@ export default function Layout({ children }) {
           {children}
         </main>
       </Transition>
+      {/* Bottom Banner */}
       <BannerAads />
       <Footer />
       <style jsx global>{`
