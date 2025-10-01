@@ -36,18 +36,35 @@ export default async function handler(req, res) {
   const deviceInfo = payload.device_info || {};
   const signature = payload.signature;
 
+  // DEBUG LOGS FOR SIGNATURE
+  console.log("------ BitLabs Callback Debug ------");
+  console.log("user_id:", userId);
+  console.log("transaction_id:", transactionId);
+  console.log("reward:", rewardRaw);
+  console.log("BITLABS_SECRET:", BITLABS_SECRET ? "(hidden)" : "(missing)");
+  console.log("signature from BitLabs:", signature);
+
+  // String used for signature calculation
+  const sigData = `${userId}${transactionId}${rewardRaw}${BITLABS_SECRET}`;
+  console.log("sigData string (for SHA256):", sigData);
+
+  const expectedSignature = crypto.createHash('sha256').update(sigData).digest('hex');
+  console.log("expected signature (local):", expectedSignature);
+
   // Signature validation (BitLabs spec: SHA256(user_id + transaction_id + reward + secret))
   if (BITLABS_SECRET) {
-    const sigData = `${userId}${transactionId}${rewardRaw}${BITLABS_SECRET}`;
-    const expectedSignature = crypto.createHash('sha256').update(sigData).digest('hex');
     if (signature !== expectedSignature) {
-      return res.status(403).json({ error: 'Invalid BitLabs signature' });
+      console.log("Signature mismatch: REJECTED");
+      return res.status(403).json({ error: 'Invalid BitLabs signature', debug: { payload, sigData, expectedSignature } });
+    } else {
+      console.log("Signature match: ACCEPTED");
     }
   }
 
   // Validate required params
   const points = rewardRaw !== undefined && rewardRaw !== null ? parseFloat(rewardRaw) : null;
   if (!userId || !transactionId || !offerIdPartner || points === null || isNaN(points) || points <= 0) {
+    console.log("Missing or invalid BitLabs parameters");
     return res.status(400).json({ error: 'Missing or invalid BitLabs parameters', payload });
   }
 
@@ -60,6 +77,7 @@ export default async function handler(req, res) {
       .single();
 
     if (existing) {
+      console.log("Already processed transaction:", transactionId);
       return res.status(200).json({ status: 'already_processed', completion_id: existing.id });
     }
 
@@ -70,6 +88,7 @@ export default async function handler(req, res) {
       .eq('id', userId)
       .single();
     if (!user) {
+      console.log("User not found:", userId);
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -80,6 +99,7 @@ export default async function handler(req, res) {
       .eq('code', 'bitlabs')
       .single();
     if (!partner) {
+      console.log("BitLabs partner not found");
       return res.status(404).json({ error: 'Partner not found' });
     }
 
@@ -92,7 +112,7 @@ export default async function handler(req, res) {
       .single();
 
     if (offerError || !offer) {
-      // Automatically create missing offer
+      console.log("Offer not found, creating new:", offerIdPartner);
       const { data: createdOffer, error: createError } = await supabase
         .from('offers')
         .insert({
@@ -105,6 +125,7 @@ export default async function handler(req, res) {
         .select()
         .single();
       if (createError || !createdOffer) {
+        console.log("Failed to create offer:", createError);
         return res.status(500).json({ error: 'Failed to create offer automatically', details: createError?.message });
       }
       offer = createdOffer;
@@ -131,15 +152,20 @@ export default async function handler(req, res) {
       .select()
       .single();
 
-    if (completionError) throw completionError;
+    if (completionError) {
+      console.log("Failed to insert completion:", completionError);
+      throw completionError;
+    }
 
     // Increment/deduct user points
     if (completion.status === 'credited') {
       await supabase
         .rpc('increment_user_points', { uid: user.id, pts: points, ref_completion: completion.id });
+      console.log(`Credited ${points} points to user ${user.id}`);
     } else if (completion.status === 'reversed') {
       await supabase
         .rpc('debit_user_points_for_payout', { uid: user.id, pts: points, ref_payout: completion.id });
+      console.log(`Reversed ${points} points from user ${user.id}`);
     }
 
     // Log postback for audit
@@ -155,6 +181,7 @@ export default async function handler(req, res) {
         received_at: new Date().toISOString()
       });
 
+    console.log("Postback processed OK:", transactionId);
     return res.status(200).json({ status: completion.status, completion_id: completion.id });
   } catch (err) {
     console.error('BitLabs postback error:', err);
