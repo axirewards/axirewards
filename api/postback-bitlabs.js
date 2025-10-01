@@ -1,32 +1,27 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase config
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// BitLabs secret for validation (never log this!)
 const BITLABS_SECRET = process.env.POSTBACK_SECRET_BITLABS;
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
+  // Accept BOTH GET and POST for BitLabs testing
+  let payload = {};
+  if (req.method === 'POST') {
+    try {
+      payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid payload format' });
+    }
+  } else if (req.method === 'GET') {
+    payload = req.query;
+  } else {
     return res.status(405).send('Method Not Allowed');
   }
 
-  // Accept JSON or urlencoded
-  let payload = {};
-  try {
-    payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-  } catch (e) {
-    return res.status(400).json({ error: 'Invalid payload format' });
-  }
-
-  // BitLabs required params (see https://docs.bitlabs.ai/docs/postbacks)
-  // uid: your user id
-  // survey_id: BitLabs survey id
-  // transaction_id: unique transaction id for idempotency
-  // reward: points awarded (recommended: integer, but can be decimal)
-  // secret: your postback secret (for validation)
+  // Extract BitLabs parameters (works for both GET and POST)
   const userIdRaw = payload.uid;
   const surveyId = payload.survey_id;
   const transactionId = payload.transaction_id;
