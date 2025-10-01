@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import AyetOfferwall from "../components/AyetOfferwall";
+import BitLabsOfferwall from "../components/BitLabsOfferwall"; // <--- ADD THIS LINE
 import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -15,6 +16,14 @@ const OFFERWALLS = [
     color: "#60A5FA",
     adSlot: "23274",
     description: "Complete surveys, apps and tasks for premium AXI rewards.",
+  },
+  {
+    key: "bitlabs",
+    name: "BitLabs",
+    logo: "/icons/bitlabslogo.png",
+    color: "#62D6FB",
+    apiKey: "2dfb7d19-2974-4085-b686-181bcb681b70",
+    description: "Complete surveys and earn AXI points with BitLabs.",
   },
   // Add more providers here with local logo paths (e.g. /icons/lootably.png, etc.)
 ];
@@ -203,6 +212,9 @@ export default function Dashboard({ setGlobalLoading }) {
                 {/* Actual offerwall iframe only, no info or branding duplication */}
                 {activeOfferwall === "ayet" && (
                   <AyetOfferwall adSlot={OFFERWALLS.find(w => w.key === "ayet").adSlot} height="700px" />
+                )}
+                {activeOfferwall === "bitlabs" && (
+                  <BitLabsOfferwall apiKey={OFFERWALLS.find(w => w.key === "bitlabs").apiKey} height="700px" />
                 )}
                 {/* Future: add other offerwall components here */}
               </div>
