@@ -200,15 +200,6 @@ export default function Dashboard({ setGlobalLoading }) {
                 >
                   &times;
                 </button>
-                {/* Only branding for modal, no info duplication */}
-                <div className="flex items-center gap-3 mb-2">
-                  <img
-                    src={OFFERWALLS.find(w => w.key === activeOfferwall)?.logo}
-                    alt={OFFERWALLS.find(w => w.key === activeOfferwall)?.name + " logo"}
-                    className="w-12 h-12 object-contain"
-                  />
-                  <span className="text-2xl font-bold text-accent">{OFFERWALLS.find(w => w.key === activeOfferwall)?.name}</span>
-                </div>
                 {/* Actual offerwall iframe only, no info or branding duplication */}
                 {activeOfferwall === "ayet" && (
                   <AyetOfferwall adSlot={OFFERWALLS.find(w => w.key === "ayet").adSlot} height="700px" />
