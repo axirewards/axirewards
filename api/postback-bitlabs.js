@@ -1,15 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
-// Supabase config
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// BitLabs secret for validation (never log this!)
 const BITLABS_SECRET = process.env.BITLABS_SECRET;
 
 export default async function handler(req, res) {
-  // Accept BOTH GET and POST for BitLabs testing
   let payload = {};
   if (req.method === 'POST') {
     try {
@@ -23,12 +21,12 @@ export default async function handler(req, res) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  // BitLabs required parameters (1:1 su jų dokumentacija)
+  // BitLabs required parameters
   const userId = payload.user_id;
   const transactionId = payload.transaction_id;
   const rewardRaw = payload.reward;
-  const offerId = payload.offer_id;
-  const status = payload.status;
+  const offerIdPartner = payload.offer_id || payload.survey_id; // BitLabs uses offer_id or survey_id
+  const status = payload.status; // "completed", "chargeback", etc.
   const currency = payload.currency;
   const surveyId = payload.survey_id;
   const offerType = payload.offer_type;
@@ -38,10 +36,10 @@ export default async function handler(req, res) {
   const deviceInfo = payload.device_info || {};
   const signature = payload.signature;
 
-  // Signature validation (SHA256 su secret)
+  // Signature validation (BitLabs spec: SHA256(user_id + transaction_id + reward + secret))
   if (BITLABS_SECRET) {
     const sigData = `${userId}${transactionId}${rewardRaw}${BITLABS_SECRET}`;
-    const expectedSignature = require('crypto').createHash('sha256').update(sigData).digest('hex');
+    const expectedSignature = crypto.createHash('sha256').update(sigData).digest('hex');
     if (signature !== expectedSignature) {
       return res.status(403).json({ error: 'Invalid BitLabs signature' });
     }
@@ -49,7 +47,7 @@ export default async function handler(req, res) {
 
   // Validate required params
   const points = rewardRaw !== undefined && rewardRaw !== null ? parseFloat(rewardRaw) : null;
-  if (!userId || !transactionId || points === null || isNaN(points) || points <= 0) {
+  if (!userId || !transactionId || !offerIdPartner || points === null || isNaN(points) || points <= 0) {
     return res.status(400).json({ error: 'Missing or invalid BitLabs parameters', payload });
   }
 
@@ -62,7 +60,7 @@ export default async function handler(req, res) {
       .single();
 
     if (existing) {
-      return res.status(200).json({ status: 'already_processed' });
+      return res.status(200).json({ status: 'already_processed', completion_id: existing.id });
     }
 
     // Fetch user
@@ -85,24 +83,43 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Partner not found' });
     }
 
-    // Fetch offer (by offer_id_partner)
-    const { data: offer } = await supabase
+    // Fetch offer (by offer_id_partner, create if missing!)
+    let { data: offer, error: offerError } = await supabase
       .from('offers')
       .select('*')
-      .eq('offer_id_partner', offerId)
+      .eq('offer_id_partner', offerIdPartner)
       .eq('partner_id', partner.id)
       .single();
+
+    if (offerError || !offer) {
+      // Automatically create missing offer
+      const { data: createdOffer, error: createError } = await supabase
+        .from('offers')
+        .insert({
+          partner_id: partner.id,
+          offer_id_partner: offerIdPartner,
+          title: `BitLabs offer ${offerIdPartner}`,
+          country: country,
+          status: 'active',
+        })
+        .select()
+        .single();
+      if (createError || !createdOffer) {
+        return res.status(500).json({ error: 'Failed to create offer automatically', details: createError?.message });
+      }
+      offer = createdOffer;
+    }
 
     // Insert into completions
     const { data: completion, error: completionError } = await supabase
       .from('completions')
       .insert({
         user_id: user.id,
-        offer_id: offer ? offer.id : null,
+        offer_id: offer.id,
         partner_id: partner.id,
         partner_callback_id: transactionId,
         credited_points: points,
-        status: status || 'credited',
+        status: status === 'chargeback' ? 'reversed' : (status === 'completed' ? 'credited' : status || 'credited'),
         ip,
         user_agent: userAgent,
         device_info: deviceInfo,
@@ -116,26 +133,29 @@ export default async function handler(req, res) {
 
     if (completionError) throw completionError;
 
-    // Increment user points atomically via RPC (jei turi funkciją)
-    if (status === 'completed') {
+    // Increment/deduct user points
+    if (completion.status === 'credited') {
       await supabase
         .rpc('increment_user_points', { uid: user.id, pts: points, ref_completion: completion.id });
+    } else if (completion.status === 'reversed') {
+      await supabase
+        .rpc('debit_user_points_for_payout', { uid: user.id, pts: points, ref_payout: completion.id });
     }
 
-    // Log postback (jei turi lentelę postback_logs)
+    // Log postback for audit
     await supabase
       .from('postback_logs')
       .insert({
         user_id: user.id,
         transaction_id: transactionId,
-        offer_id_partner: offerId,
+        offer_id_partner: offerIdPartner,
         raw_payload: payload,
         ip,
         country,
         received_at: new Date().toISOString()
       });
 
-    return res.status(200).json({ status: 'ok', completion_id: completion.id });
+    return res.status(200).json({ status: completion.status, completion_id: completion.id });
   } catch (err) {
     console.error('BitLabs postback error:', err);
     return res.status(500).json({ error: 'Internal server error', details: err.message });
