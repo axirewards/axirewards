@@ -21,14 +21,21 @@ export default function Offers({ setGlobalLoading }) {
     fetchProviders()
   }, [])
 
-  // Fetch offers
+  // Fetch offers with extended fields
   useEffect(() => {
     if (typeof setGlobalLoading === "function") setGlobalLoading(true)
     async function fetchOffers() {
       try {
         let query = supabase
           .from('offers')
-          .select('*, partners(code, name)')
+          .select(`
+            *,
+            partners(code, name),
+            steps,
+            details_url,
+            points_table,
+            image_url
+          `)
           .eq('status', 'active')
           .order('created_at', { ascending: false })
 
@@ -99,6 +106,14 @@ export default function Offers({ setGlobalLoading }) {
                   }
                 >
                   <div className="p-5 border-b border-gray-800 w-full">
+                    {/* Optional offer cover image */}
+                    {offer.image_url && (
+                      <img
+                        src={offer.image_url}
+                        alt={offer.title}
+                        className="w-full max-h-40 object-cover rounded mb-3 shadow"
+                      />
+                    )}
                     <h2 className="text-xl font-bold text-accent mb-2">{offer.title}</h2>
                     <p className="text-base text-white/90 mb-2">{offer.description}</p>
                     <div className="flex flex-row gap-2 items-center mb-1">
@@ -116,10 +131,11 @@ export default function Offers({ setGlobalLoading }) {
                     offer={{
                       title: offer.title,
                       description: offer.description,
-                      steps: offer.steps, // array if available
+                      steps: Array.isArray(offer.steps) ? offer.steps : (offer.steps ? JSON.parse(offer.steps) : []),
                       payout_points: offer.payout_points,
                       detailsUrl: offer.details_url,
-                      pointsTable: offer.pointsTable,
+                      pointsTable: Array.isArray(offer.points_table) ? offer.points_table : (offer.points_table ? JSON.parse(offer.points_table) : undefined),
+                      imageUrl: offer.image_url
                     }}
                   />
                 </div>
