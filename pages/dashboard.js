@@ -6,12 +6,34 @@ import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
+// Example offerwall providers (expand with more in future)
+const OFFERWALLS = [
+  {
+    key: "ayet",
+    name: "Ayet Studios",
+    logo: "https://cdn.ayetstudios.com/img/logo/ayet_logo_full.png",
+    color: "#60A5FA",
+    adSlot: "23274",
+    description: "Complete surveys, apps and tasks for premium AXI rewards.",
+  },
+  // Add more providers here! Example:
+  // {
+  //   key: "lootably",
+  //   name: "Lootably",
+  //   logo: "https://www.lootably.com/img/logo.svg",
+  //   color: "#FBBF24",
+  //   adSlot: "YOUR_ADSLOT_ID",
+  //   description: "Lootably tasks and offers.",
+  // },
+];
+
 export default function Dashboard({ setGlobalLoading }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [ledger, setLedger] = useState([]);
   const [error, setError] = useState("");
   const [streak, setStreak] = useState(0);
+  const [activeOfferwall, setActiveOfferwall] = useState(null);
 
   useEffect(() => {
     if (typeof setGlobalLoading === "function") setGlobalLoading(true);
@@ -145,9 +167,61 @@ export default function Dashboard({ setGlobalLoading }) {
         {/* Offerwalls Section */}
         <div className="w-full mt-12">
           <h2 className={sectionTitleClass}>Premium Offerwalls</h2>
-          {/* Ayet Studios Offerwall */}
-          <AyetOfferwall adSlot="23274" height="700px" />
-          {/* Here in future you can add more provider offerwalls! */}
+          {/* Offerwall cards */}
+          <div className="flex flex-wrap gap-8 justify-center items-stretch mt-4">
+            {OFFERWALLS.map((wall) => (
+              <div
+                key={wall.key}
+                className={`relative group bg-gradient-to-tr from-black/80 via-[#0B0B0B] to-black/60 border-2 border-gray-900 hover:border-accent rounded-2xl shadow-lg w-[200px] h-[200px] flex flex-col items-center justify-center cursor-pointer transition hover:scale-105 hover:shadow-2xl`}
+                onClick={() => setActiveOfferwall(wall.key)}
+                style={{
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <div className="absolute inset-0 rounded-2xl" style={{ pointerEvents: "none" }} />
+                <img
+                  src={wall.logo}
+                  alt={wall.name + " logo"}
+                  className="w-20 h-20 object-contain mb-2 opacity-80 drop-shadow-lg"
+                  style={{ filter: `drop-shadow(0 0 8px ${wall.color})`, marginTop: '12px' }}
+                />
+                <div className="text-accent font-extrabold text-lg text-center mb-2">{wall.name}</div>
+                <div className="text-xs text-gray-400 px-2 text-center">{wall.description}</div>
+                <span className="absolute bottom-4 right-4 text-[11px] text-accent opacity-0 group-hover:opacity-100 transition">Open offerwall</span>
+              </div>
+            ))}
+          </div>
+          {/* Modal offerwall open */}
+          {activeOfferwall && (
+            <div className="fixed inset-0 z-[1001] bg-black/70 flex items-center justify-center backdrop-blur">
+              <div className="bg-white rounded-2xl shadow-2xl border-2 border-accent max-w-3xl w-full p-6 relative flex flex-col items-center animate-fade-in">
+                <button
+                  className="absolute top-3 right-4 text-accent text-3xl font-extrabold hover:text-blue-700 transition"
+                  onClick={() => setActiveOfferwall(null)}
+                  aria-label="Close"
+                >
+                  &times;
+                </button>
+                {/* Offerwall branding */}
+                <div className="flex items-center gap-3 mb-2">
+                  <img
+                    src={OFFERWALLS.find(w => w.key === activeOfferwall)?.logo}
+                    alt={OFFERWALLS.find(w => w.key === activeOfferwall)?.name + " logo"}
+                    className="w-12 h-12 object-contain"
+                  />
+                  <span className="text-2xl font-bold text-accent">{OFFERWALLS.find(w => w.key === activeOfferwall)?.name}</span>
+                </div>
+                <div className="mb-4 text-gray-700 font-semibold text-center">
+                  {OFFERWALLS.find(w => w.key === activeOfferwall)?.description}
+                </div>
+                {/* Actual offerwall iframe */}
+                {activeOfferwall === "ayet" && (
+                  <AyetOfferwall adSlot={OFFERWALLS.find(w => w.key === "ayet").adSlot} height="700px" />
+                )}
+                {/* Future: add other offerwall components here */}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {/* Custom Scrollbar & Animations */}
@@ -158,6 +232,11 @@ export default function Dashboard({ setGlobalLoading }) {
         .scrollbar-track-card::-webkit-scrollbar { background: #0B0B0B; }
         .scrollbar-thumb-accent::-webkit-scrollbar-thumb { background: #60A5FA; }
         .scrollbar-thin::-webkit-scrollbar { height: 8px; }
+        .border-accent { border-color: #60A5FA; }
+        .text-accent { color: #60A5FA; }
+        .animate-fade-in {
+          animation: fadeInModal 0.22s cubic-bezier(.23,1,.32,1);
+        }
       `}</style>
     </Layout>
   );
