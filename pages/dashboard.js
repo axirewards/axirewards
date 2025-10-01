@@ -11,20 +11,12 @@ const OFFERWALLS = [
   {
     key: "ayet",
     name: "Ayet Studios",
-    logo: "https://cdn.ayetstudios.com/img/logo/ayet_logo_full.png",
+    logo: "/icons/ayetlogo.png",
     color: "#60A5FA",
     adSlot: "23274",
     description: "Complete surveys, apps and tasks for premium AXI rewards.",
   },
-  // Add more providers here! Example:
-  // {
-  //   key: "lootably",
-  //   name: "Lootably",
-  //   logo: "https://www.lootably.com/img/logo.svg",
-  //   color: "#FBBF24",
-  //   adSlot: "YOUR_ADSLOT_ID",
-  //   description: "Lootably tasks and offers.",
-  // },
+  // Add more providers here with local logo paths (e.g. /icons/lootably.png, etc.)
 ];
 
 export default function Dashboard({ setGlobalLoading }) {
@@ -111,17 +103,17 @@ export default function Dashboard({ setGlobalLoading }) {
 
   return (
     <Layout>
-      <div className="flex flex-col items-center justify-center min-h-[90vh] max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 py-6">
+      <div className="flex flex-col items-center justify-start min-h-[90vh] max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row items-center justify-between w-full mb-8 gap-4">
-          <h1 className="text-4xl font-extrabold text-white text-center md:text-left drop-shadow mb-3 md:mb-0">
+        <div className="flex flex-col md:flex-row items-center justify-center w-full mb-8 gap-4">
+          <h1 className="text-4xl font-extrabold text-white text-center drop-shadow mb-3">
             Dashboard
           </h1>
         </div>
 
         {/* Stats Cards */}
         {user && (
-          <div className={gridCardClass}>
+          <div className={gridCardClass + " justify-center"}>
             <div className={cardClass + " px-4 py-6"}>
               <h3 className="text-lg font-bold text-accent mb-2">Points Balance</h3>
               <p className="text-3xl font-extrabold text-white">{user.points_balance || 0}</p>
@@ -165,16 +157,22 @@ export default function Dashboard({ setGlobalLoading }) {
         )}
 
         {/* Offerwalls Section */}
-        <div className="w-full mt-12">
+        <div className="w-full mt-16 flex flex-col items-center justify-center">
           <h2 className={sectionTitleClass}>Premium Offerwalls</h2>
           {/* Offerwall cards */}
-          <div className="flex flex-wrap gap-8 justify-center items-stretch mt-4">
+          <div className="flex flex-wrap gap-8 justify-center items-center mt-4 w-full">
             {OFFERWALLS.map((wall) => (
               <div
                 key={wall.key}
-                className={`relative group bg-gradient-to-tr from-black/80 via-[#0B0B0B] to-black/60 border-2 border-gray-900 hover:border-accent rounded-2xl shadow-lg w-[200px] h-[200px] flex flex-col items-center justify-center cursor-pointer transition hover:scale-105 hover:shadow-2xl`}
+                className={`relative group bg-gradient-to-tr from-black/80 via-[#0B0B0B] to-black/60 border-2 border-gray-900 hover:border-accent rounded-2xl shadow-lg flex flex-col items-center justify-center cursor-pointer transition hover:scale-105 hover:shadow-2xl offerwall-cube`}
                 onClick={() => setActiveOfferwall(wall.key)}
                 style={{
+                  minWidth: "230px",
+                  minHeight: "230px",
+                  maxWidth: "300px",
+                  maxHeight: "300px",
+                  width: "33vw",
+                  height: "33vw",
                   backdropFilter: "blur(8px)",
                 }}
               >
@@ -182,8 +180,8 @@ export default function Dashboard({ setGlobalLoading }) {
                 <img
                   src={wall.logo}
                   alt={wall.name + " logo"}
-                  className="w-20 h-20 object-contain mb-2 opacity-80 drop-shadow-lg"
-                  style={{ filter: `drop-shadow(0 0 8px ${wall.color})`, marginTop: '12px' }}
+                  className="w-24 h-24 object-contain mb-2 opacity-85 drop-shadow-lg"
+                  style={{ filter: `drop-shadow(0 0 16px ${wall.color})`, marginTop: '18px' }}
                 />
                 <div className="text-accent font-extrabold text-lg text-center mb-2">{wall.name}</div>
                 <div className="text-xs text-gray-400 px-2 text-center">{wall.description}</div>
@@ -224,7 +222,6 @@ export default function Dashboard({ setGlobalLoading }) {
           )}
         </div>
       </div>
-      {/* Custom Scrollbar & Animations */}
       <style jsx>{`
         .bg-card { background-color: #0B0B0B; }
         .scrollbar-thin { scrollbar-width: thin; }
@@ -236,6 +233,19 @@ export default function Dashboard({ setGlobalLoading }) {
         .text-accent { color: #60A5FA; }
         .animate-fade-in {
           animation: fadeInModal 0.22s cubic-bezier(.23,1,.32,1);
+        }
+        .offerwall-cube {
+          aspect-ratio: 1 / 1;
+        }
+        @media (max-width: 700px) {
+          .offerwall-cube {
+            min-width: 150px;
+            min-height: 150px;
+            width: 90vw;
+            height: 90vw;
+            max-width: 98vw;
+            max-height: 98vw;
+          }
         }
       `}</style>
     </Layout>
