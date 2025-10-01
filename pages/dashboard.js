@@ -1,50 +1,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
-import AyetOfferwall from "../components/AyetOfferwall";
-import BitLabsOfferwall from "../components/BitLabsOfferwall";
-import CpxOfferwall from "../components/CpxOfferwall";
-import TheoremOfferwall from "../components/TheoremOfferwall";
 import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-
-// Example offerwall providers (expand with more in future)
-// OFFERWALLS stays hardcoded for config/branding, but will be filtered by enabledPartners from DB
-const OFFERWALLS = [
-  {
-    key: "ayet",
-    name: "Ayet Studios",
-    logo: "/icons/ayetlogo.png",
-    color: "#60A5FA",
-    adSlot: "23274",
-    description: "Complete surveys, apps and tasks for premium AXI rewards.",
-  },
-  {
-    key: "bitlabs",
-    name: "BitLabs",
-    logo: "/icons/bitlabslogo.png",
-    color: "#62D6FB",
-    apiKey: "2dfb7d19-2974-4085-b686-181bcb681b70",
-    description: "Complete surveys and earn AXI points with BitLabs.",
-  },
-  {
-    key: "cpx",
-    name: "CPX Research",
-    logo: "/icons/cpxlogo.png",
-    color: "#5AF599",
-    appId: "29422",
-    description: "Complete surveys and earn AXI points with CPX Research.",
-  },
-  {
-    key: "theorem",
-    name: "TheoremReach",
-    logo: "/icons/theoremreachlogo.png",
-    color: "#7b6cfb",
-    appId: "24198",
-    description: "Complete surveys and earn AXI points with TheoremReach.",
-  },
-];
 
 export default function Dashboard({ setGlobalLoading }) {
   const router = useRouter();
@@ -53,10 +12,11 @@ export default function Dashboard({ setGlobalLoading }) {
   const [error, setError] = useState("");
   const [streak, setStreak] = useState(0);
   const [activeOfferwall, setActiveOfferwall] = useState(null);
-  const [enabledPartners, setEnabledPartners] = useState([]); // NEW
+  const [offerwalls, setOfferwalls] = useState([]);
 
   useEffect(() => {
     if (typeof setGlobalLoading === "function") setGlobalLoading(true);
+
     const getData = async () => {
       try {
         const { data: authData, error: authError } = await supabase.auth.getUser();
@@ -114,16 +74,17 @@ export default function Dashboard({ setGlobalLoading }) {
           .update({ last_login: new Date(), streak: currentStreak })
           .eq("id", userData.id);
 
-        // Fetch enabled partners for offerwall section (NEW)
+        // Fetch enabled partners for offerwall section
         const { data: partnersData, error: partnersError } = await supabase
           .from("partners")
-          .select("code, is_enabled")
-          .eq("is_enabled", true);
+          .select("*")
+          .eq("is_enabled", true)
+          .order("created_at", { ascending: true });
         if (partnersError) {
           console.error("Error fetching enabled partners:", partnersError);
-          setEnabledPartners([]);
+          setOfferwalls([]);
         } else {
-          setEnabledPartners(partnersData.map(p => p.code));
+          setOfferwalls(partnersData);
         }
 
       } catch (err) {
@@ -136,15 +97,19 @@ export default function Dashboard({ setGlobalLoading }) {
     getData();
   }, [router]);
 
+  // Helper: replace all placeholders in iframe_url (supports {user_id}, {transaction_id} etc.)
+  function parseIframeUrl(url, user) {
+    if (!url || !user) return '';
+    let finalUrl = url.replace('{user_id}', user.id ?? '');
+    // If you want to support transaction_id or more, add logic here:
+    // finalUrl = finalUrl.replace('{transaction_id}', generateTransactionId());
+    return finalUrl;
+  }
+
   // UI constants
   const cardClass = "bg-card rounded-2xl shadow-lg flex flex-col items-center animate-fade-in border border-gray-900";
   const gridCardClass = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10";
   const sectionTitleClass = "mb-6 text-2xl font-bold text-white text-center tracking-tight";
-
-  // Filter OFFERWALLS by enabled partners
-  const filteredOfferwalls = OFFERWALLS.filter(wall =>
-    enabledPartners.includes(wall.key)
-  );
 
   return (
     <Layout>
@@ -206,11 +171,11 @@ export default function Dashboard({ setGlobalLoading }) {
           <h2 className={sectionTitleClass}>Premium Offerwalls</h2>
           {/* Offerwall cards */}
           <div className="flex flex-wrap gap-8 justify-center items-center mt-4 w-full">
-            {filteredOfferwalls.map((wall) => (
+            {offerwalls.map((wall) => (
               <div
-                key={wall.key}
+                key={wall.code}
                 className={`relative group bg-gradient-to-tr from-black/80 via-[#0B0B0B] to-black/60 border-2 border-gray-900 hover:border-accent rounded-2xl shadow-lg flex flex-col items-center justify-center cursor-pointer transition hover:scale-105 hover:shadow-2xl offerwall-cube`}
-                onClick={() => setActiveOfferwall(wall.key)}
+                onClick={() => setActiveOfferwall(wall.code)}
                 style={{
                   minWidth: "230px",
                   minHeight: "230px",
@@ -223,7 +188,7 @@ export default function Dashboard({ setGlobalLoading }) {
               >
                 <div className="absolute inset-0 rounded-2xl" style={{ pointerEvents: "none" }} />
                 <img
-                  src={wall.logo}
+                  src={wall.logo_url}
                   alt={wall.name + " logo"}
                   className="w-24 h-24 object-contain mb-2 opacity-85 drop-shadow-lg"
                   style={{ filter: `drop-shadow(0 0 16px ${wall.color})`, marginTop: '18px' }}
@@ -245,19 +210,22 @@ export default function Dashboard({ setGlobalLoading }) {
                 >
                   &times;
                 </button>
-                {/* Actual offerwall iframe only, no info or branding duplication */}
-                {activeOfferwall === "ayet" && (
-                  <AyetOfferwall adSlot={OFFERWALLS.find(w => w.key === "ayet").adSlot} height="700px" />
-                )}
-                {activeOfferwall === "bitlabs" && (
-                  <BitLabsOfferwall apiKey={OFFERWALLS.find(w => w.key === "bitlabs").apiKey} height="700px" />
-                )}
-                {activeOfferwall === "cpx" && (
-                  <CpxOfferwall appId={OFFERWALLS.find(w => w.key === "cpx").appId} height="700px" />
-                )}
-                {activeOfferwall === "theorem" && (
-                  <TheoremOfferwall appId={OFFERWALLS.find(w => w.key === "theorem").appId} height="700px" />
-                )}
+                {/* Offerwall iframe from DB iframe_url, parses {user_id} */}
+                <iframe
+                  src={parseIframeUrl(offerwalls.find(w => w.code === activeOfferwall)?.iframe_url, user)}
+                  title={offerwalls.find(w => w.code === activeOfferwall)?.name + " Offerwall"}
+                  className="w-full"
+                  style={{
+                    minHeight: "700px",
+                    height: 'clamp(350px,70vh,850px)',
+                    borderRadius: '1rem',
+                    background: '#fff',
+                    border: 'none',
+                    zoom: 1,
+                  }}
+                  allow="fullscreen"
+                  sandbox="allow-top-navigation allow-scripts allow-same-origin allow-forms"
+                />
               </div>
             </div>
           )}
