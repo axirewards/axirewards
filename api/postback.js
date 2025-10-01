@@ -34,10 +34,6 @@ const PROVIDERS = {
       ip: payload.ip || '',
     }),
   },
-  cpx: {
-    secret: process.env.POSTBACK_SECRET_CPX,
-    // TODO: add mapping if/when needed
-  },
   offertoro: {
     secret: process.env.POSTBACK_SECRET_OFFERTORO,
     // TODO: add mapping if/when needed
