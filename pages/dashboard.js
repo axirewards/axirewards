@@ -3,7 +3,8 @@ import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import AyetOfferwall from "../components/AyetOfferwall";
 import BitLabsOfferwall from "../components/BitLabsOfferwall";
-import CpxOfferwall from "../components/CpxOfferwall"; // <--- ADD THIS LINE
+import CpxOfferwall from "../components/CpxOfferwall";
+import TheoremOfferwall from "../components/TheoremOfferwall"; // <--- ADD THIS LINE
 import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -34,7 +35,14 @@ const OFFERWALLS = [
     appId: "29422",
     description: "Complete surveys and earn AXI points with CPX Research.",
   },
-  // Add more providers here with local logo paths (e.g. /icons/lootably.png, etc.)
+  {
+    key: "theorem",
+    name: "TheoremReach",
+    logo: "/icons/theoremreachlogo.png",
+    color: "#7b6cfb",
+    appId: "24198",
+    description: "Complete surveys and earn AXI points with TheoremReach.",
+  },
 ];
 
 export default function Dashboard({ setGlobalLoading }) {
@@ -228,7 +236,9 @@ export default function Dashboard({ setGlobalLoading }) {
                 {activeOfferwall === "cpx" && (
                   <CpxOfferwall appId={OFFERWALLS.find(w => w.key === "cpx").appId} height="700px" />
                 )}
-                {/* Future: add other offerwall components here */}
+                {activeOfferwall === "theorem" && (
+                  <TheoremOfferwall appId={OFFERWALLS.find(w => w.key === "theorem").appId} height="700px" />
+                )}
               </div>
             </div>
           )}
