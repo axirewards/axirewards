@@ -1,123 +1,143 @@
-/**
- * BitLabs Postback Endpoint
- * Pilnai pritaikyta tavo DB struktūrai, BitLabs offerwall ir survey integracijai.
- * Endpoint: GET /api/postback-bitlabs
- * Payload loguojamas, taškai pridedami, statusas apdorojamas, saugumas užtikrinamas.
- */
+import { createClient } from '@supabase/supabase-js';
 
-const express = require('express');
-const router = express.Router();
-const crypto = require('crypto');
+// Supabase config
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// --- Import ORM modelius, priderintus prie tavo DB ---
-const { Users, Offers, Partners, Completions, Ledger, PostbackLogs } = require('../models'); // pakeisk kelią jei reikia
+// BitLabs secret for validation (never log this!)
+const BITLABS_SECRET = process.env.BITLABS_SECRET;
 
-// --- CONFIG: Saugumo secret BitLabs postbackams ---
-const BITLABS_SECRET = process.env.BITLABS_SECRET || 'TAVO_BITLABS_SECRET';
-
-// --- Main handler ---
-router.get('/postback-bitlabs', async (req, res) => {
-  try {
-    // --- 1. Extract all BitLabs params ---
-    const {
-      user_id,                  // tavosios users.id
-      transaction_id,           // BitLabs unikalus ID
-      reward,                   // taškai už survey/offer
-      offer_id,                 // BitLabs offer ID (offers.offer_id_partner)
-      status,                   // completed, rejected, chargeback, ir t.t.
-      currency,                 // points, USD, EUR
-      survey_id,                // survey ID jei yra
-      offer_type,               // survey arba offer
-      country,                  // šalies kodas
-      ip,                       // vartotojo IP
-      signature,                // BitLabs parašas
-      user_agent,               // papildoma: vartotojo agentas
-      device_info               // papildoma: įrenginio info
-    } = req.query;
-
-    // --- 2. Signature validation ---
-    if (BITLABS_SECRET) {
-      // BitLabs parašo algoritmas: SHA256(user_id+transaction_id+reward+secret)
-      const sigData = `${user_id}${transaction_id}${reward}${BITLABS_SECRET}`;
-      const expectedSignature = crypto.createHash('sha256').update(sigData).digest('hex');
-      if (signature !== expectedSignature) {
-        await PostbackLogs.create({
-          user_id: user_id || null,
-          transaction_id,
-          offer_id_partner: offer_id,
-          raw_payload: req.query,
-          ip,
-          country,
-          received_at: new Date()
-        });
-        return res.status(403).send('Invalid signature');
-      }
+export default async function handler(req, res) {
+  // Accept BOTH GET and POST for BitLabs testing
+  let payload = {};
+  if (req.method === 'POST') {
+    try {
+      payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid payload format' });
     }
-
-    // --- 3. Find user ---
-    const user = await Users.findOne({ where: { id: user_id } });
-    if (!user) return res.status(404).send('User not found');
-
-    // --- 4. Find offer ---
-    const offer = await Offers.findOne({ where: { offer_id_partner: offer_id } });
-
-    // --- 5. Create completion record ---
-    const completion = await Completions.create({
-      user_id: user.id,
-      offer_id: offer ? offer.id : null,
-      partner_id: offer ? offer.partner_id : null,
-      partner_callback_id: transaction_id,
-      credited_points: reward,
-      status,
-      ip,
-      user_agent: user_agent || null,
-      device_info: device_info ? JSON.stringify(device_info) : null,
-      country,
-      completion_steps: survey_id || offer_type
-        ? JSON.stringify({ survey_id, offer_type })
-        : null
-    });
-
-    // --- 6. Update user points if status == completed ---
-    if (status === 'completed') {
-      user.points_balance = Number(user.points_balance) + Number(reward);
-      await user.save();
-
-      // --- Ledger entry ---
-      await Ledger.create({
-        user_id: user.id,
-        kind: 'credit',
-        amount: reward,
-        balance_after: user.points_balance,
-        source: 'bitlabs',
-        reference_id: completion.id,
-        created_at: new Date()
-      });
-    }
-
-    // --- 7. Log postback ---
-    await PostbackLogs.create({
-      user_id: user.id,
-      transaction_id,
-      offer_id_partner: offer_id,
-      raw_payload: req.query,
-      ip,
-      country,
-      received_at: new Date()
-    });
-
-    // --- 8. Respond 200 OK, ready for BitLabs postback tester ---
-    return res.status(200).send('OK');
-  } catch (err) {
-    console.error('[BitLabs Postback Error]', err);
-    return res.status(500).send('Error');
+  } else if (req.method === 'GET') {
+    payload = req.query;
+  } else {
+    return res.status(405).send('Method Not Allowed');
   }
-});
 
-module.exports = router;
+  // BitLabs required parameters (1:1 su jų dokumentacija)
+  const userId = payload.user_id;
+  const transactionId = payload.transaction_id;
+  const rewardRaw = payload.reward;
+  const offerId = payload.offer_id;
+  const status = payload.status;
+  const currency = payload.currency;
+  const surveyId = payload.survey_id;
+  const offerType = payload.offer_type;
+  const country = payload.country || payload.geo || 'ALL';
+  const ip = payload.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
+  const userAgent = payload.user_agent || req.headers['user-agent'] || '';
+  const deviceInfo = payload.device_info || {};
+  const signature = payload.signature;
 
-/**
- * Naudojimas Express app:
- * const postbackBitlabs = require('./api/postback-bitlabs');
- * app.use('/api', postbackBitlabs);
- */
+  // Signature validation (SHA256 su secret)
+  if (BITLABS_SECRET) {
+    const sigData = `${userId}${transactionId}${rewardRaw}${BITLABS_SECRET}`;
+    const expectedSignature = require('crypto').createHash('sha256').update(sigData).digest('hex');
+    if (signature !== expectedSignature) {
+      return res.status(403).json({ error: 'Invalid BitLabs signature' });
+    }
+  }
+
+  // Validate required params
+  const points = rewardRaw !== undefined && rewardRaw !== null ? parseFloat(rewardRaw) : null;
+  if (!userId || !transactionId || points === null || isNaN(points) || points <= 0) {
+    return res.status(400).json({ error: 'Missing or invalid BitLabs parameters', payload });
+  }
+
+  try {
+    // Idempotency: don't double process
+    const { data: existing } = await supabase
+      .from('completions')
+      .select('id')
+      .eq('partner_callback_id', transactionId)
+      .single();
+
+    if (existing) {
+      return res.status(200).json({ status: 'already_processed' });
+    }
+
+    // Fetch user
+    const { data: user } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Fetch BitLabs partner
+    const { data: partner } = await supabase
+      .from('partners')
+      .select('*')
+      .eq('code', 'bitlabs')
+      .single();
+    if (!partner) {
+      return res.status(404).json({ error: 'Partner not found' });
+    }
+
+    // Fetch offer (by offer_id_partner)
+    const { data: offer } = await supabase
+      .from('offers')
+      .select('*')
+      .eq('offer_id_partner', offerId)
+      .eq('partner_id', partner.id)
+      .single();
+
+    // Insert into completions
+    const { data: completion, error: completionError } = await supabase
+      .from('completions')
+      .insert({
+        user_id: user.id,
+        offer_id: offer ? offer.id : null,
+        partner_id: partner.id,
+        partner_callback_id: transactionId,
+        credited_points: points,
+        status: status || 'credited',
+        ip,
+        user_agent: userAgent,
+        device_info: deviceInfo,
+        country,
+        completion_steps: surveyId || offerType
+          ? JSON.stringify({ survey_id: surveyId, offer_type: offerType })
+          : null
+      })
+      .select()
+      .single();
+
+    if (completionError) throw completionError;
+
+    // Increment user points atomically via RPC (jei turi funkciją)
+    if (status === 'completed') {
+      await supabase
+        .rpc('increment_user_points', { uid: user.id, pts: points, ref_completion: completion.id });
+    }
+
+    // Log postback (jei turi lentelę postback_logs)
+    await supabase
+      .from('postback_logs')
+      .insert({
+        user_id: user.id,
+        transaction_id: transactionId,
+        offer_id_partner: offerId,
+        raw_payload: payload,
+        ip,
+        country,
+        received_at: new Date().toISOString()
+      });
+
+    return res.status(200).json({ status: 'ok', completion_id: completion.id });
+  } catch (err) {
+    console.error('BitLabs postback error:', err);
+    return res.status(500).json({ error: 'Internal server error', details: err.message });
+  }
+}
