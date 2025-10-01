@@ -46,7 +46,7 @@ export default function CpxOfferwall({ appId = "29422", height = "900px" }) {
           setLoading(false)
         }
         // Calculate secure hash (md5 of `${userId}-${cpx_secure_hash}`)
-        const cpxSecret = process.env.NEXT_PUBLIC_CPX_SECURE_HASH || ""
+        const cpxSecret = process.env.CPX_SECURE_HASH || ""
         if (userData?.id && cpxSecret) {
           setSecureHash(MD5(`${userData.id}-${cpxSecret}`).toString())
         } else {
