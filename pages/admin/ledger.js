@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
+import AdminNavbar from '../../components/AdminNavbar'
 import { supabase } from '../../lib/supabaseClient'
 import { pointsToCurrency } from '../../lib/pointsConversion'
 import { isAdmin } from '../../lib/userUtils'
@@ -355,163 +356,166 @@ export default function AdminLedger() {
 
   return (
     <Layout admin>
-      <div className="max-w-7xl mx-auto p-6">
-        <h1 className="text-3xl font-bold text-primary mb-6">Admin Ledger</h1>
-        {renderPointsCalculator()}
+      <AdminNavbar user={adminUser} />
+      <div className="min-h-screen flex flex-col">
+        <div className="max-w-7xl mx-auto p-6 flex-grow">
+          <h1 className="text-3xl font-bold text-primary mb-6">Admin Ledger</h1>
+          {renderPointsCalculator()}
 
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <select
-            className="border rounded p-2 dark:bg-gray-800 dark:text-white"
-            value={filterUser}
-            onChange={(e) => setFilterUser(e.target.value)}
-          >
-            <option value="">All Users</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.email}
-              </option>
-            ))}
-          </select>
-          <select
-            className="border rounded p-2 dark:bg-gray-800 dark:text-white"
-            value={filterKind}
-            onChange={(e) => setFilterKind(e.target.value)}
-          >
-            <option value="">All Types</option>
-            <option value="credit">Credit</option>
-            <option value="debit">Debit</option>
-            <option value="payout">Payout</option>
-            <option value="payout_fee">Payout Fee</option>
-          </select>
-        </div>
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <select
+              className="border rounded p-2 dark:bg-gray-800 dark:text-white"
+              value={filterUser}
+              onChange={(e) => setFilterUser(e.target.value)}
+            >
+              <option value="">All Users</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.email}
+                </option>
+              ))}
+            </select>
+            <select
+              className="border rounded p-2 dark:bg-gray-800 dark:text-white"
+              value={filterKind}
+              onChange={(e) => setFilterKind(e.target.value)}
+            >
+              <option value="">All Types</option>
+              <option value="credit">Credit</option>
+              <option value="debit">Debit</option>
+              <option value="payout">Payout</option>
+              <option value="payout_fee">Payout Fee</option>
+            </select>
+          </div>
 
-        {/* Users summary table */}
-        <div className="mb-10">
-          <h2 className="text-xl font-semibold mb-2 text-primary">Users Overview</h2>
+          {/* Users summary table */}
+          <div className="mb-10">
+            <h2 className="text-xl font-semibold mb-2 text-primary">Users Overview</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm bg-white dark:bg-gray-800 shadow rounded mb-2">
+                <thead className="bg-gray-100 dark:bg-gray-700">
+                  <tr>
+                    <th>Email</th>
+                    <th>Tier</th>
+                    <th>Points</th>
+                    <th>KYC</th>
+                    <th>Wallet</th>
+                    <th>Banned</th>
+                    <th>Last Login</th>
+                    <th>Payouts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(user => {
+                    const { usd, eur } = pointsToCurrency(user.points_balance)
+                    return (
+                      <tr
+                        key={user.id}
+                        className="border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900"
+                        onClick={() => openUserModal(user)}
+                      >
+                        <td>{user.email}</td>
+                        <td>{user.tier}</td>
+                        <td>
+                          {user.points_balance}
+                          <span className="block text-xs text-gray-500">
+                            ({usd} USD / {eur} EUR)
+                          </span>
+                        </td>
+                        <td>{user.kyc_status}</td>
+                        <td>
+                          <span
+                            className="break-all bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono select-all cursor-pointer"
+                            title="Click to copy"
+                            onClick={e => { e.stopPropagation(); handleCopyWallet(user.wallet_address) }}>
+                            {user.wallet_address || '-'}
+                          </span>
+                          {copyStatus && <span className="ml-2 text-green-600 text-xs">{copyStatus}</span>}
+                        </td>
+                        <td>
+                          {user.is_banned
+                            ? <span className="text-red-600 font-bold">BANNED</span>
+                            : <span className="text-green-600 font-bold">ACTIVE</span>
+                          }
+                          {user.is_banned && (
+                            <div className="text-xs text-red-500">
+                              Reason: {user.banned_reason || '-'}<br />
+                              When: {user.banned_at ? new Date(user.banned_at).toLocaleString() : '-'}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          {user.last_login ? new Date(user.last_login).toLocaleString() : '-'}
+                        </td>
+                        <td>
+                          {getUserPayoutSummary(user.id)}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Ledger entries table */}
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white dark:bg-gray-800 shadow rounded mb-2">
+            <h2 className="text-xl font-semibold mb-2 text-primary">Ledger Entries</h2>
+            <table className="min-w-full text-sm bg-white dark:bg-gray-800 shadow rounded">
               <thead className="bg-gray-100 dark:bg-gray-700">
                 <tr>
-                  <th>Email</th>
-                  <th>Tier</th>
-                  <th>Points</th>
-                  <th>KYC</th>
-                  <th>Wallet</th>
-                  <th>Banned</th>
-                  <th>Last Login</th>
-                  <th>Payouts</th>
+                  <th>User</th>
+                  <th>Kind</th>
+                  <th>Amount</th>
+                  <th>Amount (USD/EUR)</th>
+                  <th>Balance After</th>
+                  <th>Source</th>
+                  <th>Reference ID</th>
+                  <th>Created At</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map(user => {
-                  const { usd, eur } = pointsToCurrency(user.points_balance)
+                {ledger.map((entry) => {
+                  const { usd, eur } = pointsToCurrency(entry.amount)
+                  const user = userDetailsMap[entry.user_id]
                   return (
                     <tr
-                      key={user.id}
+                      key={entry.id}
                       className="border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900"
-                      onClick={() => openUserModal(user)}
+                      onClick={() => openLedgerModal(entry)}
                     >
-                      <td>{user.email}</td>
-                      <td>{user.tier}</td>
                       <td>
-                        {user.points_balance}
-                        <span className="block text-xs text-gray-500">
-                          ({usd} USD / {eur} EUR)
-                        </span>
+                        {user?.email || entry.user?.email || 'N/A'}
+                        <div className="text-xs text-gray-500">
+                          Wallet: <span
+                            className="break-all bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono select-all cursor-pointer"
+                            title="Click to copy"
+                            onClick={e => { e.stopPropagation(); handleCopyWallet(user?.wallet_address) }}>
+                            {user?.wallet_address || '-'}
+                          </span>
+                          {copyStatus && <span className="ml-2 text-green-600 text-xs">{copyStatus}</span>}
+                        </div>
                       </td>
-                      <td>{user.kyc_status}</td>
+                      <td>{entry.kind}</td>
+                      <td>{entry.amount}</td>
                       <td>
-                        <span
-                          className="break-all bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono select-all cursor-pointer"
-                          title="Click to copy"
-                          onClick={e => { e.stopPropagation(); handleCopyWallet(user.wallet_address) }}>
-                          {user.wallet_address || '-'}
-                        </span>
-                        {copyStatus && <span className="ml-2 text-green-600 text-xs">{copyStatus}</span>}
+                        <span className="text-green-700">{usd} USD</span> / <span className="text-blue-700">{eur} EUR</span>
                       </td>
-                      <td>
-                        {user.is_banned
-                          ? <span className="text-red-600 font-bold">BANNED</span>
-                          : <span className="text-green-600 font-bold">ACTIVE</span>
-                        }
-                        {user.is_banned && (
-                          <div className="text-xs text-red-500">
-                            Reason: {user.banned_reason || '-'}<br />
-                            When: {user.banned_at ? new Date(user.banned_at).toLocaleString() : '-'}
-                          </div>
-                        )}
-                      </td>
-                      <td>
-                        {user.last_login ? new Date(user.last_login).toLocaleString() : '-'}
-                      </td>
-                      <td>
-                        {getUserPayoutSummary(user.id)}
-                      </td>
+                      <td>{entry.balance_after}</td>
+                      <td>{entry.source}</td>
+                      <td>{entry.reference_id}</td>
+                      <td>{new Date(entry.created_at).toLocaleString()}</td>
                     </tr>
                   )
                 })}
               </tbody>
             </table>
           </div>
-        </div>
 
-        {/* Ledger entries table */}
-        <div className="overflow-x-auto">
-          <h2 className="text-xl font-semibold mb-2 text-primary">Ledger Entries</h2>
-          <table className="min-w-full bg-white dark:bg-gray-800 shadow rounded">
-            <thead className="bg-gray-100 dark:bg-gray-700">
-              <tr>
-                <th>User</th>
-                <th>Kind</th>
-                <th>Amount</th>
-                <th>Amount (USD/EUR)</th>
-                <th>Balance After</th>
-                <th>Source</th>
-                <th>Reference ID</th>
-                <th>Created At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ledger.map((entry) => {
-                const { usd, eur } = pointsToCurrency(entry.amount)
-                const user = userDetailsMap[entry.user_id]
-                return (
-                  <tr
-                    key={entry.id}
-                    className="border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900"
-                    onClick={() => openLedgerModal(entry)}
-                  >
-                    <td>
-                      {user?.email || entry.user?.email || 'N/A'}
-                      <div className="text-xs text-gray-500">
-                        Wallet: <span
-                          className="break-all bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono select-all cursor-pointer"
-                          title="Click to copy"
-                          onClick={e => { e.stopPropagation(); handleCopyWallet(user?.wallet_address) }}>
-                          {user?.wallet_address || '-'}
-                        </span>
-                        {copyStatus && <span className="ml-2 text-green-600 text-xs">{copyStatus}</span>}
-                      </div>
-                    </td>
-                    <td>{entry.kind}</td>
-                    <td>{entry.amount}</td>
-                    <td>
-                      <span className="text-green-700">{usd} USD</span> / <span className="text-blue-700">{eur} EUR</span>
-                    </td>
-                    <td>{entry.balance_after}</td>
-                    <td>{entry.source}</td>
-                    <td>{entry.reference_id}</td>
-                    <td>{new Date(entry.created_at).toLocaleString()}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          {/* Modals */}
+          {showUserModal && <UserInfoModal />}
+          {showLedgerModal && <LedgerInfoModal />}
         </div>
-
-        {/* Modals */}
-        {showUserModal && <UserInfoModal />}
-        {showLedgerModal && <LedgerInfoModal />}
       </div>
     </Layout>
   )
