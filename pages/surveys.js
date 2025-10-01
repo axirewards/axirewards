@@ -1,20 +1,11 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
-import AyetOfferwall from "../components/AyetOfferwall";
 import BitLabsOfferwall from "../components/BitLabsOfferwall";
 import CpxOfferwall from "../components/CpxOfferwall";
 import TheoremOfferwall from "../components/TheoremOfferwall";
 import { supabase } from "../lib/supabaseClient";
 
 const SURVEY_PROVIDERS = [
-  {
-    key: "ayet",
-    name: "Ayet Studios",
-    logo: "/icons/ayetlogo.png",
-    color: "#60A5FA",
-    adSlot: "23274",
-    description: "Complete surveys for premium AXI rewards.",
-  },
   {
     key: "bitlabs",
     name: "BitLabs",
@@ -77,9 +68,6 @@ export default function Surveys({ setGlobalLoading }) {
   return (
     <Layout>
       <div className="flex flex-col items-center justify-start min-h-[90vh] max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 py-6">
-        <h1 className="text-4xl font-extrabold text-white text-center drop-shadow mb-3">
-          Surveys
-        </h1>
         <div className="w-full mt-8 flex flex-col items-center justify-center">
           <h2 className={sectionTitleClass}>Survey Providers</h2>
           <div className="flex flex-wrap gap-8 justify-center items-center mt-4 w-full">
@@ -135,10 +123,6 @@ export default function Surveys({ setGlobalLoading }) {
                 >
                   &times;
                 </button>
-                {/* Iframe/modal for each survey provider */}
-                {activeSurvey === "ayet" && (
-                  <AyetOfferwall adSlot={SURVEY_PROVIDERS.find((p) => p.key === "ayet").adSlot} height="700px" />
-                )}
                 {activeSurvey === "bitlabs" && (
                   <BitLabsOfferwall apiKey={SURVEY_PROVIDERS.find((p) => p.key === "bitlabs").apiKey} height="700px" />
                 )}
