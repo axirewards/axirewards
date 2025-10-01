@@ -1,6 +1,6 @@
 import Navbar from './Navbar'
 import Footer from './Footer'
-import BannerAads from './components/BannerAads'
+import BannerAads from './BannerAads'
 import { Transition } from '@headlessui/react'
 
 export default function Layout({ children }) {
