@@ -4,12 +4,13 @@ import Layout from "../components/Layout";
 import AyetOfferwall from "../components/AyetOfferwall";
 import BitLabsOfferwall from "../components/BitLabsOfferwall";
 import CpxOfferwall from "../components/CpxOfferwall";
-import TheoremOfferwall from "../components/TheoremOfferwall"; // <--- ADD THIS LINE
+import TheoremOfferwall from "../components/TheoremOfferwall";
 import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 // Example offerwall providers (expand with more in future)
+// OFFERWALLS stays hardcoded for config/branding, but will be filtered by enabledPartners from DB
 const OFFERWALLS = [
   {
     key: "ayet",
@@ -52,6 +53,7 @@ export default function Dashboard({ setGlobalLoading }) {
   const [error, setError] = useState("");
   const [streak, setStreak] = useState(0);
   const [activeOfferwall, setActiveOfferwall] = useState(null);
+  const [enabledPartners, setEnabledPartners] = useState([]); // NEW
 
   useEffect(() => {
     if (typeof setGlobalLoading === "function") setGlobalLoading(true);
@@ -112,6 +114,18 @@ export default function Dashboard({ setGlobalLoading }) {
           .update({ last_login: new Date(), streak: currentStreak })
           .eq("id", userData.id);
 
+        // Fetch enabled partners for offerwall section (NEW)
+        const { data: partnersData, error: partnersError } = await supabase
+          .from("partners")
+          .select("code, is_enabled")
+          .eq("is_enabled", true);
+        if (partnersError) {
+          console.error("Error fetching enabled partners:", partnersError);
+          setEnabledPartners([]);
+        } else {
+          setEnabledPartners(partnersData.map(p => p.code));
+        }
+
       } catch (err) {
         console.error("Dashboard error:", err);
         setError("Something went wrong.");
@@ -126,6 +140,11 @@ export default function Dashboard({ setGlobalLoading }) {
   const cardClass = "bg-card rounded-2xl shadow-lg flex flex-col items-center animate-fade-in border border-gray-900";
   const gridCardClass = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10";
   const sectionTitleClass = "mb-6 text-2xl font-bold text-white text-center tracking-tight";
+
+  // Filter OFFERWALLS by enabled partners
+  const filteredOfferwalls = OFFERWALLS.filter(wall =>
+    enabledPartners.includes(wall.key)
+  );
 
   return (
     <Layout>
@@ -187,7 +206,7 @@ export default function Dashboard({ setGlobalLoading }) {
           <h2 className={sectionTitleClass}>Premium Offerwalls</h2>
           {/* Offerwall cards */}
           <div className="flex flex-wrap gap-8 justify-center items-center mt-4 w-full">
-            {OFFERWALLS.map((wall) => (
+            {filteredOfferwalls.map((wall) => (
               <div
                 key={wall.key}
                 className={`relative group bg-gradient-to-tr from-black/80 via-[#0B0B0B] to-black/60 border-2 border-gray-900 hover:border-accent rounded-2xl shadow-lg flex flex-col items-center justify-center cursor-pointer transition hover:scale-105 hover:shadow-2xl offerwall-cube`}
