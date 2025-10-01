@@ -25,7 +25,7 @@ export default function AyetOfferwall({ adSlot = "23274", height = "700px" }) {
 
   // Ayet offerwall URL
   const ayetUrl = userId
-    ? `https://offerwall.ayet.io/offers?adSlot=${adSlot}&externalIdentifier=${userId}`
+    ? `https://offerwall.ayet.io/offers?adSlot=23274&externalIdentifier=${userId}`
     : null
 
   return (
