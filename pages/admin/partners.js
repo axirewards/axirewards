@@ -121,6 +121,13 @@ export default function AdminPartners() {
     else fetchPartners()
   }
 
+  // Enable/Disable partner
+  const togglePartnerEnabled = async (id, enabled) => {
+    const { error } = await supabase.from('partners').update({ is_enabled: enabled }).eq('id', id)
+    if (error) setError('Error updating partner status: ' + error.message)
+    fetchPartners()
+  }
+
   return (
     <Layout admin>
       <div className="max-w-7xl mx-auto p-6">
@@ -192,8 +199,7 @@ export default function AdminPartners() {
                   placeholder="Callback Secret"
                   value={newPartner.callback_secret}
                   onChange={(e) =>
-                    setNewPartner({ ...newPartner, callback_secret: e.target.value })
-                  }
+                    setNewPartner({ ...newPartner, callback_secret: e.target.value })}
                   className="border rounded p-2"
                 />
                 <button
@@ -218,6 +224,7 @@ export default function AdminPartners() {
                   <th className="py-2 px-4 text-left">Revenue %</th>
                   <th className="py-2 px-4 text-left">Net Terms</th>
                   <th className="py-2 px-4 text-left">Callback Secret</th>
+                  <th className="py-2 px-4 text-left">Enabled</th>
                   <th className="py-2 px-4 text-left">Created</th>
                   <th className="py-2 px-4 text-left">Actions</th>
                 </tr>
@@ -260,8 +267,23 @@ export default function AdminPartners() {
                         className="border rounded p-1 w-32 dark:bg-gray-700 dark:text-white"
                       /> : p.callback_secret
                     }</td>
+                    <td className="py-2 px-4">
+                      <span
+                        className={`inline-block px-2 py-1 rounded text-xs font-bold ${p.is_enabled ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-700'}`}
+                      >
+                        {p.is_enabled ? 'Enabled' : 'Paused'}
+                      </span>
+                    </td>
                     <td className="py-2 px-4">{new Date(p.created_at).toLocaleDateString()}</td>
                     <td className="py-2 px-4 flex gap-2">
+                      {/* Enable/Disable button */}
+                      <button
+                        className={p.is_enabled ? "bg-yellow-400 text-gray-900 px-2 py-1 rounded hover:bg-yellow-500" : "bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"}
+                        onClick={() => togglePartnerEnabled(p.id, !p.is_enabled)}
+                        title={p.is_enabled ? "Pause partner (hide everywhere)" : "Resume partner (show everywhere)"}
+                      >
+                        {p.is_enabled ? "Pause" : "Resume"}
+                      </button>
                       {editingId === p.id ? (
                         <>
                           <button
@@ -290,7 +312,7 @@ export default function AdminPartners() {
                 ))}
                 {partners.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-3 px-4 text-center text-gray-400">
+                    <td colSpan={8} className="py-3 px-4 text-center text-gray-400">
                       No partners found.
                     </td>
                   </tr>
