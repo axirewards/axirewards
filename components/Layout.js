@@ -1,5 +1,6 @@
 import Navbar from './Navbar'
 import Footer from './Footer'
+import BannerAads from './components/BannerAads'
 import { Transition } from '@headlessui/react'
 
 export default function Layout({ children }) {
@@ -17,7 +18,7 @@ export default function Layout({ children }) {
           role="main"
           className="
             flex-grow
-            min-h-[60vh]        // <-- čia garantuoja footer apačioje
+            min-h-[60vh]
             w-full
             max-w-7xl
             mx-auto
@@ -39,6 +40,7 @@ export default function Layout({ children }) {
           {children}
         </main>
       </Transition>
+      <BannerAads />
       <Footer />
       <style jsx global>{`
         body {
