@@ -46,7 +46,7 @@ export default function CpxOfferwall({ appId = "29422", height = "900px" }) {
           setLoading(false)
         }
         // Calculate secure hash (md5 of `${userId}-${cpx_secure_hash}`)
-        const cpxSecret = process.env.CPX_SECURE_HASH || ""
+        const cpxSecret = process.env.NEXT_PUBLIC_CPX_SECURE_HASH || ""
         if (userData?.id && cpxSecret) {
           setSecureHash(MD5(`${userData.id}-${cpxSecret}`).toString())
         } else {
@@ -76,15 +76,7 @@ export default function CpxOfferwall({ appId = "29422", height = "900px" }) {
   return (
     <div className="w-full flex flex-col items-center justify-center py-2 sm:py-6">
       {/* CPX branding and info */}
-      <div className="flex flex-col items-center justify-center w-full max-w-2xl mb-4 px-2 sm:px-4">
-        <div className="flex flex-row items-center justify-center gap-3 w-full mb-2">
-          <img
-            src="/icons/cpxlogo.png"
-            alt="CPX Research"
-            className="h-10 w-auto"
-            style={{ filter: 'drop-shadow(0 0 8px #5AF599)' }}
-          />
-        </div>
+      <div className="flex flex-col items-center justify-center w-full max-w-2xl mb-2 px-2 sm:px-4">
         <div className="flex flex-row items-center justify-center w-full">
           <span className="text-xs text-gray-400 sm:text-sm text-center font-semibold mx-2">
             Complete surveys and earn AXI points with CPX Research.
