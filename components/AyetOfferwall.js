@@ -43,7 +43,6 @@ export default function AyetOfferwall({ adSlot = "23274", height = "700px" }) {
             className="h-10 w-auto"
             style={{ filter: 'drop-shadow(0 0 8px #60A5FA)' }}
           />
-          <span className="text-md sm:text-lg font-bold text-accent drop-shadow">Offerwall by Ayet Studios</span>
         </div>
         <div className="flex flex-row items-center justify-center w-full">
           <span className="text-xs text-gray-400 sm:text-sm text-center font-semibold mx-2">
