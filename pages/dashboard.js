@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import AyetOfferwall from "../components/AyetOfferwall";
-import BitLabsOfferwall from "../components/BitLabsOfferwall"; // <--- ADD THIS LINE
+import BitLabsOfferwall from "../components/BitLabsOfferwall";
+import CpxOfferwall from "../components/CpxOfferwall"; // <--- ADD THIS LINE
 import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -24,6 +25,14 @@ const OFFERWALLS = [
     color: "#62D6FB",
     apiKey: "2dfb7d19-2974-4085-b686-181bcb681b70",
     description: "Complete surveys and earn AXI points with BitLabs.",
+  },
+  {
+    key: "cpx",
+    name: "CPX Research",
+    logo: "/icons/cpxlogo.png",
+    color: "#5AF599",
+    appId: "29422",
+    description: "Complete surveys and earn AXI points with CPX Research.",
   },
   // Add more providers here with local logo paths (e.g. /icons/lootably.png, etc.)
 ];
@@ -215,6 +224,9 @@ export default function Dashboard({ setGlobalLoading }) {
                 )}
                 {activeOfferwall === "bitlabs" && (
                   <BitLabsOfferwall apiKey={OFFERWALLS.find(w => w.key === "bitlabs").apiKey} height="700px" />
+                )}
+                {activeOfferwall === "cpx" && (
+                  <CpxOfferwall appId={OFFERWALLS.find(w => w.key === "cpx").appId} height="900px" />
                 )}
                 {/* Future: add other offerwall components here */}
               </div>
