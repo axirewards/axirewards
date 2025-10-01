@@ -1,105 +1,141 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import MD5 from 'crypto-js/md5'
 
-export default function AyetOfferwall({ adSlot = "23274", height = "700px" }) {
-  const [userId, setUserId] = useState(null)
+/**
+ * CPX Research Offerwall iframe component.
+ * - Uses Supabase users.id as ext_user_id (unique per user, mandatory)
+ * - Uses Supabase email and display_name for username/email
+ * - Secure hash: md5(`${userId}-${process.env.NEXT_PUBLIC_CPX_SECURE_HASH}`)
+ * - Responsive, premium UI identiškai kaip Ayet/BitLabs
+ * - Automatically adapts to PC/mobile screens
+ */
+export default function CpxOfferwall({ appId = "29422", height = "900px" }) {
+  const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [secureHash, setSecureHash] = useState("")
 
   useEffect(() => {
+    let isMounted = true
     async function fetchUser() {
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-      if (!currentUser) {
-        setLoading(false)
-        return
+      try {
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
+        if (authError || !currentUser) {
+          if (isMounted) {
+            setError("Please log in to view CPX surveys.")
+            setLoading(false)
+          }
+          return
+        }
+        // Get users table info
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id,email,display_name')
+          .eq('email', currentUser.email)
+          .single()
+        if (userError || !userData?.id) {
+          if (isMounted) {
+            setError("User profile not found. Contact support.")
+            setLoading(false)
+          }
+          return
+        }
+        if (isMounted) {
+          setUser(userData)
+          setLoading(false)
+        }
+        // Calculate secure hash (md5 of `${userId}-${cpx_secure_hash}`)
+        const cpxSecret = process.env.CPX_SECURE_HASH || ""
+        if (userData?.id && cpxSecret) {
+          setSecureHash(MD5(`${userData.id}-${cpxSecret}`).toString())
+        } else {
+          setSecureHash("")
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError("Unexpected error loading user. Try again.")
+          setLoading(false)
+        }
       }
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', currentUser.email)
-        .single()
-      if (error) {
-        setLoading(false)
-        return
-      }
-      setUserId(userData?.id)
-      setLoading(false)
     }
     fetchUser()
+    return () => { isMounted = false }
   }, [])
 
-  // Ayet offerwall URL
-  const ayetUrl = userId
-    ? `https://offerwall.ayet.io/offers?adSlot=${adSlot}&externalIdentifier=${userId}`
+  // Construct CPX offerwall URL (replace all recommended params)
+  const cpxUrl = user
+    ? `https://offers.cpx-research.com/index.php?app_id=${appId}` +
+      `&ext_user_id=${user.id}` +
+      `&secure_hash=${secureHash}` +
+      `&username=${encodeURIComponent(user.display_name || "")}` +
+      `&email=${encodeURIComponent(user.email || "")}` +
+      `&subid_1=&subid_2=`
     : null
 
   return (
     <div className="w-full flex flex-col items-center justify-center py-2 sm:py-6">
-      {/* Ayet branding and info */}
+      {/* CPX branding and info */}
       <div className="flex flex-col items-center justify-center w-full max-w-2xl mb-4 px-2 sm:px-4">
         <div className="flex flex-row items-center justify-center gap-3 w-full mb-2">
           <img
-            src="/icons/ayetlogodark.png"
-            alt="Ayet Studios"
+            src="/icons/cpxlogo.png"
+            alt="CPX Research"
             className="h-10 w-auto"
-            style={{ filter: 'drop-shadow(0 0 8px #60A5FA)' }}
+            style={{ filter: 'drop-shadow(0 0 8px #5AF599)' }}
           />
         </div>
         <div className="flex flex-row items-center justify-center w-full">
           <span className="text-xs text-gray-400 sm:text-sm text-center font-semibold mx-2">
-            Complete surveys, apps and tasks for premium AXI rewards.
+            Complete surveys and earn AXI points with CPX Research.
           </span>
           <a
-            href="https://www.ayetstudios.com/"
+            href="https://cpx-research.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-blue-500 hover:underline font-semibold ml-3"
+            className="text-xs text-green-500 hover:underline font-semibold ml-3"
           >
             What is this?
           </a>
         </div>
       </div>
-
       {/* Offerwall iframe */}
       <div
-        className="w-full max-w-2xl rounded-2xl shadow-2xl border border-accent bg-white flex items-center justify-center"
+        className="w-full max-w-2xl rounded-2xl shadow-2xl border border-green-400 bg-white flex items-center justify-center"
         style={{
           minHeight: height,
           height: 'auto',
           overflow: 'hidden',
         }}
       >
-        {loading && (
+        {loading ? (
           <div className="w-full flex items-center justify-center min-h-[400px]">
-            <span className="text-primary animate-pulse text-lg font-bold">Loading Ayet Offerwall...</span>
+            <span className="text-green-400 animate-pulse text-lg font-bold">Loading CPX Research...</span>
           </div>
-        )}
-        {!loading && !userId && (
+        ) : error ? (
           <div className="w-full flex items-center justify-center min-h-[400px]">
-            <span className="text-red-500 font-bold text-md">Please log in to view offers.</span>
+            <span className="text-red-500 font-bold text-md">{error}</span>
           </div>
-        )}
-        {!loading && userId && (
+        ) : (
           <iframe
-            src={ayetUrl}
-            title="Ayet Studios Offerwall"
+            src={cpxUrl}
+            title="CPX Research Offerwall"
             className="w-full"
             style={{
               minHeight: height,
-              height: 'clamp(350px,70vh,850px)',
+              height: 'clamp(350px,70vh,1200px)',
               borderRadius: '1rem',
               background: '#fff',
               border: 'none',
               zoom: 1,
             }}
             allow="fullscreen"
+            frameBorder="0"
           />
         )}
       </div>
       <style jsx>{`
-        .bg-accent { background-color: #60A5FA; }
-        .text-accent { color: #60A5FA; }
-        .border-accent { border-color: #60A5FA; }
-        .shadow-2xl { box-shadow: 0 6px 32px 0 #60A5fa22, 0 1.5px 8px 0 #60A5fa33; }
+        .shadow-2xl { box-shadow: 0 6px 32px 0 #5AF59922, 0 1.5px 8px 0 #5AF59933; }
         @media (max-width: 700px) {
           .max-w-2xl { max-width: 98vw !important; }
           .rounded-2xl { border-radius: 1rem !important; }
