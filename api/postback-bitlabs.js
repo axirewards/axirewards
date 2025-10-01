@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Supabase config
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// BitLabs secret for validation (never log this!)
 const BITLABS_SECRET = process.env.POSTBACK_SECRET_BITLABS;
 
 export default async function handler(req, res) {
@@ -21,24 +23,27 @@ export default async function handler(req, res) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  // Extract BitLabs parameters (works for both GET and POST)
+  // BitLabs required parameters
   const userIdRaw = payload.uid;
   const surveyId = payload.survey_id;
   const transactionId = payload.transaction_id;
-  const points = parseFloat(payload.reward || 0);
-  const receivedSecret = payload.secret;
+  const secret = payload.secret;
+  // Use reward (float or int), fallback to 0 if missing
+  const rewardRaw = payload.reward;
+  const points = rewardRaw !== undefined && rewardRaw !== null ? parseFloat(rewardRaw) : null;
+
   const country = payload.geo || payload.country || 'ALL';
   const ip = payload.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
   const userAgent = payload.user_agent || req.headers['user-agent'] || '';
   const deviceInfo = payload.device_info || {};
 
   // Secret validation
-  if (!BITLABS_SECRET || !receivedSecret || receivedSecret !== BITLABS_SECRET) {
+  if (!BITLABS_SECRET || !secret || secret !== BITLABS_SECRET) {
     return res.status(403).json({ error: 'Invalid BitLabs secret' });
   }
 
   // Validate required BitLabs params
-  if (!userIdRaw || !surveyId || !transactionId || isNaN(points) || points <= 0) {
+  if (!userIdRaw || !surveyId || !transactionId || points === null || isNaN(points) || points <= 0) {
     return res.status(400).json({ error: 'Missing or invalid BitLabs parameters', payload });
   }
 
