@@ -2,7 +2,6 @@ import React from "react";
 
 const BannerAadsLeft = () => (
   <>
-    {/* Desktop/tablet only: sticky left banner */}
     <div
       className="
         hidden
@@ -24,42 +23,42 @@ const BannerAadsLeft = () => (
         py-2
       "
       style={{
-        minWidth: "180px",
-        maxWidth: "240px",
-        width: "200px",
-        borderTopRightRadius: "12px",
-        borderBottomRightRadius: "12px",
+        minWidth: "120px",
+        maxWidth: "180px",
+        width: "160px",
+        height: "600px", // pailgas banneris
+        borderTopRightRadius: "18px",
+        borderBottomRightRadius: "18px",
       }}
     >
       <div
         id="frame"
-        className="w-full flex justify-center"
-        style={{ width: "100%" }}
+        className="w-full h-full flex justify-center items-center"
+        style={{ width: "100%", height: "100%" }}
       >
         <iframe
           data-aa="2412103"
-          src="//acceptable.a-ads.com/2412103/?size=Adaptive&background_color=000000&text_color=ffffff&link_color=ffffff"
+          src="//acceptable.a-ads.com/2412103/?size=160x600&background_color=000000&text_color=ffffff&link_color=ffffff"
           style={{
             border: 0,
             padding: 0,
             width: "100%",
-            height: "90px",
-            minHeight: "60px",
-            maxHeight: "140px",
+            height: "100%",
+            minHeight: "400px",
+            maxHeight: "900px",
             overflow: "hidden",
             display: "block",
             margin: "auto",
-            borderRadius: "10px",
+            borderRadius: "14px",
             background: "#000",
           }}
-          title="Advertisement"
+          title="Advertisement Left"
           scrolling="no"
           allowtransparency="true"
           frameBorder="0"
         ></iframe>
       </div>
     </div>
-    {/* Mobile: do not show banner */}
     <style jsx>{`
       @media (max-width: 640px) {
         .md\\:flex {
