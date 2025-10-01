@@ -8,12 +8,16 @@ export default async function handler(req, res) {
   // Accept both GET and POST for CPX compatibility
   const method = req.method;
   let payload = {};
-  if (method === 'POST') {
-    payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-  } else if (method === 'GET') {
-    payload = req.query;
-  } else {
-    return res.status(405).send('Method Not Allowed');
+  try {
+    if (method === 'POST') {
+      payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } else if (method === 'GET') {
+      payload = req.query;
+    } else {
+      return res.status(405).send('Method Not Allowed');
+    }
+  } catch (e) {
+    return res.status(400).json({ error: 'Invalid payload format' });
   }
 
   // Extract required CPX fields
@@ -23,16 +27,63 @@ export default async function handler(req, res) {
   const amountLocal = parseFloat(payload.amount_local || 0);
   const amountUsd = parseFloat(payload.amount_usd || 0);
   const status = payload.status; // 1 = credited, 2 = reversed
-  const ip = payload.ip_click || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
+  const ip =
+    payload.ip_click ||
+    req.headers['x-forwarded-for'] ||
+    req.socket?.remoteAddress ||
+    '';
   const country = payload.country || 'ALL';
 
   // Validate required CPX params
-  if (!userIdRaw || !transactionId || !offerIdPartner || !amountLocal || !amountUsd || !status) {
-    return res.status(400).json({ error: 'Missing required CPX parameters' });
+  if (
+    !userIdRaw ||
+    !transactionId ||
+    !offerIdPartner ||
+    isNaN(amountLocal) ||
+    isNaN(amountUsd) ||
+    !status
+  ) {
+    return res
+      .status(400)
+      .json({ error: 'Missing required CPX parameters', payload });
+  }
+
+  // Insert into postback_logs for audit trail
+  try {
+    await supabase.from('postback_logs').insert([
+      {
+        user_id: userIdRaw,
+        transaction_id: transactionId,
+        offer_id_partner: offerIdPartner,
+        raw_payload: payload,
+        ip,
+        country,
+        received_at: new Date().toISOString(),
+      },
+    ]);
+  } catch (e) {
+    // Don't block main flow if audit log fails, but log error
+    console.error('Failed to log postback:', e);
   }
 
   try {
-    // Check for idempotency (transaction can be reversed later)
+    // --- Webhook rate limiting: max 5 per user per minute ---
+    const { count: rateCount, error: rateError } = await supabase
+      .from('completions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userIdRaw)
+      .gte('created_at', new Date(Date.now() - 60 * 1000).toISOString());
+
+    if (rateError) {
+      console.error('Rate limit check failed:', rateError);
+    }
+    if (rateCount !== null && rateCount > 5) {
+      return res
+        .status(429)
+        .json({ error: 'Rate limit exceeded: max 5 per minute per user.' });
+    }
+
+    // --- Idempotency check ---
     const { data: existing, error: checkError } = await supabase
       .from('completions')
       .select('*')
@@ -46,21 +97,28 @@ export default async function handler(req, res) {
         .update({ status: 'reversed' })
         .eq('id', existing.id);
 
-      // Deduct points via RPC (you may want a dedicated function for reversals)
-      const { error: rpcError } = await supabase
-        .rpc('decrement_user_points', { uid: existing.user_id, pts: existing.credited_points, ref_completion: existing.id });
+      // Deduct points via RPC (for reversals)
+      const { error: rpcError } = await supabase.rpc('decrement_user_points', {
+        uid: existing.user_id,
+        pts: existing.credited_points,
+        ref_completion: existing.id,
+      });
 
       if (rpcError) throw rpcError;
 
-      return res.status(200).json({ status: 'reversed', completion_id: existing.id });
+      return res
+        .status(200)
+        .json({ status: 'reversed', completion_id: existing.id });
     }
 
     // If already credited and not reversal, just acknowledge
     if (existing) {
-      return res.status(200).json({ status: 'already_processed', completion_id: existing.id });
+      return res
+        .status(200)
+        .json({ status: 'already_processed', completion_id: existing.id });
     }
 
-    // Fetch user
+    // --- Fetch user ---
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('*')
@@ -70,7 +128,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Fetch partner (cpx)
+    // --- Fetch partner (cpx) ---
     const { data: partner, error: partnerError } = await supabase
       .from('partners')
       .select('*')
@@ -80,7 +138,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Partner not found' });
     }
 
-    // Fetch offer (by partner offer id)
+    // --- Fetch offer (by partner offer id) ---
     const { data: offer, error: offerError } = await supabase
       .from('offers')
       .select('*')
@@ -91,10 +149,11 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Offer not found' });
     }
 
-    // Credit points using amount_local (or use amount_usd if needed)
-    const points = amountLocal;
+    // --- Points calculation and rounding ---
+    // Policy: always floor, never partial points (100 points = $1)
+    const points = Math.floor(amountLocal);
 
-    // Insert credited completion
+    // --- Insert credited completion ---
     const { data: completion, error: completionError } = await supabase
       .from('completions')
       .insert({
@@ -106,29 +165,42 @@ export default async function handler(req, res) {
         status: String(status) === '2' ? 'reversed' : 'credited',
         ip: ip,
         device_info: {},
-        country: country
+        country: country,
       })
       .select()
       .single();
 
     if (completionError) throw completionError;
 
-    // Credit or deduct points atomically based on status
+    // --- Credit or deduct points atomically based on status ---
     if (String(status) === '2') {
       // Reversed: Deduct
-      const { error: rpcError } = await supabase
-        .rpc('decrement_user_points', { uid: user.id, pts: points, ref_completion: completion.id });
+      const { error: rpcError } = await supabase.rpc('decrement_user_points', {
+        uid: user.id,
+        pts: points,
+        ref_completion: completion.id,
+      });
       if (rpcError) throw rpcError;
-      return res.status(200).json({ status: 'reversed', completion_id: completion.id });
+      return res
+        .status(200)
+        .json({ status: 'reversed', completion_id: completion.id });
     } else {
       // Credited: Add
-      const { data: newBalance, error: rpcError } = await supabase
-        .rpc('increment_user_points', { uid: user.id, pts: points, ref_completion: completion.id });
+      const { data: newBalance, error: rpcError } = await supabase.rpc(
+        'increment_user_points',
+        { uid: user.id, pts: points, ref_completion: completion.id }
+      );
       if (rpcError) throw rpcError;
-      return res.status(200).json({ status: 'credited', new_balance: newBalance[0].new_balance, completion_id: completion.id });
+      return res.status(200).json({
+        status: 'credited',
+        new_balance: newBalance?.[0]?.new_balance,
+        completion_id: completion.id,
+      });
     }
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Internal server error', details: err.message });
+    return res
+      .status(500)
+      .json({ error: 'Internal server error', details: err.message });
   }
 }
