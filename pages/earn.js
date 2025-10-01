@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 import Layout from '../components/Layout'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const categories = [
   {
@@ -42,9 +42,18 @@ const categories = [
   }
 ]
 
-export default function Earn() {
+export default function Earn({ setGlobalLoading }) {
   const router = useRouter()
   const [hovered, setHovered] = useState(null)
+
+  // UX: Show global spinner for smooth page transitions
+  useEffect(() => {
+    if (typeof setGlobalLoading === "function") setGlobalLoading(true)
+    const timer = setTimeout(() => {
+      if (typeof setGlobalLoading === "function") setGlobalLoading(false)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [setGlobalLoading])
 
   return (
     <Layout>
@@ -67,7 +76,10 @@ export default function Earn() {
                   hover:scale-[1.04] hover:shadow-accent focus:outline-none focus:ring-4 focus:ring-accent
                   ${hovered === cat.key ? 'ring-4 ring-accent/60' : ''}
                 `}
-                onClick={() => router.push(cat.route)}
+                onClick={() => {
+                  if (typeof setGlobalLoading === "function") setGlobalLoading(true)
+                  router.push(cat.route)
+                }}
                 onMouseEnter={() => setHovered(cat.key)}
                 onMouseLeave={() => setHovered(null)}
                 aria-label={cat.name}
