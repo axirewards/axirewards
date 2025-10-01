@@ -6,7 +6,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const PROVIDERS = {
   ayet: {
-    secret: process.env.POSTBACK_SECRET_AYET,
+    // Ayet does NOT require secret for postback validation
+    secret: null,
     getUserId: payload => payload.externalIdentifier, // Ayet: user.id
     getOfferId: payload => payload.offerIdPartner || payload.offer_id_partner,
     getPoints: payload => parseFloat(payload.points || payload.credited_points || 0),
@@ -59,11 +60,13 @@ export default async function handler(req, res) {
 
   const provider = PROVIDERS[providerCode];
 
-  // Secret validation
-  const providerSecret = provider.secret;
-  const receivedSecret = payload.secret;
-  if (!providerSecret || !receivedSecret || receivedSecret !== providerSecret) {
-    return res.status(403).json({ error: 'Invalid secret' });
+  // Secret validation: only if provider has secret (Ayet does NOT)
+  if (provider.secret) {
+    const providerSecret = provider.secret;
+    const receivedSecret = payload.secret;
+    if (!receivedSecret || receivedSecret !== providerSecret) {
+      return res.status(403).json({ error: 'Invalid secret' });
+    }
   }
 
   // --- Unified multiprovider extraction ---
