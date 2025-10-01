@@ -12,7 +12,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
 
   const links = [
     { href: '/dashboard', name: 'Dashboard' },
-    { href: '/offers', name: 'Offers' },
+    { href: '/earn', name: 'Earn' },
     { href: '/payout', name: 'Payout' },
     { href: '/profile', name: 'Profile' },
   ]
