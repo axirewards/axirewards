@@ -1,125 +1,123 @@
-import { createClient } from '@supabase/supabase-js';
+/**
+ * BitLabs Postback Endpoint
+ * Pilnai pritaikyta tavo DB struktūrai, BitLabs offerwall ir survey integracijai.
+ * Endpoint: GET /api/postback-bitlabs
+ * Payload loguojamas, taškai pridedami, statusas apdorojamas, saugumas užtikrinamas.
+ */
 
-// Supabase config
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const express = require('express');
+const router = express.Router();
+const crypto = require('crypto');
 
-// BitLabs secret for validation (never log this!)
-const BITLABS_SECRET = process.env.POSTBACK_SECRET_BITLABS;
+// --- Import ORM modelius, priderintus prie tavo DB ---
+const { Users, Offers, Partners, Completions, Ledger, PostbackLogs } = require('../models'); // pakeisk kelią jei reikia
 
-export default async function handler(req, res) {
-  // Accept BOTH GET and POST for BitLabs testing
-  let payload = {};
-  if (req.method === 'POST') {
-    try {
-      payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    } catch (e) {
-      return res.status(400).json({ error: 'Invalid payload format' });
-    }
-  } else if (req.method === 'GET') {
-    payload = req.query;
-  } else {
-    return res.status(405).send('Method Not Allowed');
-  }
+// --- CONFIG: Saugumo secret BitLabs postbackams ---
+const BITLABS_SECRET = process.env.BITLABS_SECRET || 'TAVO_BITLABS_SECRET';
 
-  // BitLabs required parameters
-  const userIdRaw = payload.uid;
-  const surveyId = payload.survey_id;
-  const transactionId = payload.transaction_id;
-  const secret = payload.secret;
-  // Use reward (float or int), fallback to 0 if missing
-  const rewardRaw = payload.reward;
-  const points = rewardRaw !== undefined && rewardRaw !== null ? parseFloat(rewardRaw) : null;
-
-  const country = payload.geo || payload.country || 'ALL';
-  const ip = payload.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
-  const userAgent = payload.user_agent || req.headers['user-agent'] || '';
-  const deviceInfo = payload.device_info || {};
-
-  // Secret validation
-  if (!BITLABS_SECRET || !secret || secret !== BITLABS_SECRET) {
-    return res.status(403).json({ error: 'Invalid BitLabs secret' });
-  }
-
-  // Validate required BitLabs params
-  if (!userIdRaw || !surveyId || !transactionId || points === null || isNaN(points) || points <= 0) {
-    return res.status(400).json({ error: 'Missing or invalid BitLabs parameters', payload });
-  }
-
+// --- Main handler ---
+router.get('/postback-bitlabs', async (req, res) => {
   try {
-    // Idempotency: don't double process
-    const { data: existing, error: checkError } = await supabase
-      .from('completions')
-      .select('id')
-      .eq('partner_callback_id', transactionId)
-      .single();
+    // --- 1. Extract all BitLabs params ---
+    const {
+      user_id,                  // tavosios users.id
+      transaction_id,           // BitLabs unikalus ID
+      reward,                   // taškai už survey/offer
+      offer_id,                 // BitLabs offer ID (offers.offer_id_partner)
+      status,                   // completed, rejected, chargeback, ir t.t.
+      currency,                 // points, USD, EUR
+      survey_id,                // survey ID jei yra
+      offer_type,               // survey arba offer
+      country,                  // šalies kodas
+      ip,                       // vartotojo IP
+      signature,                // BitLabs parašas
+      user_agent,               // papildoma: vartotojo agentas
+      device_info               // papildoma: įrenginio info
+    } = req.query;
 
-    if (checkError) throw checkError;
-    if (existing) {
-      return res.status(200).json({ status: 'already_processed' });
+    // --- 2. Signature validation ---
+    if (BITLABS_SECRET) {
+      // BitLabs parašo algoritmas: SHA256(user_id+transaction_id+reward+secret)
+      const sigData = `${user_id}${transaction_id}${reward}${BITLABS_SECRET}`;
+      const expectedSignature = crypto.createHash('sha256').update(sigData).digest('hex');
+      if (signature !== expectedSignature) {
+        await PostbackLogs.create({
+          user_id: user_id || null,
+          transaction_id,
+          offer_id_partner: offer_id,
+          raw_payload: req.query,
+          ip,
+          country,
+          received_at: new Date()
+        });
+        return res.status(403).send('Invalid signature');
+      }
     }
 
-    // Fetch user (by id, not email!)
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userIdRaw)
-      .single();
-    if (userError || !user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    // --- 3. Find user ---
+    const user = await Users.findOne({ where: { id: user_id } });
+    if (!user) return res.status(404).send('User not found');
 
-    // Fetch BitLabs partner
-    const { data: partner, error: partnerError } = await supabase
-      .from('partners')
-      .select('*')
-      .eq('code', 'bitlabs')
-      .single();
-    if (partnerError || !partner) {
-      return res.status(404).json({ error: 'Partner not found' });
-    }
+    // --- 4. Find offer ---
+    const offer = await Offers.findOne({ where: { offer_id_partner: offer_id } });
 
-    // Fetch offer (by survey_id as offer_id_partner)
-    const { data: offer, error: offerError } = await supabase
-      .from('offers')
-      .select('*')
-      .eq('offer_id_partner', surveyId)
-      .eq('partner_id', partner.id)
-      .single();
-    if (offerError || !offer) {
-      return res.status(404).json({ error: 'Offer not found' });
-    }
+    // --- 5. Create completion record ---
+    const completion = await Completions.create({
+      user_id: user.id,
+      offer_id: offer ? offer.id : null,
+      partner_id: offer ? offer.partner_id : null,
+      partner_callback_id: transaction_id,
+      credited_points: reward,
+      status,
+      ip,
+      user_agent: user_agent || null,
+      device_info: device_info ? JSON.stringify(device_info) : null,
+      country,
+      completion_steps: survey_id || offer_type
+        ? JSON.stringify({ survey_id, offer_type })
+        : null
+    });
 
-    // Insert into completions
-    const { data: completion, error: completionError } = await supabase
-      .from('completions')
-      .insert({
+    // --- 6. Update user points if status == completed ---
+    if (status === 'completed') {
+      user.points_balance = Number(user.points_balance) + Number(reward);
+      await user.save();
+
+      // --- Ledger entry ---
+      await Ledger.create({
         user_id: user.id,
-        offer_id: offer.id,
-        partner_id: partner.id,
-        partner_callback_id: transactionId,
-        credited_points: points,
-        status: 'credited',
-        ip,
-        user_agent: userAgent,
-        device_info: deviceInfo,
-        country
-      })
-      .select()
-      .single();
+        kind: 'credit',
+        amount: reward,
+        balance_after: user.points_balance,
+        source: 'bitlabs',
+        reference_id: completion.id,
+        created_at: new Date()
+      });
+    }
 
-    if (completionError) throw completionError;
+    // --- 7. Log postback ---
+    await PostbackLogs.create({
+      user_id: user.id,
+      transaction_id,
+      offer_id_partner: offer_id,
+      raw_payload: req.query,
+      ip,
+      country,
+      received_at: new Date()
+    });
 
-    // Increment user points atomically via RPC
-    const { data: newBalance, error: rpcError } = await supabase
-      .rpc('increment_user_points', { uid: user.id, pts: points, ref_completion: completion.id });
-
-    if (rpcError) throw rpcError;
-
-    return res.status(200).json({ status: 'ok', new_balance: newBalance?.[0]?.new_balance, completion_id: completion.id });
+    // --- 8. Respond 200 OK, ready for BitLabs postback tester ---
+    return res.status(200).send('OK');
   } catch (err) {
-    console.error('BitLabs postback error:', err);
-    return res.status(500).json({ error: 'Internal server error', details: err.message });
+    console.error('[BitLabs Postback Error]', err);
+    return res.status(500).send('Error');
   }
-}
+});
+
+module.exports = router;
+
+/**
+ * Naudojimas Express app:
+ * const postbackBitlabs = require('./api/postback-bitlabs');
+ * app.use('/api', postbackBitlabs);
+ */
