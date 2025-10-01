@@ -4,11 +4,6 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-/**
- * CPX Research-specific postback endpoint
- * Accepts GET or POST, parses CPX parameters, handles reversals & frauds per CPX docs:
- * https://cpx-research.com/docs/postback-integration
- */
 export default async function handler(req, res) {
   // Accept both GET and POST for CPX compatibility
   const method = req.method;
@@ -21,20 +16,19 @@ export default async function handler(req, res) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  // Required fields from CPX:
-  // status, trans_id, user_id, amount_local, amount_usd, offer_id
+  // Extract required CPX fields
   const userIdRaw = payload.user_id;
   const transactionId = payload.trans_id;
   const offerIdPartner = payload.offer_id;
   const amountLocal = parseFloat(payload.amount_local || 0);
   const amountUsd = parseFloat(payload.amount_usd || 0);
-  const status = payload.status; // 1 = pending/credited, 2 = reversed
+  const status = payload.status; // 1 = credited, 2 = reversed
   const ip = payload.ip_click || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
-  const secureHash = payload.hash || '';
   const country = payload.country || 'ALL';
 
+  // Validate required CPX params
   if (!userIdRaw || !transactionId || !offerIdPartner || !amountLocal || !amountUsd || !status) {
-    return res.status(400).json({ error: 'Missing required parameters' });
+    return res.status(400).json({ error: 'Missing required CPX parameters' });
   }
 
   try {
@@ -47,7 +41,6 @@ export default async function handler(req, res) {
 
     // If status=2 (reversed), update completion and deduct points
     if (existing && String(status) === '2') {
-      // Mark as reversed and deduct points
       await supabase
         .from('completions')
         .update({ status: 'reversed' })
@@ -73,7 +66,6 @@ export default async function handler(req, res) {
       .select('*')
       .eq('id', userIdRaw)
       .single();
-
     if (userError || !user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -84,7 +76,6 @@ export default async function handler(req, res) {
       .select('*')
       .eq('code', 'cpx')
       .single();
-
     if (partnerError || !partner) {
       return res.status(404).json({ error: 'Partner not found' });
     }
@@ -96,13 +87,11 @@ export default async function handler(req, res) {
       .eq('offer_id_partner', offerIdPartner)
       .eq('partner_id', partner.id)
       .single();
-
     if (offerError || !offer) {
       return res.status(404).json({ error: 'Offer not found' });
     }
 
-    // Calculate points to credit (use amount_local or amount_usd, per your business rules)
-    // Here we use amount_local, adjust if needed
+    // Credit points using amount_local (or use amount_usd if needed)
     const points = amountLocal;
 
     // Insert credited completion
