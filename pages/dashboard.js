@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
-import ProviderIframe from "../components/ProviderIFrame";
+import AyetOfferwall from "../components/AyetOfferwall";
 import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -9,11 +9,9 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 export default function Dashboard({ setGlobalLoading }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [offers, setOffers] = useState([]);
   const [ledger, setLedger] = useState([]);
   const [error, setError] = useState("");
   const [streak, setStreak] = useState(0);
-  const [completions, setCompletions] = useState({}); // {offerId: completedCount}
 
   useEffect(() => {
     if (typeof setGlobalLoading === "function") setGlobalLoading(true);
@@ -50,21 +48,6 @@ export default function Dashboard({ setGlobalLoading }) {
         }
         setUser(userData);
 
-        // Get active offers (now fetch extended fields for UI/UX)
-        const { data: offerData, error: offerError } = await supabase
-          .from("offers")
-          .select(`
-            *,
-            steps,
-            details_url,
-            points_table,
-            image_url
-          `)
-          .eq("status", "active")
-          .order("created_at", { ascending: false });
-        if (offerError) console.error(offerError);
-        else setOffers(offerData || []);
-
         // Ledger history
         const { data: ledgerData, error: ledgerError } = await supabase
           .from("ledger")
@@ -89,21 +72,6 @@ export default function Dashboard({ setGlobalLoading }) {
           .update({ last_login: new Date(), streak: currentStreak })
           .eq("id", userData.id);
 
-        // Fetch completions
-        const { data: completionData, error: completionError } = await supabase
-          .from("completions")
-          .select("offer_id,status,points_earned,completion_steps")
-          .eq("user_id", userData.id);
-
-        if (!completionError && completionData) {
-          const compMap = {};
-          completionData.forEach((c) => {
-            if (c.status === "completed") {
-              compMap[c.offer_id] = (compMap[c.offer_id] || 0) + (c.points_earned || 0);
-            }
-          });
-          setCompletions(compMap);
-        }
       } catch (err) {
         console.error("Dashboard error:", err);
         setError("Something went wrong.");
@@ -174,70 +142,12 @@ export default function Dashboard({ setGlobalLoading }) {
           </div>
         )}
 
-        {/* Offers Section */}
-        <div className="w-full">
-          <h2 className={sectionTitleClass}>Available Offers</h2>
-          {offers.length === 0 ? (
-            <p className="text-gray-400 text-center">No active offers right now. Check back later!</p>
-          ) : (
-            <div
-              className="overflow-x-auto scrollbar-thin scrollbar-thumb-accent scrollbar-track-card"
-              tabIndex={0}
-              style={{ WebkitOverflowScrolling: "touch" }}
-            >
-              <div className="flex gap-6 pb-2 min-w-[350px] snap-x snap-mandatory">
-                {offers.map((offer, idx) => {
-                  const earnedPoints = completions[offer.id] || 0;
-                  const completionPercent = Math.min((earnedPoints / (offer.points_reward || offer.payout_points || 1)) * 100, 100);
-                  return (
-                    <div
-                      key={offer.id}
-                      className={
-                        "snap-start min-w-[320px] max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl " +
-                        "overflow-hidden rounded-2xl border border-gray-900 bg-card shadow-xl hover:shadow-2xl transition transform hover:-translate-y-1 animate-fade-in flex flex-col"
-                      }
-                    >
-                      <div className="p-4 border-b border-gray-800">
-                        {/* Optional offer cover image */}
-                        {offer.image_url && (
-                          <img
-                            src={offer.image_url}
-                            alt={offer.title}
-                            className="w-full max-h-40 object-cover rounded mb-3 shadow"
-                          />
-                        )}
-                        <h3 className="text-lg font-semibold text-accent mb-1">{offer.title}</h3>
-                        <p className="text-sm text-white/80 mb-2">{offer.description}</p>
-                        <div className="w-full bg-gray-700 rounded-full h-2 relative group">
-                          <div
-                            className="bg-accent h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${completionPercent}%` }}
-                          />
-                          <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 text-xs text-accent opacity-0 group-hover:opacity-100 transition">
-                            {earnedPoints} / {offer.points_reward || offer.payout_points || 1} points
-                          </span>
-                        </div>
-                        <p className="text-xs text-accent mt-1">{completionPercent.toFixed(0)}% completed</p>
-                      </div>
-                      <ProviderIframe
-                        url={offer.iframe_url || `https://example-offerwall.com/${offer.id}`}
-                        height="400px"
-                        offer={{
-                          title: offer.title,
-                          description: offer.description,
-                          steps: Array.isArray(offer.steps) ? offer.steps : (offer.steps ? JSON.parse(offer.steps) : []),
-                          payout_points: offer.payout_points || offer.points_reward,
-                          detailsUrl: offer.details_url,
-                          pointsTable: Array.isArray(offer.points_table) ? offer.points_table : (offer.points_table ? JSON.parse(offer.points_table) : undefined),
-                          imageUrl: offer.image_url
-                        }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+        {/* Offerwalls Section */}
+        <div className="w-full mt-12">
+          <h2 className={sectionTitleClass}>Premium Offerwalls</h2>
+          {/* Ayet Studios Offerwall */}
+          <AyetOfferwall adSlot="23274" height="700px" />
+          {/* Here in future you can add more provider offerwalls! */}
         </div>
       </div>
       {/* Custom Scrollbar & Animations */}
@@ -248,10 +158,6 @@ export default function Dashboard({ setGlobalLoading }) {
         .scrollbar-track-card::-webkit-scrollbar { background: #0B0B0B; }
         .scrollbar-thumb-accent::-webkit-scrollbar-thumb { background: #60A5FA; }
         .scrollbar-thin::-webkit-scrollbar { height: 8px; }
-        @media (max-width: 640px) {
-          .snap-x { scroll-snap-type: x mandatory; }
-          .snap-start { scroll-snap-align: start; }
-        }
       `}</style>
     </Layout>
   );
