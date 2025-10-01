@@ -1,17 +1,47 @@
+import { useEffect, useState } from 'react'
 import Navbar from './Navbar'
 import Footer from './Footer'
 import BannerAads from './BannerAads'
 import BannerAadsLeft from './BannerAadsLeft'
 import BannerAadsRight from './BannerAadsRight'
 import { Transition } from '@headlessui/react'
+import { supabase } from '../lib/supabaseClient'
 
 export default function Layout({ children }) {
+  // DB settings for banners
+  const [showSideBanners, setShowSideBanners] = useState(true)
+  const [showBottomBanner, setShowBottomBanner] = useState(true)
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    async function fetchSettings() {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('show_side_banners, show_bottom_banner')
+        .eq('id', 1)
+        .single()
+      if (!error && data && isMounted) {
+        setShowSideBanners(!!data.show_side_banners)
+        setShowBottomBanner(!!data.show_bottom_banner)
+        setSettingsLoaded(true)
+      } else if (isMounted) {
+        // fallback: show banners if error
+        setShowSideBanners(true)
+        setShowBottomBanner(true)
+        setSettingsLoaded(true)
+      }
+    }
+    fetchSettings()
+    return () => { isMounted = false }
+  }, [])
+
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans relative">
       {/* Left Banner */}
-      <BannerAadsLeft />
+      {settingsLoaded && showSideBanners && <BannerAadsLeft />}
       {/* Right Banner */}
-      <BannerAadsRight />
+      {settingsLoaded && showSideBanners && <BannerAadsRight />}
       {/* Main Content */}
       <Navbar />
       <Transition
@@ -48,7 +78,7 @@ export default function Layout({ children }) {
         </main>
       </Transition>
       {/* Bottom Banner */}
-      <BannerAads />
+      {settingsLoaded && showBottomBanner && <BannerAads />}
       <Footer />
       <style jsx global>{`
         body {
