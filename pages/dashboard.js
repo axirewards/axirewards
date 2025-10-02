@@ -193,12 +193,14 @@ export default function Dashboard({ setGlobalLoading }) {
           </div>
           {/* User Stats / VIP */}
           {user && (
-            <UserStatsVip
-              tier={user?.tier || 1}
-              points={user?.points_balance || 0}
-              streak={streak}
-              completedOffers={user?.completed_offers || 0}
-            />
+            <div style={{ marginTop: '1.3vw', width: '100%' }}>
+              <UserStatsVip
+                tier={user?.tier || 1}
+                points={user?.points_balance || 0}
+                streak={streak}
+                completedOffers={user?.completed_offers || 0}
+              />
+            </div>
           )}
           {/* Offerwalls Section */}
           <div className="w-full flex flex-col items-center justify-center" style={{maxWidth:'97vw', marginTop:'3.1vw'}}>
@@ -298,12 +300,14 @@ export default function Dashboard({ setGlobalLoading }) {
           )}
           {/* User Stats / VIP */}
           {user && (
-            <UserStatsVip
-              tier={user?.tier || 1}
-              points={user?.points_balance || 0}
-              streak={streak}
-              completedOffers={user?.completed_offers || 0}
-            />
+            <div style={{ marginTop: '2.6vw', width: '100%' }}>
+              <UserStatsVip
+                tier={user?.tier || 1}
+                points={user?.points_balance || 0}
+                streak={streak}
+                completedOffers={user?.completed_offers || 0}
+              />
+            </div>
           )}
           {/* Offerwall Carousel - beautiful spacing below stats */}
           <div className="w-full flex flex-col items-center mt-3 mb-3" style={{maxWidth:'97vw'}}>
