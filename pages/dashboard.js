@@ -9,6 +9,7 @@ import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import UserStatsVip from "../components/UserStatsVip";
 import OfferwallCarousel from "../components/OfferwallCarousel";
+import AchievementWall from "../components/AchievementWall";
 import FloatingActionButton from "../components/FloatingActionButton";
 
 const OFFERWALLS = [
@@ -178,31 +179,11 @@ export default function Dashboard({ setGlobalLoading }) {
             <div className="w-full flex flex-col items-center justify-center">
               <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
             </div>
-            {/* Modal offerwall open */}
-            {activeOfferwall && (
-              <div className="fixed inset-0 z-[1001] bg-black/80 flex items-center justify-center backdrop-blur">
-                <div className="glass-card rounded-3xl shadow-2xl border-4 border-accent max-w-3xl w-full p-8 flex flex-col items-center relative animate-fade-in">
-                  <button
-                    className="absolute top-4 right-6 text-accent text-4xl font-extrabold hover:text-blue-700 transition"
-                    onClick={() => setActiveOfferwall(null)}
-                    aria-label="Close"
-                  >
-                    &times;
-                  </button>
-                  {activeOfferwall === "ayet" && (
-                    <AyetOfferwall adSlot={getOfferwallParams("ayet")?.adSlot} height="700px" />
-                  )}
-                  {activeOfferwall === "bitlabs" && (
-                    <BitLabsOfferwall apiKey={getOfferwallParams("bitlabs")?.apiKey} height="700px" />
-                  )}
-                  {activeOfferwall === "cpx" && (
-                    <CpxOfferwall appId={getOfferwallParams("cpx")?.appId} height="700px" />
-                  )}
-                  {activeOfferwall === "theorem" && (
-                    <TheoremOfferwall appId={getOfferwallParams("theorem")?.appId} height="700px" />
-                  )}
-                </div>
-              </div>
+          </div>
+          {/* Achievement Wall - perfect distance below offerwall carousel */}
+          <div className="w-full flex flex-col items-center justify-center" style={{maxWidth:'97vw', marginTop:'30px', marginBottom:'24px'}}>
+            {user && (
+              <AchievementWall completedOffers={user?.completed_offers || 0} />
             )}
           </div>
           {showFAB && <FloatingActionButton />}
@@ -261,6 +242,12 @@ export default function Dashboard({ setGlobalLoading }) {
           <div className="w-full flex flex-col items-center mt-5 mb-4" style={{maxWidth:'97vw'}}>
             <h2 className="mb-5 text-xl font-bold text-white text-center tracking-tight">Premium Offerwalls</h2>
             <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
+          </div>
+          {/* Achievement Wall - perfect distance below offerwall carousel */}
+          <div className="w-full flex flex-col items-center justify-center" style={{maxWidth:'97vw', marginTop:'22px', marginBottom:'14px'}}>
+            {user && (
+              <AchievementWall completedOffers={user?.completed_offers || 0} />
+            )}
           </div>
         </div>
         {showFAB && <FloatingActionButton />}
