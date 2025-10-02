@@ -4,52 +4,10 @@ import BitLabsOfferwall from "./BitLabsOfferwall";
 import CpxOfferwall from "./CpxOfferwall";
 import TheoremOfferwall from "./TheoremOfferwall";
 
-/**
- * OfferwallCarousel – visi offerwallai, hardcoded, modalas ir atidarymas viduje,
- * kiekvienas atsidaro savo modalą, užsidaro, swipe/arrow veikia.
- */
-const OFFERWALLS = [
-  {
-    key: "ayet",
-    name: "Ayet Studios",
-    logo: "/icons/ayetlogo.png",
-    color: "#60A5FA",
-    adSlot: "23274",
-    description: "Complete surveys, apps and tasks for premium AXI rewards.",
-  },
-  {
-    key: "bitlabs",
-    name: "BitLabs",
-    logo: "/icons/bitlabslogo.png",
-    color: "#62D6FB",
-    apiKey: "2dfb7d19-2974-4085-b686-181bcb681b70",
-    description: "Complete surveys and earn AXI points with BitLabs.",
-  },
-  {
-    key: "cpx",
-    name: "CPX Research",
-    logo: "/icons/cpxlogo.png",
-    color: "#5AF599",
-    appId: "29422",
-    description: "Complete surveys and earn AXI points with CPX Research.",
-  },
-  {
-    key: "theorem",
-    name: "TheoremReach",
-    logo: "/icons/theoremreachlogo.png",
-    color: "#7b6cfb",
-    appId: "24198",
-    description: "Complete surveys and earn AXI points with TheoremReach.",
-  },
-];
-
-export default function OfferwallCarousel() {
-  // Carousel
+export default function OfferwallCarousel({ offerwalls = [] }) {
   const [current, setCurrent] = useState(0);
   const carouselRef = useRef();
   const [isMobile, setIsMobile] = useState(false);
-
-  // Modal
   const [activeOfferwall, setActiveOfferwall] = useState(null);
 
   useEffect(() => {
@@ -57,7 +15,6 @@ export default function OfferwallCarousel() {
     checkMobile();
     window.addEventListener("resize", checkMobile);
 
-    // Swipe gestures (mobile)
     let startX = null;
     const handleTouchStart = e => { startX = e.touches[0].clientX; };
     const handleTouchMove = e => {
@@ -78,10 +35,10 @@ export default function OfferwallCarousel() {
       carousel?.removeEventListener("touchstart", handleTouchStart);
       carousel?.removeEventListener("touchmove", handleTouchMove);
     };
-  }, []);
+  }, [offerwalls.length]);
 
-  const nextSlide = () => setCurrent(c => (c + 1) % OFFERWALLS.length);
-  const prevSlide = () => setCurrent(c => (c - 1 + OFFERWALLS.length) % OFFERWALLS.length);
+  const nextSlide = () => setCurrent(c => (c + 1) % offerwalls.length);
+  const prevSlide = () => setCurrent(c => (c - 1 + offerwalls.length) % offerwalls.length);
 
   // Sizes
   const cardMinWidth = isMobile ? "94vw" : "360px";
@@ -91,12 +48,13 @@ export default function OfferwallCarousel() {
   const descFontSize = isMobile ? "1.06rem" : "1.24rem";
   const nameFontSize = isMobile ? "1.31rem" : "1.48rem";
   const buttonFontSize = isMobile ? "1.09rem" : "1.15rem";
-  const shadowColor = OFFERWALLS[current]?.color || "#60A5FA";
+  const shadowColor = offerwalls[current]?.color || "#60A5FA";
 
-  // Offerwall modal logic
+  // Modal logic
   function renderOfferwallModal() {
     if (!activeOfferwall) return null;
-    const wall = OFFERWALLS.find(w => w.key === activeOfferwall);
+    const wall = offerwalls.find(w => w.key === activeOfferwall);
+    if (!wall) return null;
     return (
       <div className="fixed inset-0 z-[1001] bg-black/80 flex items-center justify-center backdrop-blur">
         <div className="glass-card rounded-3xl shadow-2xl border-4 border-accent max-w-3xl w-full p-8 flex flex-col items-center relative animate-fade-in">
@@ -137,8 +95,8 @@ export default function OfferwallCarousel() {
           onClick={prevSlide}
           aria-label="Prev"
           style={{
-            opacity: OFFERWALLS.length > 1 ? 1 : 0,
-            pointerEvents: OFFERWALLS.length > 1 ? "auto" : "none",
+            opacity: offerwalls.length > 1 ? 1 : 0,
+            pointerEvents: offerwalls.length > 1 ? "auto" : "none",
             width: isMobile ? 38 : 48,
             height: isMobile ? 38 : 48,
           }}
@@ -147,7 +105,7 @@ export default function OfferwallCarousel() {
         </button>
 
         {/* Carousel main offerwall card */}
-        {OFFERWALLS.length > 0 && (
+        {offerwalls.length > 0 && (
           <div className="flex flex-col items-center justify-center w-full mx-auto">
             <div
               className="relative group glass-card px-7 py-8 rounded-3xl shadow-2xl border-4 flex flex-col items-center justify-center cursor-pointer transition-all duration-400 hover:scale-[1.035] hover:shadow-accent"
@@ -160,7 +118,7 @@ export default function OfferwallCarousel() {
                 background: `linear-gradient(120deg, #151a2b 65%, ${shadowColor}33 100%)`,
                 overflow: "hidden",
               }}
-              onClick={() => setActiveOfferwall(OFFERWALLS[current].key)}
+              onClick={() => setActiveOfferwall(offerwalls[current].key)}
             >
               {/* Animated ring with glow */}
               <div
@@ -184,8 +142,8 @@ export default function OfferwallCarousel() {
               />
               {/* Logo */}
               <img
-                src={OFFERWALLS[current].logo}
-                alt={OFFERWALLS[current].name + " logo"}
+                src={offerwalls[current].logo}
+                alt={offerwalls[current].name + " logo"}
                 className="object-contain mb-4 drop-shadow-lg animate-bounce-slow"
                 style={{
                   width: logoSize,
@@ -204,7 +162,7 @@ export default function OfferwallCarousel() {
                   textShadow: `0 2px 16px ${shadowColor}44, 0 1px 2px #181e38`,
                   zIndex: 2,
                 }}>
-                {OFFERWALLS[current].name}
+                {offerwalls[current].name}
               </div>
               <div className="text-gray-300 px-2 text-center mb-3"
                 style={{
@@ -213,20 +171,20 @@ export default function OfferwallCarousel() {
                   fontWeight: 500,
                   lineHeight: isMobile ? "1.18" : "1.22",
                 }}>
-                {OFFERWALLS[current].description}
+                {offerwalls[current].description}
               </div>
               {/* Open button */}
               <button
                 className="px-6 py-2 rounded-full font-bold bg-gradient-to-br from-accent to-secondary text-white shadow-lg hover:scale-105 active:scale-95 transition"
                 style={{ fontSize: buttonFontSize, zIndex: 3, marginTop: "8px", letterSpacing: "0.04em" }}
-                onClick={e => { e.stopPropagation(); setActiveOfferwall(OFFERWALLS[current].key); }}
+                onClick={e => { e.stopPropagation(); setActiveOfferwall(offerwalls[current].key); }}
               >
                 Open Offerwall
               </button>
             </div>
             {/* Carousel dots */}
             <div className="flex flex-row gap-2 mt-5 items-center justify-center">
-              {OFFERWALLS.map((_, idx) => (
+              {offerwalls.map((_, idx) => (
                 <button
                   key={idx}
                   className={`w-4 h-4 rounded-full border-2 border-accent transition-all duration-300 ${
@@ -248,8 +206,8 @@ export default function OfferwallCarousel() {
           onClick={nextSlide}
           aria-label="Next"
           style={{
-            opacity: OFFERWALLS.length > 1 ? 1 : 0,
-            pointerEvents: OFFERWALLS.length > 1 ? "auto" : "none",
+            opacity: offerwalls.length > 1 ? 1 : 0,
+            pointerEvents: offerwalls.length > 1 ? "auto" : "none",
             width: isMobile ? 38 : 48,
             height: isMobile ? 38 : 48,
           }}
