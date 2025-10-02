@@ -150,8 +150,9 @@ export default async function handler(req, res) {
       if (rpcError) throw rpcError;
       return res.status(200).json({ status: 'reversed', completion_id: completion.id });
     } else {
+      // NAUJAS KVIESTINAS METODAS:
       const { data: newBalance, error: rpcError } = await supabase.rpc(
-        'increment_user_points',
+        'increment_user_points_and_levelpoints', // ← NAUJAS pavadinimas
         { uid: user.id, pts: amountLocal, ref_completion: completion.id }
       );
       if (rpcError) throw rpcError;
@@ -159,9 +160,14 @@ export default async function handler(req, res) {
         Array.isArray(newBalance) && newBalance.length > 0
           ? newBalance[0]?.new_balance
           : null;
+      const creditedLevelpoints =
+        Array.isArray(newBalance) && newBalance.length > 0
+          ? newBalance[0]?.new_levelpoints
+          : null;
       return res.status(200).json({
         status: 'credited',
         new_balance: creditedBalance,
+        new_levelpoints: creditedLevelpoints,
         completion_id: completion.id,
       });
     }
