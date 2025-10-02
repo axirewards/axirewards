@@ -2,12 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
 
-interface ConsentPopupProps {
-  userId: string;
-  consent: boolean;
-}
-
-const ConsentPopup: React.FC<ConsentPopupProps> = ({ userId, consent }) => {
+function ConsentPopup({ userId, consent }) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -15,46 +10,83 @@ const ConsentPopup: React.FC<ConsentPopupProps> = ({ userId, consent }) => {
   }, [consent]);
 
   const handleAccept = async () => {
-    await axios.post('/api/consent', { userId, consent: true });
-    setShow(false);
+    try {
+      await axios.post('/api/consent', { userId, consent: true });
+      setShow(false);
+    } catch (err) {
+      // Optionally handle error
+    }
   };
 
   if (!show) return null;
 
   return (
     <div style={{
-      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-      background: "rgba(0,0,0,0.5)", zIndex: 9999,
+      position: "fixed",
+      top: 0, left: 0, right: 0, bottom: 0,
+      background: "rgba(0,0,0,0.38)",
+      zIndex: 9999,
       display: "flex", alignItems: "center", justifyContent: "center"
     }}>
       <div style={{
-        background: "#fff", borderRadius: "15px", maxWidth: 420,
-        padding: "32px 24px", boxShadow: "0 2px 24px rgba(0,0,0,0.18)"
+        background: "#fff",
+        borderRadius: "20px",
+        maxWidth: 420,
+        width: "90%",
+        padding: "40px 28px",
+        boxShadow: "0 4px 32px rgba(0,0,0,0.20)",
+        textAlign: "center",
+        fontFamily: "inherit"
       }}>
-        <h2 style={{marginBottom: 8}}>Sutikimas su taisyklėmis ir privatumu</h2>
-        <p style={{fontSize: 16, marginBottom: 20}}>
-          Naudodamiesi šiuo puslapiu, sutinkate su mūsų taisyklėmis bei privatumo politika.
+        <h2 style={{
+          marginBottom: 10,
+          color: "#222",
+          fontWeight: 700,
+          fontSize: 22,
+          letterSpacing: ".01em"
+        }}>
+          Consent Required
+        </h2>
+        <p style={{
+          fontSize: 16,
+          marginBottom: 24,
+          color: "#444",
+          fontWeight: 500
+        }}>
+          By using this website, you agree to our Terms of Service and Privacy Policy.
         </p>
-        <div style={{fontSize: 13, color: "#666", marginBottom: 16}}>
+        <div style={{
+          fontSize: 13,
+          color: "#888",
+          marginBottom: 18,
+          letterSpacing: ".01em"
+        }}>
           <Link href="/terms" legacyBehavior>
-            <a style={{marginRight: 20}}>Taisyklės</a>
+            <a style={{marginRight: 18, textDecoration: "underline", color: "#0070f3"}}>Terms of Service</a>
           </Link>
           <Link href="/privacy" legacyBehavior>
-            <a>Privatumo politika</a>
+            <a style={{textDecoration: "underline", color: "#0070f3"}}>Privacy Policy</a>
           </Link>
         </div>
         <button
           style={{
-            background: "#0070f3", color: "#fff", border: "none",
-            borderRadius: 8, padding: "10px 24px", fontSize: 16, cursor: "pointer"
+            background: "linear-gradient(90deg,#0070f3 0,#1c55b2 100%)",
+            color: "#fff",
+            border: "none",
+            borderRadius: 10,
+            padding: "12px 28px",
+            fontSize: 17,
+            fontWeight: 600,
+            cursor: "pointer",
+            boxShadow: "0 2px 10px rgba(0,112,243,0.08)"
           }}
           onClick={handleAccept}
         >
-          Sutinku
+          I Agree
         </button>
       </div>
     </div>
   );
-};
+}
 
 export default ConsentPopup;
