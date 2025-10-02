@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 
 /**
- * Luxury Offerwall Preview Carousel – ultra animated, responsive, mobile-first.
+ * Ultra-luxury Offerwall Preview Carousel – top-notch, animated, responsive for PC & mobile.
  * Props: offerwalls – array of offerwall objects ({ key, name, logo, color, description })
  *        onOpen – function to open offerwall modal
  */
@@ -9,13 +9,19 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
   // Current index for carousel
   const [current, setCurrent] = useState(0);
   const carouselRef = useRef();
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Swipe gestures (mobile)
   useEffect(() => {
-    let startX = null;
-    const handleTouchStart = e => {
-      startX = e.touches[0].clientX;
+    // Responsive: detect mobile/PC for sizing
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 700);
     };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    // Swipe gestures (mobile)
+    let startX = null;
+    const handleTouchStart = e => { startX = e.touches[0].clientX; };
     const handleTouchMove = e => {
       if (!startX) return;
       const diffX = e.touches[0].clientX - startX;
@@ -28,47 +34,61 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
     const carousel = carouselRef.current;
     carousel?.addEventListener("touchstart", handleTouchStart);
     carousel?.addEventListener("touchmove", handleTouchMove);
+
     return () => {
+      window.removeEventListener("resize", checkMobile);
       carousel?.removeEventListener("touchstart", handleTouchStart);
       carousel?.removeEventListener("touchmove", handleTouchMove);
     };
-  });
+  }, []);
 
   const nextSlide = () => setCurrent(c => (c + 1) % offerwalls.length);
   const prevSlide = () => setCurrent(c => (c - 1 + offerwalls.length) % offerwalls.length);
 
+  // Responsive sizes
+  const cardMinWidth = isMobile ? "92vw" : "340px";
+  const cardMaxWidth = isMobile ? "97vw" : "460px";
+  const cardMinHeight = isMobile ? "230px" : "340px";
+  const logoSize = isMobile ? 68 : 104;
+  const descFontSize = isMobile ? "1rem" : "1.15rem";
+  const nameFontSize = isMobile ? "1.19rem" : "1.35rem";
+  const buttonFontSize = isMobile ? "1.01rem" : "1.12rem";
+
   return (
-    <div className="w-full flex flex-col items-center mt-10 mb-8 px-2">
-      <h3 className="text-xl font-extrabold text-accent mb-6 tracking-wide uppercase">
-        Premium Offerwalls
-      </h3>
+    <div className="w-full flex flex-col items-center mt-5 mb-8 px-2">
       <div
         ref={carouselRef}
         className="relative w-full flex items-center justify-center"
-        style={{ minHeight: "320px" }}
+        style={{ minHeight: isMobile ? "260px" : "370px" }}
       >
         {/* Carousel arrow left */}
         <button
-          className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-br from-[#232e40] to-[#60A5FA] text-white rounded-full shadow-lg p-2 z-10 hover:scale-110 transition"
+          className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-br from-[#222B3A] to-[#60A5FA] text-white rounded-full shadow-lg p-2 z-10 hover:scale-110 transition"
           onClick={prevSlide}
           aria-label="Prev"
-          style={{ opacity: offerwalls.length > 1 ? 1 : 0, pointerEvents: offerwalls.length > 1 ? "auto" : "none" }}
+          style={{
+            opacity: offerwalls.length > 1 ? 1 : 0,
+            pointerEvents: offerwalls.length > 1 ? "auto" : "none",
+            width: isMobile ? 38 : 48,
+            height: isMobile ? 38 : 48,
+          }}
         >
           <svg width="24" height="24" fill="none"><path d="M14 18l-6-6 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
 
         {/* Carousel main offerwall card */}
         {offerwalls.length > 0 && (
-          <div className="flex flex-col items-center justify-center w-full max-w-lg mx-auto">
+          <div className="flex flex-col items-center justify-center w-full mx-auto">
             <div
-              className="relative group glass-card px-7 py-8 rounded-3xl shadow-2xl border-4 border-accent flex flex-col items-center justify-center cursor-pointer transition-all duration-500 hover:scale-105 hover:shadow-accent"
+              className="relative group glass-card px-7 py-8 rounded-3xl shadow-2xl border-4 flex flex-col items-center justify-center cursor-pointer transition-all duration-500 hover:scale-105 hover:shadow-accent"
               style={{
-                minWidth: "260px",
-                maxWidth: "350px",
-                minHeight: "250px",
-                boxShadow: "0 0 48px 0 #60A5fa44, 0 2px 18px 0 #7b6cfb77",
+                minWidth: cardMinWidth,
+                maxWidth: cardMaxWidth,
+                minHeight: cardMinHeight,
+                boxShadow: "0 0 58px 0 #60A5fa55, 0 1px 14px 0 #7b6cfb77",
                 border: `4px solid ${offerwalls[current].color}`,
-                background: `linear-gradient(135deg, #232e40 60%, ${offerwalls[current].color}88 100%)`,
+                background: `linear-gradient(135deg, #181e38 60%, ${offerwalls[current].color}44 100%)`,
+                overflow: "hidden",
               }}
               onClick={() => onOpen && onOpen(offerwalls[current].key)}
             >
@@ -86,15 +106,28 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
               <img
                 src={offerwalls[current].logo}
                 alt={offerwalls[current].name + " logo"}
-                className="w-24 h-24 object-contain mb-4 drop-shadow-lg animate-bounce-slow"
-                style={{ filter: `drop-shadow(0 0 24px ${offerwalls[current].color})` }}
+                className="object-contain mb-4 drop-shadow-lg animate-bounce-slow"
+                style={{
+                  width: logoSize,
+                  height: logoSize,
+                  filter: `drop-shadow(0 0 24px ${offerwalls[current].color})`,
+                  marginTop: isMobile ? '5px' : '18px',
+                  zIndex: 2,
+                }}
               />
               {/* Name & description */}
-              <div className="text-accent font-extrabold text-2xl text-center mb-2">{offerwalls[current].name}</div>
-              <div className="text-sm text-gray-300 px-2 text-center mb-3">{offerwalls[current].description}</div>
+              <div className="text-accent font-extrabold text-center mb-2"
+                style={{ fontSize: nameFontSize, zIndex: 2 }}>
+                {offerwalls[current].name}
+              </div>
+              <div className="text-gray-300 px-2 text-center mb-3"
+                style={{ fontSize: descFontSize, zIndex: 2 }}>
+                {offerwalls[current].description}
+              </div>
               {/* Open button */}
               <button
                 className="px-6 py-2 rounded-full font-bold bg-gradient-to-br from-accent to-secondary text-white shadow-lg hover:scale-105 active:scale-95 transition"
+                style={{ fontSize: buttonFontSize, zIndex: 3 }}
                 onClick={e => { e.stopPropagation(); onOpen && onOpen(offerwalls[current].key); }}
               >
                 Open Offerwall
@@ -120,17 +153,22 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
 
         {/* Carousel arrow right */}
         <button
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-br from-[#232e40] to-[#60A5FA] text-white rounded-full shadow-lg p-2 z-10 hover:scale-110 transition"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-br from-[#222B3A] to-[#60A5FA] text-white rounded-full shadow-lg p-2 z-10 hover:scale-110 transition"
           onClick={nextSlide}
           aria-label="Next"
-          style={{ opacity: offerwalls.length > 1 ? 1 : 0, pointerEvents: offerwalls.length > 1 ? "auto" : "none" }}
+          style={{
+            opacity: offerwalls.length > 1 ? 1 : 0,
+            pointerEvents: offerwalls.length > 1 ? "auto" : "none",
+            width: isMobile ? 38 : 48,
+            height: isMobile ? 38 : 48,
+          }}
         >
           <svg width="24" height="24" fill="none"><path d="M10 6l6 6-6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
       <style jsx>{`
         .glass-card {
-          background: rgba(24, 32, 56, 0.93);
+          background: rgba(24, 32, 56, 0.96);
           backdrop-filter: blur(18px);
           border-radius: 1.75rem;
         }
