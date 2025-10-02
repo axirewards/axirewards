@@ -7,7 +7,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' })
 
-  const { user_email, points, wallet_address, crypto_currency = 'USDT' } = req.body
+  const { user_email, points, wallet_address, crypto_currency = 'POLYGON' } = req.body
 
   if (!user_email || !points || !wallet_address) {
     return res.status(400).json({ error: 'Missing required parameters' })
