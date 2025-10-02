@@ -2,58 +2,60 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 
-function ConsentPopup({ userId }) {
+function getIP() {
+  // Gauk viešą IP iš API (arba backend)
+  return fetch('https://api.ipify.org?format=json')
+    .then(res => res.json())
+    .then(data => data.ip)
+    .catch(() => null);
+}
+
+function ConsentPopup() {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [ip, setIp] = useState(null);
 
-  // Fetch consent status from Supabase
   useEffect(() => {
-    async function fetchConsent() {
-      if (!userId) {
+    async function checkConsent() {
+      setLoading(true);
+      // Gauk IP
+      const userIp = await getIP();
+      setIp(userIp);
+
+      if (!userIp) {
         setLoading(false);
-        setShow(false);
+        setShow(true); // Jei nepavyko gauti IP, vis tiek rodom consent
         return;
       }
+
+      // Patikrink DB ar jau yra consent
       const { data, error } = await supabase
-        .from('users')
+        .from('consent')
         .select('consent')
-        .eq('id', userId)
+        .eq('ip_address', userIp)
         .single();
 
-      if (error) {
-        setError("Failed to check consent status.");
-        setShow(false);
+      if (error || !data || !data.consent) {
+        setShow(true); // consent nėra
       } else {
-        if (!data?.consent) {
-          setShow(true);
-        } else {
-          setShow(false);
-        }
+        setShow(false); // consent jau duotas
       }
       setLoading(false);
     }
-    fetchConsent();
-  }, [userId]);
+    checkConsent();
+  }, []);
 
   const handleAccept = async () => {
     setLoading(true);
-    setError("");
-    const { error } = await supabase
-      .from('users')
-      .update({ consent: true })
-      .eq('id', userId);
-
-    if (error) {
-      setError("Failed to save consent. Please try again.");
-      setLoading(false);
-    } else {
-      setShow(false);
-      setLoading(false);
-    }
+    // Išsaugom consent į DB
+    await supabase
+      .from('consent')
+      .upsert({ ip_address: ip, consent: true });
+    setShow(false);
+    setLoading(false);
   };
 
-  if (!show || !userId) return null;
+  if (!show || loading) return null;
 
   return (
     <div style={{
@@ -103,18 +105,6 @@ function ConsentPopup({ userId }) {
             <a style={{textDecoration: "underline", color: "#0070f3"}}>Privacy Policy</a>
           </Link>
         </div>
-        {error && (
-          <p style={{
-            background: '#ffe4e4',
-            color: '#d32f2f',
-            padding: '8px',
-            borderRadius: '5px',
-            marginBottom: '12px',
-            fontSize: '14px'
-          }}>
-            {error}
-          </p>
-        )}
         <button
           style={{
             background: "linear-gradient(90deg,#0070f3 0,#1c55b2 100%)",
