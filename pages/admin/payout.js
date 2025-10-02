@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
+import AdminNavbar from '../../components/AdminNavbar'
 import { supabase } from '../../lib/supabaseClient'
 
 export default function AdminPayout({ setGlobalLoading }) {
@@ -93,6 +94,7 @@ export default function AdminPayout({ setGlobalLoading }) {
 
   return (
     <Layout admin>
+      <AdminNavbar />
       <div className="min-h-screen flex flex-col">
         <div className="max-w-7xl mx-auto w-full p-6 flex-grow flex flex-col">
           <h1 className="text-3xl font-bold text-primary mb-6">Admin Payout Management</h1>
