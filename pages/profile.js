@@ -1,197 +1,150 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
-import Layout from '../components/Layout'
-import UserStats from '../components/UserStats'
+import { FaCoins } from 'react-icons/fa'
+import { FiMenu, FiX } from 'react-icons/fi'
 import { supabase } from '../lib/supabaseClient'
-import DeleteAccountButton from '../components/DeleteAccountButton'
 
-export default function Profile({ setGlobalLoading }) {
+export default function Navbar({ user, balance = 0 }) {
   const router = useRouter()
-  const [user, setUser] = useState(null)
-  const [wallet, setWallet] = useState('')
-  const [completions, setCompletions] = useState([])
-  const [saving, setSaving] = useState(false)
-  const [walletError, setWalletError] = useState('')
-  const [walletSuccess, setWalletSuccess] = useState('')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const handleDropdown = () => setDropdownOpen((v) => !v)
 
-  useEffect(() => {
-    if (typeof setGlobalLoading === "function") setGlobalLoading(true)
-    async function fetchUser() {
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-      if (!currentUser) {
-        if (typeof setGlobalLoading === "function") setGlobalLoading(false)
-        return
-      }
+  const links = [
+    { href: '/dashboard', name: 'Dashboard' },
+    { href: '/earn', name: 'Earn' },
+    { href: '/payout', name: 'Payout' },
+    { href: '/profile', name: 'Profile' },
+  ]
 
-      // Fetch user details
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', currentUser.email)
-        .single()
-      if (userError) {
-        console.error(userError)
-      } else {
-        setUser(userData)
-        setWallet(userData.wallet_address || '')
-      }
+  const isActive = (path) => router.pathname === path
+  const handleLogoClick = (e) => {
+    e.preventDefault()
+    router.push('/dashboard')
+  }
 
-      // Fetch last 10 completions for this user using both user_id and user_email
-      if (userData) {
-        let completionsArr = []
-
-        // Query by user_id
-        const { data: completionsById, error: errorById } = await supabase
-          .from('completions')
-          .select('*')
-          .eq('user_id', userData.id)
-          .order('created_at', { ascending: false })
-          .limit(10)
-        if (errorById) console.error(errorById)
-        if (Array.isArray(completionsById)) completionsArr = completionsArr.concat(completionsById)
-
-        // Query by user_email (if needed)
-        if (userData.email) {
-          const { data: completionsByEmail, error: errorByEmail } = await supabase
-            .from('completions')
-            .select('*')
-            .eq('user_email', userData.email)
-            .order('created_at', { ascending: false })
-            .limit(10)
-          if (errorByEmail) console.error(errorByEmail)
-          if (Array.isArray(completionsByEmail)) completionsArr = completionsArr.concat(completionsByEmail)
-        }
-
-        // Deduplicate completions by id, and sort by created_at DESC
-        const uniqueCompletions = Object.values(
-          completionsArr.reduce((acc, c) => {
-            acc[c.id] = c
-            return acc
-          }, {})
-        ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-
-        setCompletions(uniqueCompletions.slice(0, 10))
-      }
-
-      if (typeof setGlobalLoading === "function") setGlobalLoading(false)
-    }
-    fetchUser()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
+  // Logout function identical to Profile page
   const handleLogout = async () => {
-    if (typeof setGlobalLoading === "function") setGlobalLoading(true)
     await supabase.auth.signOut()
     router.push("/")
-    if (typeof setGlobalLoading === "function") setGlobalLoading(false)
   }
 
-  const handleWalletUpdate = async () => {
-    setWalletError('')
-    setWalletSuccess('')
-    if (!wallet || !/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
-      setWalletError('Wallet must be a valid Polygon (POLYGON Wallet) address starting with 0x...')
-      return
-    }
-    setSaving(true)
-    const { data, error } = await supabase
-      .from('users')
-      .update({ wallet_address: wallet })
-      .eq('id', user.id)
-      .select()
-      .single()
-    setSaving(false)
-    if (error) {
-      setWalletError('Failed to save wallet. Please try again.')
-      console.error(error)
-    } else {
-      setUser(data)
-      setWalletSuccess('Wallet saved successfully!')
-    }
+  // Fix: Make sure mobile logout closes menu and calls logout
+  const handleMobileLogout = async () => {
+    setMenuOpen(false)
+    await handleLogout()
   }
 
-  if (!user) return (
-    <Layout>
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="text-center text-lg text-primary animate-pulse">Loading profile...</p>
-      </div>
-    </Layout>
-  )
+  // Fix: Dropdown logout uses same logic
+  const handleDropdownLogout = async () => {
+    setDropdownOpen(false)
+    await handleLogout()
+  }
 
   return (
-    <Layout>
-      <div className="min-h-[80vh] flex flex-col justify-between">
-        <div className="max-w-4xl mx-auto w-full p-6 space-y-8">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
-            <h1 className="text-3xl font-extrabold text-primary mb-3 md:mb-0">Profile</h1>
-            <div className="flex gap-3">
-              <DeleteAccountButton email={user.email} />
-              <button
-                onClick={handleLogout}
-                className="rounded-lg bg-card px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-900 shadow-lg border border-gray-800"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
+    <nav className="bg-card text-white px-2 py-3 shadow-xl border-b border-blue-900 sticky top-0 z-40 transition-all">
+      <div className="container mx-auto flex items-center justify-between relative">
+        {/* Logo kairėje - be teksto ir dar 10% didesnis */}
+        <a
+          href="/dashboard"
+          className="flex items-center hover:opacity-90 transition cursor-pointer"
+          onClick={handleLogoClick}
+        >
+          <img src="/icons/logo.png" alt="AxiRewards" className="w-18 h-18 drop-shadow" />
+        </a>
 
-          <UserStats user={user} />
-
-          <div className="bg-card shadow-md rounded-2xl p-6 mb-2">
-            <h2 className="text-xl font-semibold mb-2 text-primary">
-              Crypto Wallet <span className="font-normal text-sm text-gray-400">(POLYGON Wallet)</span>
-            </h2>
-            <div className="flex flex-col md:flex-row gap-2 items-start md:items-center">
-              <input
-                type="text"
-                value={wallet}
-                onChange={(e) => setWallet(e.target.value)}
-                className="flex-1 border border-gray-700 rounded-lg p-2 bg-black text-white placeholder-gray-400"
-                placeholder="Enter your Polygon wallet address"
-                autoComplete="off"
-              />
-              <button
-                onClick={handleWalletUpdate}
-                disabled={saving}
-                className="bg-primary text-white px-5 py-2 rounded-lg font-semibold shadow transition hover:bg-blue-700 disabled:opacity-60"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-red-500 font-bold">
-              * You must enter a Polygon crypto wallet address (starts with 0x...)
-            </p>
-            {walletError && <p className="mt-2 text-xs text-red-500">{walletError}</p>}
-            {walletSuccess && <p className="mt-2 text-xs text-green-500">{walletSuccess}</p>}
-          </div>
-
-          <div className="bg-card shadow-md rounded-2xl p-6">
-            <h2 className="text-xl font-semibold mb-2 text-primary">Recent Completed Offers</h2>
-            {completions.length === 0 ? (
-              <p className="text-gray-400">No records found.</p>
-            ) : (
-              <ul className="space-y-2">
-                {completions.map((c) => (
-                  <li key={c.id} className="border-b border-gray-800 py-2">
-                    <p className="font-semibold text-white">
-                      {c.title || 'Offer title'}
-                    </p>
-                    <p className="text-sm text-gray-400">{c.description || ''}</p>
-                    <p className="text-sm text-accent">Points received: {parseInt(c.credited_points, 10) || 0}</p>
-                    <p className="text-xs text-gray-600">{new Date(c.created_at).toLocaleString()}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-8">
+          {links.map((link) => (
+            <Link
+              key={link.name}
+              href={link.href}
+              className={`relative px-3 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                isActive(link.href)
+                  ? 'bg-accent text-white shadow-md scale-105'
+                  : 'hover:bg-blue-800/80 hover:scale-105 text-white/90'
+              }`}
+            >
+              {link.name}
+            </Link>
+          ))}
         </div>
+
+        {/* User Info & Dropdown */}
+        {user && (
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-2 bg-accent/30 px-3 py-1 rounded-lg text-sm shadow">
+              <FaCoins className="text-yellow-300 animate-spin-slow" />
+              <span className="font-bold">{balance}</span>
+              <span className="text-xs opacity-70">Points</span>
+            </span>
+            <div className="relative">
+              <button
+                className="flex items-center gap-2 px-3 py-1 rounded-full bg-secondary text-white font-semibold hover:bg-accent transition outline-none focus:ring-2 focus:ring-accent"
+                onClick={handleDropdown}
+                aria-haspopup="true"
+                aria-expanded={dropdownOpen}
+              >
+                <span className="hidden sm:inline">More</span>
+                <svg width="16" height="16" fill="currentColor" className={`ml-1 transform transition ${dropdownOpen ? 'rotate-180' : ''}`}><path d="M4 6l4 4 4-4" /></svg>
+              </button>
+              {/* Dropdown */}
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-44 bg-white text-gray-900 rounded shadow-lg border z-20 animate-dropdownIn">
+                  <Link href="/profile" className="block px-4 py-2 hover:bg-blue-50 rounded">Profile</Link>
+                  <Link href="/settings" className="block px-4 py-2 hover:bg-blue-50 rounded">Settings</Link>
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 rounded"
+                    onClick={handleDropdownLogout}
+                  >Logout</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Burger menu for mobile */}
+        <button
+          className="md:hidden ml-2 p-2 rounded bg-blue-800/50 hover:bg-blue-800/80 transition border border-blue-900"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label={menuOpen ? 'Close Menu' : 'Open Menu'}
+        >
+          {menuOpen ? <FiX size={28} /> : <FiMenu size={28} />}
+        </button>
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className="absolute top-full left-0 w-full bg-card text-white shadow-xl flex flex-col gap-2 py-4 z-50 animate-mobileMenuIn">
+            <div className="flex items-center justify-center mb-2">
+              <img src="/icons/logo.png" alt="AxiRewards" className="w-18 h-18 drop-shadow" />
+            </div>
+            {links.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                className={`px-6 py-2 rounded-lg transition ${
+                  isActive(link.href) ? 'bg-accent text-white shadow-md scale-105' : 'hover:bg-blue-900'
+                }`}
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.name}
+              </Link>
+            ))}
+            <button className="px-6 py-2 hover:bg-blue-900 text-left" onClick={handleMobileLogout}>Logout</button>
+          </div>
+        )}
       </div>
-      {/* Footer always at bottom */}
+      {/* Animacijos & custom styles */}
       <style jsx>{`
-        .bg-card {
-          background-color: #0B0B0B;
-        }
+        .w-18 { width: 4.95rem; }
+        .h-18 { height: 4.95rem; }
+        .animate-dropdownIn { animation: dropdownIn 0.25s ease; }
+        @keyframes dropdownIn { from { opacity: 0; transform: translateY(-10px);} to { opacity: 1; transform: translateY(0);} }
+        .animate-mobileMenuIn { animation: mobileMenuIn 0.35s cubic-bezier(.23,1,.32,1); }
+        @keyframes mobileMenuIn { from { opacity: 0; transform: translateY(-16px);} to { opacity: 1; transform: translateY(0);} }
+        .animate-spin-slow { animation: spin 2s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
-    </Layout>
+    </nav>
   )
 }
