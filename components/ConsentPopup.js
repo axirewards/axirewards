@@ -1,24 +1,59 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import axios from 'axios';
+import { supabase } from '../lib/supabaseClient';
 
-function ConsentPopup({ userId, consent }) {
+function ConsentPopup({ userId }) {
   const [show, setShow] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
+  // Fetch consent status from Supabase
   useEffect(() => {
-    if (!consent) setShow(true);
-  }, [consent]);
+    async function fetchConsent() {
+      if (!userId) {
+        setLoading(false);
+        setShow(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('users')
+        .select('consent')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        setError("Failed to check consent status.");
+        setShow(false);
+      } else {
+        if (!data?.consent) {
+          setShow(true);
+        } else {
+          setShow(false);
+        }
+      }
+      setLoading(false);
+    }
+    fetchConsent();
+  }, [userId]);
 
   const handleAccept = async () => {
-    try {
-      await axios.post('/api/consent', { userId, consent: true });
+    setLoading(true);
+    setError("");
+    const { error } = await supabase
+      .from('users')
+      .update({ consent: true })
+      .eq('id', userId);
+
+    if (error) {
+      setError("Failed to save consent. Please try again.");
+      setLoading(false);
+    } else {
       setShow(false);
-    } catch (err) {
-      // Optionally handle error
+      setLoading(false);
     }
   };
 
-  if (!show) return null;
+  if (!show || !userId) return null;
 
   return (
     <div style={{
@@ -53,7 +88,7 @@ function ConsentPopup({ userId, consent }) {
           color: "#444",
           fontWeight: 500
         }}>
-          By using this website, you agree to our Terms of Service and Privacy Policy.
+          By using this website, you agree to our <span style={{fontWeight:600}}>Terms of Service</span> and <span style={{fontWeight:600}}>Privacy Policy</span>.
         </p>
         <div style={{
           fontSize: 13,
@@ -68,6 +103,18 @@ function ConsentPopup({ userId, consent }) {
             <a style={{textDecoration: "underline", color: "#0070f3"}}>Privacy Policy</a>
           </Link>
         </div>
+        {error && (
+          <p style={{
+            background: '#ffe4e4',
+            color: '#d32f2f',
+            padding: '8px',
+            borderRadius: '5px',
+            marginBottom: '12px',
+            fontSize: '14px'
+          }}>
+            {error}
+          </p>
+        )}
         <button
           style={{
             background: "linear-gradient(90deg,#0070f3 0,#1c55b2 100%)",
@@ -77,12 +124,14 @@ function ConsentPopup({ userId, consent }) {
             padding: "12px 28px",
             fontSize: 17,
             fontWeight: 600,
-            cursor: "pointer",
-            boxShadow: "0 2px 10px rgba(0,112,243,0.08)"
+            cursor: loading ? "wait" : "pointer",
+            boxShadow: "0 2px 10px rgba(0,112,243,0.08)",
+            opacity: loading ? 0.6 : 1
           }}
           onClick={handleAccept}
+          disabled={loading}
         >
-          I Agree
+          {loading ? "Saving..." : "I Agree"}
         </button>
       </div>
     </div>
