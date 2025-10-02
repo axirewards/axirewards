@@ -11,7 +11,6 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 import ParticleBackground from "../components/ParticleBackground";
 import PremiumBadge from "../components/PremiumBadge";
 import VIPTierProgress from "../components/VIPTierProgress";
-import AchievementWall from "../components/AchievementWall";
 import OfferwallCarousel from "../components/OfferwallCarousel";
 import FloatingActionButton from "../components/FloatingActionButton";
 
@@ -160,28 +159,31 @@ export default function Dashboard({ setGlobalLoading }) {
   if (!isMobile) {
     return (
       <Layout>
-        <ParticleBackground type="waves-coins" />
-        <div className="relative flex flex-col items-center min-h-screen bg-transparent z-10 w-full">
-          <div className="w-full max-w-6xl mx-auto grid grid-cols-12 gap-10 py-12 px-4">
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <ParticleBackground type="waves-coins" />
+        </div>
+        <div className="relative flex flex-col items-center min-h-screen w-full z-10 overflow-hidden">
+          <div className="w-full max-w-[1700px] mx-auto grid grid-cols-12 gap-10 py-12 px-4">
             {/* Left: Badge, Avatar, VIP Progress */}
-            <div className="col-span-3 flex flex-col items-center gap-7 bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-7 border-2 border-accent backdrop-blur">
+            <div className="col-span-4 flex flex-col items-center gap-8 bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-8 border-2 border-accent backdrop-blur min-h-[600px]">
               <PremiumBadge type={user?.tier >= 5 ? "diamond" : user?.tier >= 3 ? "gold" : "silver"} />
               <img
                 src={user?.avatar_url || "/icons/avatar-default.svg"}
                 alt="Avatar"
-                className="w-24 h-24 rounded-full border-4 border-accent shadow-xl"
+                className="w-28 h-28 rounded-full border-4 border-accent shadow-xl"
                 style={{ boxShadow: "0 2px 24px 0 #60A5fa44" }}
               />
-              <div className="text-2xl font-extrabold text-white text-center truncate w-full max-w-[230px]">{user?.display_name || user?.email}</div>
-              <div className="w-full flex items-center justify-center">
+              <div className="text-2xl font-extrabold text-white text-center truncate w-full max-w-[350px]">{user?.display_name || user?.email}</div>
+              <div className="w-full flex items-center justify-center mt-2">
                 <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
               </div>
-              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-accent to-secondary text-white font-bold shadow-lg animate-pulse">
+              <span className="mt-3 px-3 py-1 rounded-full bg-gradient-to-r from-accent to-secondary text-white font-bold shadow-lg animate-pulse">
                 VIP {user?.tier || 1}
               </span>
             </div>
-            {/* Center: Balance History + Stats + Achievements */}
-            <div className="col-span-6 flex flex-col items-center gap-9">
+
+            {/* Center: Balance History + Stats */}
+            <div className="col-span-5 flex flex-col items-center gap-10">
               {/* Balance History */}
               <div className="rounded-2xl glass-card p-7 border-2 border-accent shadow-xl w-full max-w-xl mx-auto">
                 <h3 className="text-lg font-bold text-accent mb-4">Balance History</h3>
@@ -205,19 +207,17 @@ export default function Dashboard({ setGlobalLoading }) {
                 <StatsCard title="VIP Tier" value={user?.tier || 1} unit="🏆" icon="/icons/vip.svg" animateShine />
                 <StatsCard title="Best Streak" value={user?.best_streak || streak} unit="days" icon="/icons/trophy.svg" animateSparkle />
               </div>
-              {/* Achievements */}
-              <div className="w-full flex flex-col items-center mt-2">
-                <AchievementWall completedOffers={user?.completed_offers || 0} gridMode />
-              </div>
             </div>
+
             {/* Right: Offerwalls */}
-            <div className="col-span-3 flex flex-col items-center gap-8">
+            <div className="col-span-3 flex flex-col items-center gap-8 justify-center min-h-[600px]">
               <div className="w-full flex flex-col items-center">
                 <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
               </div>
             </div>
           </div>
         </div>
+
         {/* Modal offerwall open */}
         {activeOfferwall && (
           <div className="fixed inset-0 z-[1001] bg-black/80 flex items-center justify-center backdrop-blur">
@@ -246,6 +246,11 @@ export default function Dashboard({ setGlobalLoading }) {
         )}
         {showFAB && <FloatingActionButton />}
         <style jsx>{`
+          html, body, #__next {
+            width: 100vw !important;
+            min-height: 100vh !important;
+            overflow-x: hidden !important;
+          }
           .glass-card {
             background: rgba(24, 32, 56, 0.86);
             backdrop-filter: blur(22px);
@@ -332,13 +337,6 @@ export default function Dashboard({ setGlobalLoading }) {
           <div className="w-full flex flex-col items-center mt-8 mb-8">
             <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
           </div>
-
-          {/* Achievements Wall */}
-          {user && (
-            <div className="w-full flex flex-col items-center mt-6">
-              <AchievementWall completedOffers={user?.completed_offers || 0} gridMode />
-            </div>
-          )}
         </div>
         {showFAB && <FloatingActionButton />}
         {activeOfferwall && (
@@ -367,6 +365,11 @@ export default function Dashboard({ setGlobalLoading }) {
           </div>
         )}
         <style jsx>{`
+          html, body, #__next {
+            width: 100vw !important;
+            min-height: 100vh !important;
+            overflow-x: hidden !important;
+          }
           .glass-card {
             background: rgba(24, 32, 56, 0.86);
             backdrop-filter: blur(22px);
