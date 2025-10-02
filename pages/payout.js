@@ -14,7 +14,6 @@ export default function Payout({ setGlobalLoading }) {
   const [pointsError, setPointsError] = useState('')
 
   useEffect(() => {
-    // Show MiniLoadingSpinner via globalLoading while fetching
     if (typeof setGlobalLoading === "function") setGlobalLoading(true)
     async function fetchData() {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
@@ -71,7 +70,7 @@ export default function Payout({ setGlobalLoading }) {
     const pointsNum = parseFloat(pointsToRedeem)
     if (
       isNaN(pointsNum) ||
-      pointsNum < 10000 || // CHANGE: Minimum withdrawal 10000 points
+      pointsNum < 10000 ||
       pointsNum > user.points_balance
     ) {
       setPointsError('Invalid points amount')
@@ -94,7 +93,6 @@ export default function Payout({ setGlobalLoading }) {
 
       if (error) throw error
 
-      // Debituoti user points via RPC
       const { data: newBalance, error: rpcError } = await supabase
         .rpc('debit_user_points_for_payout', {
           uid: user.id,
@@ -170,7 +168,7 @@ export default function Payout({ setGlobalLoading }) {
                 <label className="text-sm font-semibold text-white mb-1 block">Points to Redeem</label>
                 <input
                   type="number"
-                  min={10000} // CHANGE: Minimum withdrawal 10000 points
+                  min={10000}
                   max={user.points_balance || 0}
                   placeholder="Enter points amount"
                   className="w-full border border-gray-700 rounded-lg p-2 bg-black text-white"
@@ -206,16 +204,23 @@ export default function Payout({ setGlobalLoading }) {
               <p className="text-gray-400">No records found.</p>
             ) : (
               <ul className="space-y-2">
-                {payouts.map((p) => (
-                  <li key={p.id} className="border-b border-gray-900 py-2">
-                    <p className="text-white font-semibold">
-                      {p.points_amount} points | Crypto: {p.crypto_currency}
-                    </p>
-                    <p className="text-accent">Status: <span className="capitalize">{p.status}</span></p>
-                    <p className="text-gray-300">Wallet: {p.wallet_address}</p>
-                    <p className="text-xs text-gray-500">{new Date(p.requested_at).toLocaleString()}</p>
-                  </li>
-                ))}
+                {payouts.map((p) => {
+                  const { usd, eur } = pointsToCurrency(p.points_amount)
+                  return (
+                    <li key={p.id} className="border-b border-gray-900 py-2">
+                      <p className="text-white font-semibold">
+                        {p.points_amount} points
+                        <span className="text-xs text-accent ml-2">
+                          (≈ {usd} USD / {eur} EUR)
+                        </span>
+                        {" | Crypto: "}{p.crypto_currency}
+                      </p>
+                      <p className="text-accent">Status: <span className="capitalize">{p.status}</span></p>
+                      <p className="text-gray-300">Wallet: {p.wallet_address}</p>
+                      <p className="text-xs text-gray-500">{new Date(p.requested_at).toLocaleString()}</p>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </div>
