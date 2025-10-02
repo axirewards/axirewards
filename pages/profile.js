@@ -36,16 +36,41 @@ export default function Profile({ setGlobalLoading }) {
         setWallet(userData.wallet_address || '')
       }
 
-      // Fetch last 10 completions for this user using completions.user_email === users.email
+      // Fetch last 10 completions for this user using both user_id and user_email
       if (userData) {
-        const { data: completionData, error: completionError } = await supabase
+        let completionsArr = []
+
+        // Query by user_id
+        const { data: completionsById, error: errorById } = await supabase
           .from('completions')
-          .select('id,partner_callback_id,credited_points,created_at') // Only needed fields
-          .eq('user_email', userData.email)
+          .select('*')
+          .eq('user_id', userData.id)
           .order('created_at', { ascending: false })
           .limit(10)
-        if (completionError) console.error(completionError)
-        else setCompletions(completionData || [])
+        if (errorById) console.error(errorById)
+        if (Array.isArray(completionsById)) completionsArr = completionsArr.concat(completionsById)
+
+        // Query by user_email (if needed)
+        if (userData.email) {
+          const { data: completionsByEmail, error: errorByEmail } = await supabase
+            .from('completions')
+            .select('*')
+            .eq('user_email', userData.email)
+            .order('created_at', { ascending: false })
+            .limit(10)
+          if (errorByEmail) console.error(errorByEmail)
+          if (Array.isArray(completionsByEmail)) completionsArr = completionsArr.concat(completionsByEmail)
+        }
+
+        // Deduplicate completions by id, and sort by created_at DESC
+        const uniqueCompletions = Object.values(
+          completionsArr.reduce((acc, c) => {
+            acc[c.id] = c
+            return acc
+          }, {})
+        ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+        setCompletions(uniqueCompletions.slice(0, 10))
       }
 
       if (typeof setGlobalLoading === "function") setGlobalLoading(false)
@@ -110,12 +135,12 @@ export default function Profile({ setGlobalLoading }) {
             </div>
           </div>
 
-          {/* User Statistics */}
           <UserStats user={user} />
 
-          {/* Wallet Section */}
           <div className="bg-card shadow-md rounded-2xl p-6 mb-2">
-            <h2 className="text-xl font-semibold mb-2 text-primary">Crypto Wallet <span className="font-normal text-sm text-gray-400">(POLYGON Wallet)</span></h2>
+            <h2 className="text-xl font-semibold mb-2 text-primary">
+              Crypto Wallet <span className="font-normal text-sm text-gray-400">(POLYGON Wallet)</span>
+            </h2>
             <div className="flex flex-col md:flex-row gap-2 items-start md:items-center">
               <input
                 type="text"
@@ -140,36 +165,23 @@ export default function Profile({ setGlobalLoading }) {
             {walletSuccess && <p className="mt-2 text-xs text-green-500">{walletSuccess}</p>}
           </div>
 
-          {/* Recent Completed Offers */}
-          <div className="bg-card shadow-md rounded-2xl p-6 mb-4">
+          <div className="bg-card shadow-md rounded-2xl p-6">
             <h2 className="text-xl font-semibold mb-2 text-primary">Recent Completed Offers</h2>
-            <div className="flex flex-col md:flex-row md:justify-between gap-4 mb-4">
-              <div>
-                <span className="text-base text-white font-bold">Total completed offers:&nbsp;</span>
-                <span className="text-accent font-bold">{user.total_completions || 0}</span>
-              </div>
-            </div>
             {completions.length === 0 ? (
               <p className="text-gray-400">No records found.</p>
             ) : (
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-accent font-bold border-b border-gray-800">
-                    <th className="py-2">Offer ID</th>
-                    <th className="py-2">Points</th>
-                    <th className="py-2">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {completions.map((c) => (
-                    <tr key={c.id} className="border-b border-gray-800">
-                      <td className="py-2 text-white">{c.partner_callback_id}</td>
-                      <td className="py-2 text-white font-bold">{parseInt(c.credited_points, 10) || 0}</td>
-                      <td className="py-2 text-gray-400">{new Date(c.created_at).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <ul className="space-y-2">
+                {completions.map((c) => (
+                  <li key={c.id} className="border-b border-gray-800 py-2">
+                    <p className="font-semibold text-white">
+                      {c.title || 'Offer title'}
+                    </p>
+                    <p className="text-sm text-gray-400">{c.description || ''}</p>
+                    <p className="text-sm text-accent">Points received: {parseInt(c.credited_points, 10) || 0}</p>
+                    <p className="text-xs text-gray-600">{new Date(c.created_at).toLocaleString()}</p>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>
@@ -178,9 +190,6 @@ export default function Profile({ setGlobalLoading }) {
       <style jsx>{`
         .bg-card {
           background-color: #0B0B0B;
-        }
-        .text-accent {
-          color: #60A5FA;
         }
       `}</style>
     </Layout>
