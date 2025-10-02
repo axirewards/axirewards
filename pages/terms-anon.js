@@ -29,7 +29,7 @@ export default function TermsAnon() {
               <b>Account Termination:</b> We reserve the right to suspend or terminate accounts that violate these terms, or for any suspicious or fraudulent activity.
             </li>
             <li>
-              <b>Privacy:</b> Your information is handled according to our <a href="/privacy-anon" className="underline hover:text-blue-700">Privacy Policy (Anonymous)</a>.
+              <b>Privacy:</b> Your information is handled according to our <a href="/privacy-anon" className="underline hover:text-blue-700">Privacy Policy</a>.
             </li>
             <li>
               <b>Limitation of Liability:</b> Axi Rewards is not liable for any damages or losses arising from the use of our platform. Use at your own risk.
