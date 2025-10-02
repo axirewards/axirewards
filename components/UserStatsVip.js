@@ -11,14 +11,15 @@ const TIER_INFO = [
 
 const thresholds = [0, 10000, 50000, 150000, 500000, 9999999];
 
-export default function UserStatsVip({ streak = 0 }) {
+export default function UserStatsVip() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [completedOffers, setCompletedOffers] = useState(0);
+  const [streak, setStreak] = useState(0);
 
   useEffect(() => {
-    async function fetchUserAndOffers() {
+    async function fetchUserAndStats() {
       setLoading(true);
       setError("");
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
@@ -27,33 +28,62 @@ export default function UserStatsVip({ streak = 0 }) {
         setLoading(false);
         return;
       }
-      // Užklausa pagal el. paštą, nes id nėra suderinamas su bigint
-      const { data, error } = await supabase
+
+      // Get user info
+      const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("points_balance, levelpoints")
+        .select("points_balance, levelpoints, last_login, email")
         .eq("email", authUser.email)
         .single();
-      if (error || !data) {
+      if (userError || !userData) {
         setError("Vartotojas nerastas duomenų bazėje.");
         setLoading(false);
         return;
       }
-      setUser(data);
+      setUser(userData);
 
-      // Užkrauti completedOffers iš completions lentelės pagal user_email
+      // Completed offers logic
       const { count: offersCount, error: offersError } = await supabase
         .from("completions")
         .select("id", { count: "exact", head: true })
-        .eq("user_email", authUser.email);
+        .eq("user_email", userData.email);
       if (!offersError && typeof offersCount === "number") {
         setCompletedOffers(offersCount);
       } else {
         setCompletedOffers(0);
       }
 
+      // Strike (streak) logic
+      // 1. Gauti paskutinius loginus vartotojui
+      // 2. Suskaičiuoti kiek dienų iš eilės buvo loginai be pertraukos >24h
+      const { data: loginsData, error: loginsError } = await supabase
+        .from("users")
+        .select("last_login_history")
+        .eq("email", userData.email)
+        .single();
+
+      let loginHistory = [];
+      // last_login_history turi būti masyvas datų (pvz. ["2024-06-01", "2024-06-02", ...])
+      if (loginsData && Array.isArray(loginsData.last_login_history)) {
+        loginHistory = loginsData.last_login_history.map(d => new Date(d));
+      } else if (userData.last_login) {
+        // fallback: jei nėra last_login_history, pabandome paskutinį loginą
+        loginHistory = [new Date(userData.last_login)];
+      }
+
+      // Suskaičiuoti streak: loginai turi būti kasdien, be praleistų >24h tarpų
+      loginHistory.sort((a, b) => b - a); // naujausi pirmi
+      let streakCount = 1;
+      for (let i = 1; i < loginHistory.length; i++) {
+        const diff = (loginHistory[i - 1] - loginHistory[i]) / (1000 * 60 * 60 * 24); // dienomis
+        if (diff > 1.5) break; // jei daugiau nei 1.5 dienos tarp loginų, streak baigiasi
+        streakCount++;
+      }
+      setStreak(streakCount);
+
       setLoading(false);
     }
-    fetchUserAndOffers();
+    fetchUserAndStats();
   }, []);
 
   if (loading) {
@@ -72,7 +102,7 @@ export default function UserStatsVip({ streak = 0 }) {
     );
   }
 
-  const { points_balance = 0, levelpoints = 0 } = user;
+  const { points_balance = 0, levelpoints = 0 } = user || {};
 
   let tier = 1;
   for (let i = thresholds.length - 1; i >= 0; i--) {
