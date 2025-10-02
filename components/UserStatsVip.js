@@ -197,7 +197,7 @@ export default function UserStatsVip() {
       >
         <img src="/icons/check.svg" alt="Completed" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
         <span className="font-extrabold text-lg mb-2" style={{ color: "#5AF599" }}>Completed Offers</span>
-        <span className="text-3xl font-extrabold text-white">{total_completions}</span>
+        <span className="text-3xl font-extrabold text-white">{user?.total_completions ?? 0}</span>
         <span className="text-xs text-green-300 font-semibold mt-2">Offers</span>
       </div>
       <style jsx>{`
