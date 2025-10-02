@@ -8,38 +8,162 @@ import TheoremOfferwall from "../components/TheoremOfferwall";
 import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-// You'd want to add these new luxury UI components:
 import ParticleBackground from "../components/ParticleBackground";
 import PremiumBadge from "../components/PremiumBadge";
 import VIPTierProgress from "../components/VIPTierProgress";
 import AchievementWall from "../components/AchievementWall";
 import UserStatsTimeline from "../components/UserStatsTimeline";
 import OfferwallCarousel from "../components/OfferwallCarousel";
-import AXILoader from "../components/AXILoader";
 import FloatingActionButton from "../components/FloatingActionButton";
 
+// Hardcoded, but visibility controlled by Supabase partners.is_enabled
 const OFFERWALLS = [
-  // ... kaip buvo
+  {
+    key: "ayet",
+    name: "Ayet Studios",
+    logo: "/icons/ayetlogo.png",
+    color: "#60A5FA",
+    adSlot: "23274",
+    description: "Complete surveys, apps and tasks for premium AXI rewards.",
+  },
+  {
+    key: "bitlabs",
+    name: "BitLabs",
+    logo: "/icons/bitlabslogo.png",
+    color: "#62D6FB",
+    apiKey: "2dfb7d19-2974-4085-b686-181bcb681b70",
+    description: "Complete surveys and earn AXI points with BitLabs.",
+  },
+  {
+    key: "cpx",
+    name: "CPX Research",
+    logo: "/icons/cpxlogo.png",
+    color: "#5AF599",
+    appId: "29422",
+    description: "Complete surveys and earn AXI points with CPX Research.",
+  },
+  {
+    key: "theorem",
+    name: "TheoremReach",
+    logo: "/icons/theoremreachlogo.png",
+    color: "#7b6cfb",
+    appId: "24198",
+    description: "Complete surveys and earn AXI points with TheoremReach.",
+  },
 ];
 
 export default function Dashboard({ setGlobalLoading }) {
-  // ... kaip buvo su states ir useEffect
-
-  // Luxury mobile nav (sticky/floating)
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [ledger, setLedger] = useState([]);
+  const [error, setError] = useState("");
+  const [streak, setStreak] = useState(0);
+  const [activeOfferwall, setActiveOfferwall] = useState(null);
+  const [enabledKeys, setEnabledKeys] = useState([]); // keys from enabled partners
   const [showFAB, setShowFAB] = useState(false);
 
   useEffect(() => {
+    if (typeof setGlobalLoading === "function") setGlobalLoading(true);
+    const getData = async () => {
+      try {
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError || !authData.user) {
+          router.push("/");
+          return;
+        }
+        const userEmail = authData.user.email;
+        let { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("email", userEmail)
+          .single();
+        if (userError && userError.code === "PGRST116") {
+          const dummyPasswordHash = uuidv4();
+          const { data: newUser, error: insertError } = await supabase
+            .from("users")
+            .insert([{ email: userEmail, password_hash: dummyPasswordHash, created_at: new Date() }])
+            .select()
+            .single();
+          if (insertError) {
+            console.error("Error creating user profile:", insertError);
+            setError("Failed to create user profile. Contact support.");
+            setUser({ email: userEmail });
+          } else {
+            userData = newUser;
+          }
+        } else if (userError) {
+          console.error(userError);
+          setError("Failed to fetch user profile.");
+        }
+        setUser(userData);
+
+        // Ledger history
+        const { data: ledgerData, error: ledgerError } = await supabase
+          .from("ledger")
+          .select("amount,balance_after,created_at")
+          .eq("user_id", userData.id)
+          .order("created_at", { ascending: true });
+        if (ledgerError) console.error(ledgerError);
+        else setLedger(ledgerData || []);
+
+        // Daily streak
+        let currentStreak = 1;
+        if (userData.last_login) {
+          const lastLogin = new Date(userData.last_login);
+          const today = new Date();
+          const diffDays = Math.floor((today - lastLogin) / (1000 * 60 * 60 * 24));
+          currentStreak = diffDays === 1 ? (userData.streak || 0) + 1 : 1;
+        }
+        setStreak(currentStreak);
+
+        await supabase
+          .from("users")
+          .update({ last_login: new Date(), streak: currentStreak })
+          .eq("id", userData.id);
+
+        // Fetch enabled partner keys from Supabase
+        const { data: partnersData, error: partnersError } = await supabase
+          .from("partners")
+          .select("code")
+          .eq("is_enabled", true);
+        if (partnersError) {
+          console.error("Error fetching enabled partners:", partnersError);
+          setEnabledKeys([]);
+        } else {
+          setEnabledKeys(partnersData.map(p => p.code));
+        }
+
+      } catch (err) {
+        console.error("Dashboard error:", err);
+        setError("Something went wrong.");
+      } finally {
+        if (typeof setGlobalLoading === "function") setGlobalLoading(false);
+      }
+    };
+    getData();
+
     // Show floating action button only on mobile
-    if (window.innerWidth < 700) setShowFAB(true);
-  }, []);
+    if (typeof window !== "undefined" && window.innerWidth < 700) setShowFAB(true);
+  }, [router, setGlobalLoading]);
+
+  // Only show offerwalls that are enabled in Supabase partners
+  const filteredOfferwalls = OFFERWALLS.filter(wall => enabledKeys.includes(wall.key));
+
+  // Helper to open modal with correct params
+  function handleOpenOfferwall(key) {
+    setActiveOfferwall(key);
+  }
+
+  // Get offerwall params by key for modal
+  function getOfferwallParams(key) {
+    return filteredOfferwalls.find(w => w.key === key);
+  }
 
   return (
     <Layout>
       {/* Animated Luxury Particle Background */}
       <ParticleBackground type="waves-coins" />
-      {/* Main ultra-luxury container */}
       <div className="flex flex-col items-center justify-center min-h-[90vh] w-full">
-        {/* Centered glassmorphism, max 560px width */}
         <div
           className="relative bg-gradient-to-br from-[#2C3E50aa] via-[#34495Edd] to-[#000000ee] rounded-3xl shadow-2xl border border-accent backdrop-blur-xl p-6 md:p-12"
           style={{
@@ -52,57 +176,65 @@ export default function Dashboard({ setGlobalLoading }) {
           }}
         >
           {/* Luxury Premium Badge & Avatar */}
-          <div className="flex flex-col items-center mb-8 gap-3">
-            <PremiumBadge type={user?.tier >= 5 ? "diamond" : user?.tier >= 3 ? "gold" : "silver"} />
-            <img
-              src={user?.avatar_url || "/icons/avatar-default.svg"}
-              alt="Avatar"
-              className="w-20 h-20 rounded-full border-4 border-accent shadow-xl"
-              style={{ boxShadow: "0 2px 24px 0 #60A5fa44" }}
-            />
-            <div className="text-2xl font-extrabold text-white">{user?.display_name || user?.email}</div>
-            <div className="flex items-center gap-2">
-              <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} />
-              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-accent to-secondary text-white font-bold shadow-lg animate-pulse">
-                VIP {user?.tier || 1}
-              </span>
+          {user && (
+            <div className="flex flex-col items-center mb-8 gap-3">
+              <PremiumBadge type={user?.tier >= 5 ? "diamond" : user?.tier >= 3 ? "gold" : "silver"} />
+              <img
+                src={user?.avatar_url || "/icons/avatar-default.svg"}
+                alt="Avatar"
+                className="w-20 h-20 rounded-full border-4 border-accent shadow-xl"
+                style={{ boxShadow: "0 2px 24px 0 #60A5fa44" }}
+              />
+              <div className="text-2xl font-extrabold text-white">{user?.display_name || user?.email}</div>
+              <div className="flex items-center gap-2">
+                <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} />
+                <span className="px-3 py-1 rounded-full bg-gradient-to-r from-accent to-secondary text-white font-bold shadow-lg animate-pulse">
+                  VIP {user?.tier || 1}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Luxury Statistic Cards */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mb-10">
-            <StatsCard title="Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
-            <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
-            <StatsCard title="VIP Tier" value={user?.tier || 1} unit="🏆" icon="/icons/vip.svg" animateShine />
-            <StatsCard title="Best Streak" value={user?.best_streak || streak} unit="days" icon="/icons/trophy.svg" animateSparkle />
-          </div>
+          {user && (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mb-10">
+              <StatsCard title="Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
+              <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
+              <StatsCard title="VIP Tier" value={user?.tier || 1} unit="🏆" icon="/icons/vip.svg" animateShine />
+              <StatsCard title="Best Streak" value={user?.best_streak || streak} unit="days" icon="/icons/trophy.svg" animateSparkle />
+            </div>
+          )}
 
           {/* Animated User Balance History */}
-          <div className="rounded-2xl glass-card p-5 mb-8 border-2 border-accent shadow-xl">
-            <h3 className="text-lg font-bold text-accent mb-2">Balance History</h3>
-            {ledger.length > 0 ? (
-              <ResponsiveContainer width="100%" height={80}>
-                <LineChart data={ledger}>
-                  <XAxis dataKey="created_at" hide />
-                  <YAxis hide domain={['auto', 'auto']} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="balance_after" stroke="#60A5FA" strokeWidth={3} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <AXILoader text="No balance history yet..." />
-            )}
-          </div>
+          {user && (
+            <div className="rounded-2xl glass-card p-5 mb-8 border-2 border-accent shadow-xl">
+              <h3 className="text-lg font-bold text-accent mb-2">Balance History</h3>
+              {ledger.length > 0 ? (
+                <ResponsiveContainer width="100%" height={80}>
+                  <LineChart data={ledger}>
+                    <XAxis dataKey="created_at" hide />
+                    <YAxis hide domain={['auto', 'auto']} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="balance_after" stroke="#60A5FA" strokeWidth={3} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-sm text-gray-400">No balance history yet.</p>
+              )}
+            </div>
+          )}
 
           {/* Luxury Achievement Wall */}
-          <AchievementWall achievements={user?.achievements || []} />
+          {user && <AchievementWall completedOffers={user?.completed_offers || 0} />}
 
           {/* User Statistics Timeline */}
-          <UserStatsTimeline stats={user?.stats || []} />
+          {user && <UserStatsTimeline stats={user?.stats || []} />}
 
-          {/* Offerwall Preview Karuselė */}
-          <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={setActiveOfferwall} />
-
+          {/* Offerwall Carousel */}
+          <div className="w-full mt-16 flex flex-col items-center justify-center">
+            <h2 className="mb-6 text-2xl font-bold text-white text-center tracking-tight">Premium Offerwalls</h2>
+            <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
+          </div>
         </div>
 
         {/* Super luxury floating button (mobile) */}
@@ -120,16 +252,16 @@ export default function Dashboard({ setGlobalLoading }) {
                 &times;
               </button>
               {activeOfferwall === "ayet" && (
-                <AyetOfferwall adSlot={OFFERWALLS.find(w => w.key === "ayet").adSlot} height="700px" />
+                <AyetOfferwall adSlot={getOfferwallParams("ayet")?.adSlot} height="700px" />
               )}
               {activeOfferwall === "bitlabs" && (
-                <BitLabsOfferwall apiKey={OFFERWALLS.find(w => w.key === "bitlabs").apiKey} height="700px" />
+                <BitLabsOfferwall apiKey={getOfferwallParams("bitlabs")?.apiKey} height="700px" />
               )}
               {activeOfferwall === "cpx" && (
-                <CpxOfferwall appId={OFFERWALLS.find(w => w.key === "cpx").appId} height="700px" />
+                <CpxOfferwall appId={getOfferwallParams("cpx")?.appId} height="700px" />
               )}
               {activeOfferwall === "theorem" && (
-                <TheoremOfferwall appId={OFFERWALLS.find(w => w.key === "theorem").appId} height="700px" />
+                <TheoremOfferwall appId={getOfferwallParams("theorem")?.appId} height="700px" />
               )}
             </div>
           </div>
@@ -150,7 +282,6 @@ export default function Dashboard({ setGlobalLoading }) {
           from { opacity: 0; transform: scale(0.98);}
           to { opacity: 1; transform: scale(1);}
         }
-        /* Add more luxury effects, gradients, sparkles, pulses */
       `}</style>
     </Layout>
   );
