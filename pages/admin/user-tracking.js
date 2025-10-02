@@ -5,7 +5,7 @@ import AdminNavbar from '../../components/AdminNavbar'
 import { supabase } from '../../lib/supabaseClient'
 import { isAdmin } from '../../lib/userUtils'
 
-export default function AdminUserTracking() {
+export default function AdminUserTracking({ setGlobalLoading }) {
   const router = useRouter()
   const [tracking, setTracking] = useState([])
   const [users, setUsers] = useState([])
@@ -20,9 +20,11 @@ export default function AdminUserTracking() {
   // Admin check
   useEffect(() => {
     async function checkAdmin() {
+      if (typeof setGlobalLoading === "function") setGlobalLoading(true)
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser || !authUser.email) {
         router.replace('/index')
+        if (typeof setGlobalLoading === "function") setGlobalLoading(false)
         return
       }
       const { data: dbUser, error: dbError } = await supabase
@@ -32,20 +34,24 @@ export default function AdminUserTracking() {
         .single()
       if (dbError || !dbUser || !isAdmin(dbUser)) {
         router.replace('/dashboard')
+        if (typeof setGlobalLoading === "function") setGlobalLoading(false)
         return
       }
       setUser(dbUser)
       setUserChecked(true)
+      if (typeof setGlobalLoading === "function") setGlobalLoading(false)
     }
     checkAdmin()
-  }, [router])
+  }, [router, setGlobalLoading])
 
   // Fetch users and tracking data
   useEffect(() => {
     if (!userChecked) return
-    fetchUsers()
-    fetchTracking()
-  }, [userChecked, searchToken, searchEmail])
+    if (typeof setGlobalLoading === "function") setGlobalLoading(true)
+    Promise.all([fetchUsers(), fetchTracking()]).finally(() => {
+      if (typeof setGlobalLoading === "function") setGlobalLoading(false)
+    })
+  }, [userChecked, searchToken, searchEmail, setGlobalLoading])
 
   const fetchUsers = async () => {
     const { data, error } = await supabase.from('users').select('id,email').order('email', { ascending: true })
@@ -73,8 +79,10 @@ export default function AdminUserTracking() {
   }
 
   const addTracking = async () => {
+    if (typeof setGlobalLoading === "function") setGlobalLoading(true)
     if (!newToken.user_id || !newToken.tracking_token) {
       setError('User and tracking token are required')
+      if (typeof setGlobalLoading === "function") setGlobalLoading(false)
       return
     }
     // Check for duplicate tracking token
@@ -85,6 +93,7 @@ export default function AdminUserTracking() {
       .single()
     if (existing) {
       setError('Tracking token already exists!')
+      if (typeof setGlobalLoading === "function") setGlobalLoading(false)
       return
     }
     const { error } = await supabase.from('user_tracking').insert([newToken])
@@ -95,16 +104,19 @@ export default function AdminUserTracking() {
       fetchTracking()
       setError('')
     }
+    if (typeof setGlobalLoading === "function") setGlobalLoading(false)
   }
 
   const deleteTracking = async (id) => {
     if (!confirm('Delete this tracking token?')) return
+    if (typeof setGlobalLoading === "function") setGlobalLoading(true)
     const { error } = await supabase.from('user_tracking').delete().eq('id', id)
     if (error) setError('Error deleting tracking token: ' + error.message)
     else {
       fetchTracking()
       setError('')
     }
+    if (typeof setGlobalLoading === "function") setGlobalLoading(false)
   }
 
   return (
