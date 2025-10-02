@@ -1,15 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
-/**
- * UserStatsVip – one luxury responsive row with 4 cubes:
- * 1: VIP Tier (with progress bar, color and status text)
- * 2: Points Balance (with coin icon)
- * 3: Daily Streak (with fire icon)
- * 4: Completed Offers (with check icon)
- * All cubes use unified glass/card style. 
- * All logic handled inside, no child components.
- * Props: tier, points, streak, completedOffers
- */
 const TIER_INFO = [
   { level: 1, name: "Bronze", color: "#A66B3B", bg: "linear-gradient(135deg,#232e40 0%,#A66B3B 120%)" },
   { level: 2, name: "Silver", color: "#bfcbdc", bg: "linear-gradient(135deg,#232e40 0%,#bfcbdc 120%)" },
@@ -18,21 +9,55 @@ const TIER_INFO = [
   { level: 5, name: "Diamond", color: "#8fdafd", bg: "linear-gradient(135deg,#232e40 0%,#8fdafd 120%)" },
 ];
 
-export default function UserStatsVip({
-  tier = 1,
-  points = 0,
-  streak = 0,
-  completedOffers = 0
-}) {
-  // VIP Progress logic
+// thresholds x10: [0, 10_000, 50_000, 150_000, 500_000, 9_999_999]
+const thresholds = [0, 10000, 50000, 150000, 500000, 9999999];
+
+export default function UserStatsVip({ streak = 0, completedOffers = 0 }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return setLoading(false);
+      const { data, error } = await supabase
+        .from("users")
+        .select("points_balance, levelpoints")
+        .eq("id", authUser.id)
+        .single();
+      if (error) return setLoading(false);
+      setUser(data);
+      setLoading(false);
+    }
+    fetchUser();
+  }, []);
+
+  if (loading || !user) {
+    return (
+      <div className="flex justify-center items-center min-h-[180px]">
+        <span className="text-accent animate-pulse">Loading VIP stats...</span>
+      </div>
+    );
+  }
+
+  // points_balance: live balansas, levelpoints: viso laiko surinkti taškai
+  const { points_balance = 0, levelpoints = 0 } = user;
+
+  // Tier by levelpoints
+  let tier = 1;
+  for (let i = thresholds.length - 1; i >= 0; i--) {
+    if (levelpoints >= thresholds[i]) {
+      tier = i + 1;
+      break;
+    }
+  }
   const currentTier = TIER_INFO.find(t => t.level === tier) || TIER_INFO[0];
   const nextTier = TIER_INFO[tier] || null;
-  const thresholds = [0, 1000, 5000, 15000, 50000, 999999];
   const progress = nextTier
-    ? Math.min(100, ((points - thresholds[tier - 1]) / (thresholds[tier] - thresholds[tier - 1])) * 100)
+    ? Math.min(100, ((levelpoints - thresholds[tier - 1]) / (thresholds[tier] - thresholds[tier - 1])) * 100)
     : 100;
 
-  // Responsive sizing
+  // Responsive
   const isMobile = typeof window !== "undefined" ? window.innerWidth < 700 : false;
   const cubeSize = isMobile ? "90vw" : "220px";
   const iconSize = isMobile ? 32 : 44;
@@ -66,7 +91,7 @@ export default function UserStatsVip({
         >
           {currentTier.name} VIP
         </span>
-        {/* Progress bar, much smaller */}
+        {/* Progress bar */}
         <div
           className="relative rounded-full w-full shadow-inner mt-2 mb-1"
           style={{
@@ -86,7 +111,7 @@ export default function UserStatsVip({
             }}
           />
         </div>
-        <span className="text-xs text-white mt-2 font-semibold">{points} AXI</span>
+        <span className="text-xs text-white mt-2 font-semibold">{levelpoints} AXI (All-Time)</span>
         <span className="text-xs text-gray-400 mt-2 font-semibold text-center">
           {nextTier
             ? `Next: ${nextTier.name} at ${thresholds[tier]} AXI`
@@ -107,7 +132,7 @@ export default function UserStatsVip({
       >
         <img src="/icons/axicoin.svg" alt="Points" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
         <span className="font-extrabold text-lg mb-2 text-accent">Points Balance</span>
-        <span className="text-3xl font-extrabold text-white">{points}</span>
+        <span className="text-3xl font-extrabold text-white">{points_balance}</span>
         <span className="text-xs text-accent font-semibold mt-2">AXI</span>
       </div>
       {/* Daily Streak Cube */}
