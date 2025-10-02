@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { pointsToCurrency } from '../../lib/pointsConversion'
 import { isAdmin } from '../../lib/userUtils'
 
-export default function AdminLedger() {
+export default function AdminLedger({ setGlobalLoading }) {
   const router = useRouter()
   const [ledger, setLedger] = useState([])
   const [users, setUsers] = useState([])
@@ -29,9 +29,11 @@ export default function AdminLedger() {
   // Admin check on mount
   useEffect(() => {
     async function checkAdmin() {
+      if (typeof setGlobalLoading === "function") setGlobalLoading(true)
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser || !authUser.email) {
         router.replace('/index')
+        if (typeof setGlobalLoading === "function") setGlobalLoading(false)
         return
       }
       const { data: dbUser, error: dbError } = await supabase
@@ -41,18 +43,23 @@ export default function AdminLedger() {
         .single()
       if (dbError || !dbUser || !isAdmin(dbUser)) {
         router.replace('/dashboard')
+        if (typeof setGlobalLoading === "function") setGlobalLoading(false)
         return
       }
       setAdminUser(dbUser)
       setUserChecked(true)
+      if (typeof setGlobalLoading === "function") setGlobalLoading(false)
     }
     checkAdmin()
-  }, [router])
+  }, [router, setGlobalLoading])
 
   useEffect(() => {
     if (!userChecked) return
-    fetchUsers()
-  }, [userChecked])
+    if (typeof setGlobalLoading === "function") setGlobalLoading(true)
+    fetchUsers().finally(() => {
+      if (typeof setGlobalLoading === "function") setGlobalLoading(false)
+    })
+  }, [userChecked, setGlobalLoading])
 
   useEffect(() => {
     if (users.length) {
@@ -63,8 +70,11 @@ export default function AdminLedger() {
 
   useEffect(() => {
     if (!userChecked) return
-    fetchLedger()
-  }, [filterUser, filterKind, userChecked])
+    if (typeof setGlobalLoading === "function") setGlobalLoading(true)
+    fetchLedger().finally(() => {
+      if (typeof setGlobalLoading === "function") setGlobalLoading(false)
+    })
+  }, [filterUser, filterKind, userChecked, setGlobalLoading])
 
   const fetchUsers = async () => {
     const { data, error } = await supabase
@@ -201,6 +211,7 @@ export default function AdminLedger() {
     if (!selectedLedger) return
     setPayingOut(true)
     setPayError('')
+    if (typeof setGlobalLoading === "function") setGlobalLoading(true)
     try {
       // Find related payout request
       const { data: payout } = await supabase
@@ -261,6 +272,7 @@ export default function AdminLedger() {
       setPayError('Error: ' + (err.message || 'Unknown'))
     }
     setPayingOut(false)
+    if (typeof setGlobalLoading === "function") setGlobalLoading(false)
   }
 
   // User modal
@@ -406,7 +418,13 @@ export default function AdminLedger() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(user => {
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-8 text-primary animate-pulse">
+                        Loading users...
+                      </td>
+                    </tr>
+                  ) : users.map(user => {
                     const { usd, eur } = pointsToCurrency(user.points_balance)
                     return (
                       <tr
@@ -475,7 +493,13 @@ export default function AdminLedger() {
                 </tr>
               </thead>
               <tbody>
-                {ledger.map((entry) => {
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="text-center py-8 text-primary animate-pulse">
+                      Loading ledger...
+                    </td>
+                  </tr>
+                ) : ledger.map((entry) => {
                   const { usd, eur } = pointsToCurrency(entry.amount)
                   const user = userDetailsMap[entry.user_id]
                   return (
