@@ -2,7 +2,7 @@ export default function PrivacyAnon() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
       <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl py-12 px-6 md:px-10 flex flex-col items-center">
-        <h1 className="text-4xl font-extrabold text-accent mb-8 text-center drop-shadow">Privacy Policy (Anonymous)</h1>
+        <h1 className="text-4xl font-extrabold text-accent mb-8 text-center drop-shadow">Privacy Policy</h1>
         <div className="text-blue-900 text-lg space-y-6 text-left font-semibold">
           <p>
             At Axi Rewards, we value your privacy and are committed to protecting your personal data. This Privacy Policy describes how we collect, use, and safeguard your information.
