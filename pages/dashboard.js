@@ -160,14 +160,11 @@ export default function Dashboard({ setGlobalLoading }) {
   if (!isMobile) {
     return (
       <Layout>
-        {/* Longer background for scrolling */}
-        <div className="fixed inset-0 z-0 pointer-events-none" style={{ minHeight: "3500px", height: "3500px" }}>
-          <ParticleBackground type="waves-coins" />
-        </div>
-        <div className="relative flex flex-col items-center min-h-[90vh] w-full bg-transparent z-10">
-          <div className="w-full max-w-[1400px] mx-auto grid grid-cols-4 gap-10 py-14 px-4">
-            {/* Left: Premium Badge & Avatar & VIP Tier */}
-            <div className="col-span-1 flex flex-col items-center gap-9 bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-8 border-2 border-accent backdrop-blur">
+        <ParticleBackground type="waves-coins" />
+        <div className="relative flex flex-col items-center min-h-screen bg-transparent z-10 w-full">
+          <div className="w-full max-w-6xl mx-auto grid grid-cols-12 gap-10 py-12 px-4">
+            {/* Left: Badge, Avatar, VIP Progress */}
+            <div className="col-span-3 flex flex-col items-center gap-7 bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-7 border-2 border-accent backdrop-blur">
               <PremiumBadge type={user?.tier >= 5 ? "diamond" : user?.tier >= 3 ? "gold" : "silver"} />
               <img
                 src={user?.avatar_url || "/icons/avatar-default.svg"}
@@ -175,19 +172,18 @@ export default function Dashboard({ setGlobalLoading }) {
                 className="w-24 h-24 rounded-full border-4 border-accent shadow-xl"
                 style={{ boxShadow: "0 2px 24px 0 #60A5fa44" }}
               />
-              <div className="text-2xl font-extrabold text-white text-center">{user?.display_name || user?.email}</div>
-              {/* VIP Tier Progress shorter bar */}
+              <div className="text-2xl font-extrabold text-white text-center truncate w-full max-w-[230px]">{user?.display_name || user?.email}</div>
               <div className="w-full flex items-center justify-center">
-                <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} barWidth="180px" />
+                <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
               </div>
               <span className="px-3 py-1 rounded-full bg-gradient-to-r from-accent to-secondary text-white font-bold shadow-lg animate-pulse">
                 VIP {user?.tier || 1}
               </span>
             </div>
-            {/* Center: Balance History + Stats */}
-            <div className="col-span-2 flex flex-col gap-8 items-center">
-              {/* Balance History at the top, 50% width */}
-              <div className="rounded-2xl glass-card p-7 border-2 border-accent shadow-xl w-[50%] mx-auto">
+            {/* Center: Balance History + Stats + Achievements */}
+            <div className="col-span-6 flex flex-col items-center gap-9">
+              {/* Balance History */}
+              <div className="rounded-2xl glass-card p-7 border-2 border-accent shadow-xl w-full max-w-xl mx-auto">
                 <h3 className="text-lg font-bold text-accent mb-4">Balance History</h3>
                 {ledger.length > 0 ? (
                   <ResponsiveContainer width="100%" height={90}>
@@ -202,25 +198,21 @@ export default function Dashboard({ setGlobalLoading }) {
                   <p className="text-sm text-gray-400">No balance history yet.</p>
                 )}
               </div>
-              {/* Stats Cards below */}
-              <div className="grid grid-cols-2 gap-6 w-full">
+              {/* Stats Cards */}
+              <div className="grid grid-cols-2 gap-7 w-full max-w-xl">
                 <StatsCard title="Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
                 <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
                 <StatsCard title="VIP Tier" value={user?.tier || 1} unit="🏆" icon="/icons/vip.svg" animateShine />
                 <StatsCard title="Best Streak" value={user?.best_streak || streak} unit="days" icon="/icons/trophy.svg" animateSparkle />
               </div>
-              {/* Achievements grid center, beautiful container */}
-              <div className="w-full flex flex-col items-center mt-10">
-                <div className="font-extrabold text-2xl text-accent mb-2">My Achievements:</div>
-                <div className="grid grid-cols-4 md:grid-cols-7 gap-6 w-full max-w-3xl">
-                  <AchievementWall completedOffers={user?.completed_offers || 0} gridMode />
-                </div>
+              {/* Achievements */}
+              <div className="w-full flex flex-col items-center mt-2">
+                <AchievementWall completedOffers={user?.completed_offers || 0} gridMode />
               </div>
             </div>
             {/* Right: Offerwalls */}
-            <div className="col-span-1 flex flex-col items-center gap-8">
+            <div className="col-span-3 flex flex-col items-center gap-8">
               <div className="w-full flex flex-col items-center">
-                <h2 className="mb-4 text-xl font-bold text-white text-center tracking-tight">Premium Offerwalls</h2>
                 <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
               </div>
             </div>
@@ -252,6 +244,7 @@ export default function Dashboard({ setGlobalLoading }) {
             </div>
           </div>
         )}
+        {showFAB && <FloatingActionButton />}
         <style jsx>{`
           .glass-card {
             background: rgba(24, 32, 56, 0.86);
@@ -275,15 +268,15 @@ export default function Dashboard({ setGlobalLoading }) {
   // MOBILE VERSION LAYOUT
   return (
     <Layout>
-      <div className="fixed inset-0 z-0 pointer-events-none" style={{ minHeight: "2500px", height: "2500px" }}>
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <ParticleBackground type="waves-coins" />
       </div>
-      <div className="relative flex flex-col items-center justify-center min-h-[90vh] w-full z-10">
+      <div className="relative flex flex-col items-center justify-center min-h-screen w-full z-10">
         <div
           className="relative bg-gradient-to-br from-[#2C3E50aa] via-[#34495Edd] to-[#000000ee] rounded-3xl shadow-2xl border border-accent backdrop-blur-xl p-4"
           style={{
-            maxWidth: "98vw",
-            width: "98vw",
+            maxWidth: "100vw",
+            width: "100vw",
             marginTop: "22px",
             marginBottom: "22px",
             boxShadow: "0 8px 48px 0 #60A5fa44, 0 2px 12px 0 #60A5fa66",
@@ -300,8 +293,8 @@ export default function Dashboard({ setGlobalLoading }) {
                 className="w-16 h-16 rounded-full border-4 border-accent shadow-xl"
                 style={{ boxShadow: "0 2px 18px 0 #60A5fa44" }}
               />
-              <div className="text-lg font-extrabold text-white">{user?.display_name || user?.email}</div>
-              <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} />
+              <div className="text-lg font-extrabold text-white text-center truncate max-w-[220px]">{user?.display_name || user?.email}</div>
+              <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
               <span className="px-3 py-1 rounded-full bg-gradient-to-r from-accent to-secondary text-white font-bold shadow-lg animate-pulse text-sm">
                 VIP {user?.tier || 1}
               </span>
@@ -310,7 +303,7 @@ export default function Dashboard({ setGlobalLoading }) {
 
           {/* Balance History */}
           {user && (
-            <div className="rounded-2xl glass-card p-4 mb-6 border-2 border-accent shadow-xl">
+            <div className="rounded-2xl glass-card p-4 mb-6 border-2 border-accent shadow-xl w-full">
               <h3 className="text-md font-bold text-accent mb-2">Balance History</h3>
               {ledger.length > 0 ? (
                 <ResponsiveContainer width="100%" height={70}>
@@ -329,7 +322,7 @@ export default function Dashboard({ setGlobalLoading }) {
 
           {/* Stats Cards */}
           {user && (
-            <div className="flex flex-col gap-4 mb-8">
+            <div className="flex flex-col gap-4 mb-8 w-full">
               <StatsCard title="Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
               <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
             </div>
@@ -337,17 +330,13 @@ export default function Dashboard({ setGlobalLoading }) {
 
           {/* Offerwall Carousel */}
           <div className="w-full flex flex-col items-center mt-8 mb-8">
-            <h2 className="mb-4 text-lg font-bold text-white text-center tracking-tight">Premium Offerwalls</h2>
             <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
           </div>
 
           {/* Achievements Wall */}
           {user && (
             <div className="w-full flex flex-col items-center mt-6">
-              <div className="font-extrabold text-xl text-accent mb-2">My Achievements:</div>
-              <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
-                <AchievementWall completedOffers={user?.completed_offers || 0} gridMode />
-              </div>
+              <AchievementWall completedOffers={user?.completed_offers || 0} gridMode />
             </div>
           )}
         </div>
