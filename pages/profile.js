@@ -5,6 +5,23 @@ import UserStats from '../components/UserStats'
 import { supabase } from '../lib/supabaseClient'
 import DeleteAccountButton from '../components/DeleteAccountButton'
 
+// Tier info for level calculation
+const TIER_INFO = [
+  { level: 1, name: "Bronze", color: "#A66B3B", bg: "linear-gradient(135deg,#232e40 0%,#A66B3B 120%)" },
+  { level: 2, name: "Silver", color: "#bfcbdc", bg: "linear-gradient(135deg,#232e40 0%,#bfcbdc 120%)" },
+  { level: 3, name: "Gold", color: "#FFD700", bg: "linear-gradient(135deg,#232e40 0%,#FFD700 120%)" },
+  { level: 4, name: "Platinum", color: "#7b6cfb", bg: "linear-gradient(135deg,#232e40 0%,#7b6cfb 120%)" },
+  { level: 5, name: "Diamond", color: "#8fdafd", bg: "linear-gradient(135deg,#232e40 0%,#8fdafd 120%)" },
+];
+const thresholds = [0, 10000, 50000, 150000, 500000, 9999999];
+
+function getLevel(points) {
+  for (let i = thresholds.length - 1; i >= 0; i--) {
+    if (points >= thresholds[i]) return i;
+  }
+  return 1;
+}
+
 export default function Profile({ setGlobalLoading }) {
   const router = useRouter()
   const [user, setUser] = useState(null)
@@ -36,7 +53,7 @@ export default function Profile({ setGlobalLoading }) {
         setWallet(userData.wallet_address || '')
       }
 
-      // Fetch last 10 completions for this user using completions.user_email === users.email
+      // Fetch last 10 completions for this user using completions.user_email
       if (userData) {
         const { data: completionData, error: completionError } = await supabase
           .from('completions')
@@ -85,6 +102,10 @@ export default function Profile({ setGlobalLoading }) {
     }
   }
 
+  // Level calculation
+  const userLevel = user ? getLevel(user.levelpoints) : 1
+  const tier = TIER_INFO[userLevel - 1] || TIER_INFO[0]
+
   if (!user) return (
     <Layout>
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -95,7 +116,7 @@ export default function Profile({ setGlobalLoading }) {
 
   return (
     <Layout>
-      <div className="min-h-[80vh] flex flex-col justify-between">
+      <div className="min-h-[80vh] flex flex-col">
         <div className="max-w-4xl mx-auto w-full p-6 space-y-8">
           <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
             <h1 className="text-3xl font-extrabold text-primary mb-3 md:mb-0">Profile</h1>
@@ -110,7 +131,29 @@ export default function Profile({ setGlobalLoading }) {
             </div>
           </div>
 
-          <UserStats user={user} />
+          <div className="bg-card shadow-md rounded-2xl p-6 mb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <UserStats user={user} />
+            {/* User Level Badge */}
+            <div className="flex flex-col items-center md:items-end">
+              <span
+                style={{
+                  background: tier.bg,
+                  color: tier.color,
+                  fontWeight: 700,
+                  padding: '8px 18px',
+                  borderRadius: 16,
+                  fontSize: 18,
+                  marginTop: 4,
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.09)'
+                }}
+              >
+                {tier.name} Level {userLevel}
+              </span>
+              <span className="text-xs text-gray-400 mt-2">
+                Levelpoints: {user.levelpoints || 0}
+              </span>
+            </div>
+          </div>
 
           <div className="bg-card shadow-md rounded-2xl p-6 mb-2">
             <h2 className="text-xl font-semibold mb-2 text-primary">Crypto Wallet <span className="font-normal text-sm text-gray-400">(POLYGON Wallet)</span></h2>
@@ -140,6 +183,12 @@ export default function Profile({ setGlobalLoading }) {
 
           <div className="bg-card shadow-md rounded-2xl p-6 mb-4">
             <h2 className="text-xl font-semibold mb-2 text-primary">Recent Completed Offers</h2>
+            <div className="flex flex-col md:flex-row md:justify-between gap-4 mb-4">
+              <div>
+                <span className="text-base text-white font-bold">Total completed offers:&nbsp;</span>
+                <span className="text-accent font-bold">{user.total_completions || 0}</span>
+              </div>
+            </div>
             {completions.length === 0 ? (
               <p className="text-gray-400">No records found.</p>
             ) : (
