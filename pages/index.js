@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
 import Image from "next/image";
-import IndexFooter from "../components/IndexFooter";
+import ConsentPopup from "../components/ConsentPopup";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,17 +11,32 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [infoMsg, setInfoMsg] = useState("");
 
-  // Redirect if already logged in
+  // Consent state
+  const [user, setUser] = useState(null);
+  const [consent, setConsent] = useState(true); // default true if not loaded
+
+  // Check user and consent on mount
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Get consent from users table
+        const { data, error } = await supabase
+          .from("users")
+          .select("consent")
+          .eq("email", user.email)
+          .single();
+        setUser(user);
+        setConsent(data?.consent ?? false);
+
         // Update last_login if user is already logged in
         await supabase
           .from("users")
           .update({ last_login: new Date().toISOString() })
           .eq("email", user.email);
-        router.replace("/dashboard");
+
+        // Redirect if consent is already given
+        if (data?.consent) router.replace("/dashboard");
       }
     };
     checkUser();
@@ -42,8 +57,6 @@ export default function LoginPage() {
     if (error) {
       setErrorMsg(error.message);
     } else {
-      // On next visit to dashboard, last_login will be updated,
-      // but try to update it here for immediate logins too
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
         await supabase
@@ -68,8 +81,6 @@ export default function LoginPage() {
     });
 
     if (!error) {
-      // On next visit to dashboard, last_login will be updated,
-      // but try to update it here for immediate logins too
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
         await supabase
@@ -79,6 +90,18 @@ export default function LoginPage() {
       }
     }
     if (error) setErrorMsg(error.message);
+  };
+
+  // Handle consent accept (passed to popup)
+  const handleConsentAccept = async () => {
+    if (user?.id) {
+      await supabase
+        .from("users")
+        .update({ consent: true })
+        .eq("id", user.id);
+      setConsent(true);
+      router.replace("/dashboard");
+    }
   };
 
   return (
@@ -156,8 +179,15 @@ export default function LoginPage() {
           </button>
         </div>
       </main>
-      <IndexFooter />
-      {/* Animacijos */}
+      {/* Consent Popup */}
+      {user && !consent && (
+        <ConsentPopup
+          userId={user.id}
+          consent={false}
+          onAccept={handleConsentAccept}
+        />
+      )}
+      {/* Animations */}
       <style jsx>{`
         .animate-fade-in { animation: fadeIn 0.55s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
