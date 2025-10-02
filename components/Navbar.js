@@ -3,10 +3,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { FaCoins } from 'react-icons/fa'
 import { FiMenu, FiX } from 'react-icons/fi'
+import { supabase } from '../lib/supabaseClient'
 
-export default function Navbar({ user, balance = 0, onLogout }) {
+export default function Navbar({ user, balance = 0 }) {
   const router = useRouter()
-  const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const handleDropdown = () => setDropdownOpen((v) => !v)
 
@@ -23,10 +23,10 @@ export default function Navbar({ user, balance = 0, onLogout }) {
     router.push('/dashboard')
   }
 
-  // Fix: Make sure mobile logout closes menu and calls onLogout
-  const handleMobileLogout = () => {
-    setMenuOpen(false)
-    if (onLogout) onLogout()
+  // Logout function identical to Profile page
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/")
   }
 
   return (
@@ -79,11 +79,14 @@ export default function Navbar({ user, balance = 0, onLogout }) {
               {/* Dropdown */}
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-44 bg-white text-gray-900 rounded shadow-lg border z-20 animate-dropdownIn">
-                  <Link href="/profile" className="block px-4 py-2 hover:bg-blue-50 rounded">Profile</Link>
-                  <Link href="/settings" className="block px-4 py-2 hover:bg-blue-50 rounded">Settings</Link>
+                  <Link href="/profile" className="block px-4 py-2 hover:bg-blue-50 rounded" onClick={() => setDropdownOpen(false)}>Profile</Link>
+                  <Link href="/settings" className="block px-4 py-2 hover:bg-blue-50 rounded" onClick={() => setDropdownOpen(false)}>Settings</Link>
                   <button
                     className="w-full text-left px-4 py-2 hover:bg-blue-50 rounded"
-                    onClick={onLogout}
+                    onClick={async () => {
+                      setDropdownOpen(false)
+                      await handleLogout()
+                    }}
                   >Logout</button>
                 </div>
               )}
@@ -91,35 +94,14 @@ export default function Navbar({ user, balance = 0, onLogout }) {
           </div>
         )}
 
-        {/* Burger menu for mobile */}
+        {/* Burger menu for mobile - triggers dropdown only */}
         <button
           className="md:hidden ml-2 p-2 rounded bg-blue-800/50 hover:bg-blue-800/80 transition border border-blue-900"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label={menuOpen ? 'Close Menu' : 'Open Menu'}
+          onClick={handleDropdown}
+          aria-label={dropdownOpen ? 'Close Menu' : 'Open Menu'}
         >
-          {menuOpen ? <FiX size={28} /> : <FiMenu size={28} />}
+          {dropdownOpen ? <FiX size={28} /> : <FiMenu size={28} />}
         </button>
-        {/* Mobile menu */}
-        {menuOpen && (
-          <div className="absolute top-full left-0 w-full bg-card text-white shadow-xl flex flex-col gap-2 py-4 z-50 animate-mobileMenuIn">
-            <div className="flex items-center justify-center mb-2">
-              <img src="/icons/logo.png" alt="AxiRewards" className="w-18 h-18 drop-shadow" />
-            </div>
-            {links.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className={`px-6 py-2 rounded-lg transition ${
-                  isActive(link.href) ? 'bg-accent text-white shadow-md scale-105' : 'hover:bg-blue-900'
-                }`}
-                onClick={() => setMenuOpen(false)}
-              >
-                {link.name}
-              </Link>
-            ))}
-            <button className="px-6 py-2 hover:bg-blue-900 text-left" onClick={handleMobileLogout}>Logout</button>
-          </div>
-        )}
       </div>
       {/* Animacijos & custom styles */}
       <style jsx>{`
@@ -127,8 +109,6 @@ export default function Navbar({ user, balance = 0, onLogout }) {
         .h-18 { height: 4.95rem; }
         .animate-dropdownIn { animation: dropdownIn 0.25s ease; }
         @keyframes dropdownIn { from { opacity: 0; transform: translateY(-10px);} to { opacity: 1; transform: translateY(0);} }
-        .animate-mobileMenuIn { animation: mobileMenuIn 0.35s cubic-bezier(.23,1,.32,1); }
-        @keyframes mobileMenuIn { from { opacity: 0; transform: translateY(-16px);} to { opacity: 1; transform: translateY(0);} }
         .animate-spin-slow { animation: spin 2s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
