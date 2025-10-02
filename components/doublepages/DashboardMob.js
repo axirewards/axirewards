@@ -10,7 +10,6 @@ import { v4 as uuidv4 } from "uuid";
 import UserStatsVip from "../UserStatsVip";
 import OfferwallCarousel from "../OfferwallCarousel";
 import AchievementWall from "../AchievementWall";
-import FloatingActionButton from "../FloatingActionButton";
 
 const OFFERWALLS = [
   {
@@ -55,8 +54,7 @@ export default function DashboardMob({ setGlobalLoading }) {
   const [streak, setStreak] = useState(0);
   const [activeOfferwall, setActiveOfferwall] = useState(null);
   const [enabledKeys, setEnabledKeys] = useState([]);
-  const [showFAB, setShowFAB] = useState(true); // mobile visada rodom FAB
-
+  
   useEffect(() => {
     if (typeof setGlobalLoading === "function") setGlobalLoading(true);
     const getData = async () => {
@@ -135,20 +133,29 @@ export default function DashboardMob({ setGlobalLoading }) {
       }
     };
     getData();
-    // Mobile - visada FAB
-    setShowFAB(true);
   }, [router, setGlobalLoading]);
 
   const filteredOfferwalls = OFFERWALLS.filter(wall => enabledKeys.includes(wall.key));
   function handleOpenOfferwall(key) { setActiveOfferwall(key); }
   function getOfferwallParams(key) { return filteredOfferwalls.find(w => w.key === key); }
 
+  // -- MOBILE APPSHELL --
   return (
     <Layout>
-      <div className="relative flex flex-col items-center justify-start min-h-screen w-full z-10 bg-gradient-to-br from-blue-900 via-accent to-black px-0 pt-0"
-        style={{ maxWidth: "100vw", width: "100vw", paddingBottom: "80px" }}>
+      <main
+        className="relative flex flex-col items-center justify-start min-h-[100dvh] w-full max-w-full z-10"
+        style={{
+          padding: 0,
+          margin: 0,
+          width: '100vw',
+          minHeight: '100dvh',
+          boxSizing: 'border-box',
+          background: 'none', // Use project global bg (as per globals.css)
+          overflowX: 'hidden'
+        }}
+      >
         {/* Headline */}
-        <div className="w-full flex items-center justify-center mt-5 mb-2">
+        <div className="w-full flex items-center justify-center mt-5 mb-2 px-2">
           {user && (
             <span
               className="font-bold text-2xl text-white drop-shadow text-center py-3 px-6 rounded-xl"
@@ -160,6 +167,8 @@ export default function DashboardMob({ setGlobalLoading }) {
                 color: "transparent",
                 letterSpacing: "0.055em",
                 boxShadow: "0 2px 14px #60A5fa22",
+                maxWidth: "98vw",
+                overflowWrap: "break-word"
               }}
             >
               Welcome, <span style={{
@@ -177,7 +186,7 @@ export default function DashboardMob({ setGlobalLoading }) {
 
         {/* User Stats / VIP */}
         {user && (
-          <div className="w-full px-0" style={{ marginTop: '3vw' }}>
+          <div className="w-full px-2" style={{ marginTop: '3vw', maxWidth: '100vw' }}>
             <UserStatsVip
               tier={user?.tier || 1}
               points={user?.points_balance || 0}
@@ -188,41 +197,47 @@ export default function DashboardMob({ setGlobalLoading }) {
         )}
 
         {/* Offerwalls */}
-        <div className="w-full flex flex-col items-center mt-6 mb-3 px-2" style={{ maxWidth: '99vw' }}>
+        <section className="w-full flex flex-col items-center mt-6 mb-3 px-2" style={{ maxWidth: '100vw' }}>
           <h2 className="mb-3 text-xl font-bold text-white text-center tracking-tight"
             style={{
               letterSpacing: "0.05em",
               fontFamily: "inherit",
               paddingBottom: "2px",
+              maxWidth: "92vw"
             }}>
             Premium Offerwalls
           </h2>
           <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
-        </div>
+        </section>
 
         {/* Achievement Wall */}
-        <div className="w-full flex flex-col items-center justify-center" style={{ maxWidth: '99vw', marginTop: '5vw', marginBottom: '3vw' }}>
+        <section className="w-full flex flex-col items-center justify-center" style={{ maxWidth: '100vw', marginTop: '5vw', marginBottom: '3vw' }}>
           {user && (
             <AchievementWall completedOffers={user?.completed_offers || 0} />
           )}
-        </div>
-
-        {/* Floating Action Button (FAB) */}
-        {showFAB && <FloatingActionButton />}
+        </section>
 
         {/* Offerwall Modal */}
         {activeOfferwall && (
-          <div className="fixed inset-0 z-[1001] bg-black/85 flex items-center justify-center backdrop-blur">
-            <div className="glass-card rounded-2xl shadow-2xl border-4 border-accent max-w-lg w-full p-3 flex flex-col items-center relative animate-fade-in"
-              style={{ minHeight: "70vh", maxHeight: "99vh", overflowY: "auto" }}>
+          <div className="fixed inset-0 z-[1001] bg-black/85 flex items-center justify-center backdrop-blur-sm">
+            <div
+              className="glass-card rounded-2xl shadow-2xl border-4 border-accent max-w-[99vw] w-[99vw] p-1 flex flex-col items-center relative animate-fade-in"
+              style={{
+                minHeight: "70vh",
+                maxHeight: "99vh",
+                overflowY: "auto",
+                boxSizing: "border-box"
+              }}
+            >
               <button
                 className="absolute top-3 right-5 text-accent text-3xl font-extrabold hover:text-blue-700 transition"
                 onClick={() => setActiveOfferwall(null)}
                 aria-label="Close"
                 style={{
-                  background: "rgba(24,32,56,0.8)",
+                  background: "rgba(24,32,56,0.82)",
                   borderRadius: "1.4rem",
                   padding: "3px 13px",
+                  zIndex: 2
                 }}
               >
                 &times;
@@ -243,27 +258,17 @@ export default function DashboardMob({ setGlobalLoading }) {
           </div>
         )}
 
-        {/* Bottom Navigation (app style, optional) */}
-        <nav className="fixed bottom-0 left-0 right-0 z-[1002] bg-gradient-to-br from-blue-900 via-accent to-black border-t border-accent flex justify-around items-center px-4 py-2"
-          style={{ boxShadow: "0 -2px 18px #60A5fa33" }}>
-          <button className="flex flex-col items-center focus:outline-none">
-            <img src="/icons/offerwall.svg" alt="Offerwalls" className="w-7 h-7 mb-1" />
-            <span className="text-xs text-white font-bold">Offerwalls</span>
-          </button>
-          <button className="flex flex-col items-center focus:outline-none">
-            <img src="/icons/achievements.svg" alt="Achievements" className="w-7 h-7 mb-1" />
-            <span className="text-xs text-white font-bold">Achievements</span>
-          </button>
-          <button className="flex flex-col items-center focus:outline-none">
-            <img src="/icons/profile.svg" alt="Profile" className="w-7 h-7 mb-1" />
-            <span className="text-xs text-white font-bold">Profile</span>
-          </button>
-        </nav>
-      </div>
+        {/* Error display */}
+        {error && (
+          <div className="w-full flex items-center justify-center mt-4">
+            <span className="text-red-500 font-bold text-center text-sm" style={{ maxWidth: '90vw' }}>{error}</span>
+          </div>
+        )}
+      </main>
       <style jsx>{`
         html, body, #__next {
           width: 100vw !important;
-          min-height: 100vh !important;
+          min-height: 100dvh !important;
           overflow-x: hidden !important;
           box-sizing: border-box;
         }
