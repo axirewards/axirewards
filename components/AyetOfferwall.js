@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabaseClient'
  * - 1:1 iframe URL format: https://offerwall.ayet.io/offers?adSlot=23280&externalIdentifier={YOUR_USER_IDENTIFIER}
  */
 
-export default function AyetOfferwall({ adSlot = "23280", height = "700px" }) {
+export default function AyetOfferwall({ adSlot = "23308", height = "700px" }) {
   const [userId, setUserId] = useState(null)
   const [loading, setLoading] = useState(true)
 
