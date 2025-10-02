@@ -158,11 +158,38 @@ export default function Dashboard({ setGlobalLoading }) {
     return (
       <Layout>
         <div className="relative flex flex-col items-center justify-start min-h-screen w-full" style={{maxWidth:'100vw'}}>
-          {/* Header */}
-          <div className="flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-4">
-            <h1 className="text-4xl font-extrabold text-white text-center drop-shadow mb-3">
-              Dashboard
-            </h1>
+          {/* Greeting Header */}
+          <div className="flex flex-col md:flex-row items-center justify-center w-full mb-3 gap-4">
+            {user && (
+              <div className="w-full flex items-center justify-center">
+                <span
+                  className="greeting-header font-extrabold text-3xl md:text-4xl text-white text-center drop-shadow"
+                  style={{
+                    background: "linear-gradient(90deg, #60A5FA 0%, #7b6cfb 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    color: "transparent",
+                    padding: "6px 24px",
+                    borderRadius: "1.2rem",
+                    fontFamily: "inherit",
+                    letterSpacing: "0.04em",
+                    marginBottom: "2px",
+                    boxShadow: "0 2px 24px #60A5fa22",
+                  }}
+                >
+                  Welcome, <span style={{
+                    color: "#FFD700",
+                    background: "none",
+                    WebkitBackgroundClip: "unset",
+                    WebkitTextFillColor: "unset",
+                    fontWeight: 800,
+                    letterSpacing: "0.07em",
+                    textShadow: "0 1px 12px #FFD70066",
+                  }}>{user.email}</span>!
+                </span>
+              </div>
+            )}
           </div>
           {/* User Stats / VIP */}
           {user && (
@@ -173,15 +200,24 @@ export default function Dashboard({ setGlobalLoading }) {
               completedOffers={user?.completed_offers || 0}
             />
           )}
-          {/* Offerwalls Section - moved right below stats */}
-          <div className="w-full flex flex-col items-center justify-center" style={{maxWidth:'97vw', marginTop:'18px'}}>
-            <h2 className="mb-6 text-2xl font-bold text-white text-center tracking-tight">Premium Offerwalls</h2>
+          {/* Offerwalls Section */}
+          <div className="w-full flex flex-col items-center justify-center" style={{maxWidth:'97vw', marginTop:'3.1vw'}}>
+            <h2 className="mb-7 text-2xl font-bold text-white text-center tracking-tight"
+              style={{
+                marginTop: "0.8vw",
+                marginBottom: "2.9vw",
+                letterSpacing: "0.04em",
+                fontFamily: "inherit",
+                paddingBottom: "2px",
+              }}>
+              Premium Offerwalls
+            </h2>
             <div className="w-full flex flex-col items-center justify-center">
               <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
             </div>
           </div>
           {/* Achievement Wall - perfect distance below offerwall carousel */}
-          <div className="w-full flex flex-col items-center justify-center" style={{maxWidth:'97vw', marginTop:'30px', marginBottom:'24px'}}>
+          <div className="w-full flex flex-col items-center justify-center" style={{maxWidth:'97vw', marginTop:'2.9vw', marginBottom:'2vw'}}>
             {user && (
               <AchievementWall completedOffers={user?.completed_offers || 0} />
             )}
@@ -229,6 +265,37 @@ export default function Dashboard({ setGlobalLoading }) {
             border: "3px solid #60A5FA33",
           }}
         >
+          {/* Greeting Header */}
+          {user && (
+            <div className="w-full flex items-center justify-center mb-3">
+              <span
+                className="greeting-header font-extrabold text-2xl text-white text-center drop-shadow"
+                style={{
+                  background: "linear-gradient(90deg, #60A5FA 0%, #7b6cfb 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  color: "transparent",
+                  padding: "4px 14px",
+                  borderRadius: "0.9rem",
+                  fontFamily: "inherit",
+                  letterSpacing: "0.045em",
+                  marginBottom: "1px",
+                  boxShadow: "0 2px 14px #60A5fa22",
+                }}
+              >
+                Welcome, <span style={{
+                  color: "#FFD700",
+                  background: "none",
+                  WebkitBackgroundClip: "unset",
+                  WebkitTextFillColor: "unset",
+                  fontWeight: 800,
+                  letterSpacing: "0.07em",
+                  textShadow: "0 1px 7px #FFD70066",
+                }}>{user.email}</span>!
+              </span>
+            </div>
+          )}
           {/* User Stats / VIP */}
           {user && (
             <UserStatsVip
@@ -238,13 +305,22 @@ export default function Dashboard({ setGlobalLoading }) {
               completedOffers={user?.completed_offers || 0}
             />
           )}
-          {/* Offerwall Carousel - moved right below stats */}
-          <div className="w-full flex flex-col items-center mt-5 mb-4" style={{maxWidth:'97vw'}}>
-            <h2 className="mb-5 text-xl font-bold text-white text-center tracking-tight">Premium Offerwalls</h2>
+          {/* Offerwall Carousel - beautiful spacing below stats */}
+          <div className="w-full flex flex-col items-center mt-3 mb-3" style={{maxWidth:'97vw'}}>
+            <h2 className="mb-6 text-xl font-bold text-white text-center tracking-tight"
+              style={{
+                marginTop: "1.5vw",
+                marginBottom: "3vw",
+                letterSpacing: "0.04em",
+                fontFamily: "inherit",
+                paddingBottom: "2px",
+              }}>
+              Premium Offerwalls
+            </h2>
             <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
           </div>
           {/* Achievement Wall - perfect distance below offerwall carousel */}
-          <div className="w-full flex flex-col items-center justify-center" style={{maxWidth:'97vw', marginTop:'22px', marginBottom:'14px'}}>
+          <div className="w-full flex flex-col items-center justify-center" style={{maxWidth:'97vw', marginTop:'4vw', marginBottom:'2vw'}}>
             {user && (
               <AchievementWall completedOffers={user?.completed_offers || 0} />
             )}
