@@ -71,7 +71,7 @@ export default function Payout({ setGlobalLoading }) {
     const pointsNum = parseFloat(pointsToRedeem)
     if (
       isNaN(pointsNum) ||
-      pointsNum < 100 || // CHANGE: Minimum withdrawal 100 points
+      pointsNum < 10000 || // CHANGE: Minimum withdrawal 10000 points
       pointsNum > user.points_balance
     ) {
       setPointsError('Invalid points amount')
@@ -138,7 +138,7 @@ export default function Payout({ setGlobalLoading }) {
             {/* Minimum withdrawal badge - INSIDE CONTAINER */}
             <div className="absolute top-4 right-4 z-10">
               <span className="bg-white px-3 py-1 rounded-lg shadow text-xs font-bold text-red-600 border border-red-300 select-none">
-                Minimum withdrawal amount = 100 points
+                Minimum withdrawal amount = 10000 points
               </span>
             </div>
             <div>
@@ -170,7 +170,7 @@ export default function Payout({ setGlobalLoading }) {
                 <label className="text-sm font-semibold text-white mb-1 block">Points to Redeem</label>
                 <input
                   type="number"
-                  min={100}
+                  min={10000} // CHANGE: Minimum withdrawal 10000 points
                   max={user.points_balance || 0}
                   placeholder="Enter points amount"
                   className="w-full border border-gray-700 rounded-lg p-2 bg-black text-white"
