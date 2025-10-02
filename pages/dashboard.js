@@ -8,8 +8,7 @@ import TheoremOfferwall from "../components/TheoremOfferwall";
 import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import PremiumBadge from "../components/PremiumBadge";
-import VIPTierProgress from "../components/VIPTierProgress";
+import UserStatsVip from "../components/UserStatsVip";
 import OfferwallCarousel from "../components/OfferwallCarousel";
 import FloatingActionButton from "../components/FloatingActionButton";
 
@@ -166,19 +165,14 @@ export default function Dashboard({ setGlobalLoading }) {
             </h1>
           </div>
 
-          {/* Stats Cards / User / VIP */}
+          {/* User Stats / VIP (all 4 cubes in one component) */}
           {user && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-10 w-full justify-center" style={{maxWidth:'97vw'}}>
-              <div className="bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-7 border-2 border-accent backdrop-blur flex flex-col items-center">
-                {/* Only VIPTierProgress here, no badge/avatar/status from dashboard */}
-                <div className="w-full flex items-center justify-center mt-1">
-                  <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
-                </div>
-              </div>
-              <StatsCard title="Points Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
-              <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
-              <StatsCard title="VIP Tier" value={user?.tier || 1} unit="🏆" icon="/icons/vip.svg" animateShine />
-            </div>
+            <UserStatsVip
+              tier={user?.tier || 1}
+              points={user?.points_balance || 0}
+              streak={streak}
+              completedOffers={user?.completed_offers || 0}
+            />
           )}
 
           {/* Balance History */}
@@ -276,11 +270,14 @@ export default function Dashboard({ setGlobalLoading }) {
             border: "3px solid #60A5FA33",
           }}
         >
-          {/* Only VIPTierProgress here, no badge/avatar/status from dashboard */}
+          {/* User Stats / VIP (all 4 cubes in one component) */}
           {user && (
-            <div className="w-full flex items-center justify-center mt-1 mb-6">
-              <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
-            </div>
+            <UserStatsVip
+              tier={user?.tier || 1}
+              points={user?.points_balance || 0}
+              streak={streak}
+              completedOffers={user?.completed_offers || 0}
+            />
           )}
 
           {/* Balance History */}
@@ -299,14 +296,6 @@ export default function Dashboard({ setGlobalLoading }) {
               ) : (
                 <p className="text-xs text-gray-400">No balance history yet.</p>
               )}
-            </div>
-          )}
-
-          {/* Stats Cards */}
-          {user && (
-            <div className="flex flex-col gap-4 mb-8 w-full">
-              <StatsCard title="Points Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
-              <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
             </div>
           )}
 
@@ -365,28 +354,5 @@ export default function Dashboard({ setGlobalLoading }) {
         `}</style>
       </div>
     </Layout>
-  );
-}
-
-function StatsCard({ title, value, unit, icon, animateConfetti, animatePulse, animateShine, animateSparkle }) {
-  return (
-    <div
-      className={`glass-card flex flex-col items-center justify-center py-6 px-4 border border-accent shadow-xl transition-all duration-400 hover:scale-105`}
-      style={{
-        minWidth: "180px",
-        maxWidth: "100%",
-        boxShadow: "0 2px 16px 0 #60A5fa22",
-        position: "relative",
-      }}
-    >
-      <img src={icon} alt={title} className="w-10 h-10 mb-2" />
-      <h4 className="text-lg font-bold text-white mb-1">{title}</h4>
-      <span className="text-3xl font-extrabold text-accent">{value}</span>
-      <span className="text-md text-secondary">{unit}</span>
-      {animateConfetti && <span className="absolute top-2 right-2 confetti" />}
-      {animatePulse && <span className="absolute bottom-2 left-2 pulse" />}
-      {animateShine && <span className="absolute bottom-2 right-2 shine" />}
-      {animateSparkle && <span className="absolute top-2 left-2 sparkle" />}
-    </div>
   );
 }
