@@ -10,7 +10,7 @@ const ACHIEVEMENTS = [
     id: 1,
     threshold: 10,
     title: "Getting Started",
-    icon: "/icons/achievement-rocket.svg",
+    icon: "/icons/achievement-rocket.png",
     description: "Complete 10 offers – you’re officially rolling!",
   },
   {
