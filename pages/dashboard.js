@@ -15,7 +15,6 @@ import AchievementWall from "../components/AchievementWall";
 import OfferwallCarousel from "../components/OfferwallCarousel";
 import FloatingActionButton from "../components/FloatingActionButton";
 
-// OFFERWALLS masyvas su visais parametrais
 const OFFERWALLS = [
   {
     key: "ayet",
@@ -132,7 +131,6 @@ export default function Dashboard({ setGlobalLoading }) {
         } else {
           setEnabledKeys(partnersData.map(p => p.code));
         }
-
       } catch (err) {
         console.error("Dashboard error:", err);
         setError("Something went wrong.");
@@ -155,24 +153,21 @@ export default function Dashboard({ setGlobalLoading }) {
   }, [router, setGlobalLoading]);
 
   const filteredOfferwalls = OFFERWALLS.filter(wall => enabledKeys.includes(wall.key));
+  function handleOpenOfferwall(key) { setActiveOfferwall(key); }
+  function getOfferwallParams(key) { return filteredOfferwalls.find(w => w.key === key); }
 
-  // Modal helpers
-  function handleOpenOfferwall(key) {
-    setActiveOfferwall(key);
-  }
-  function getOfferwallParams(key) {
-    return filteredOfferwalls.find(w => w.key === key);
-  }
-
-  // PC VERSION LAYOUT - max luxury, wide, grid
+  // PC DESKTOP
   if (!isMobile) {
     return (
       <Layout>
-        <ParticleBackground type="waves-coins" />
-        <div className="flex flex-col items-center min-h-[90vh] w-full bg-transparent">
+        {/* Longer background for scrolling */}
+        <div className="fixed inset-0 z-0 pointer-events-none" style={{ minHeight: "3500px", height: "3500px" }}>
+          <ParticleBackground type="waves-coins" />
+        </div>
+        <div className="relative flex flex-col items-center min-h-[90vh] w-full bg-transparent z-10">
           <div className="w-full max-w-[1400px] mx-auto grid grid-cols-4 gap-10 py-14 px-4">
-            {/* Left: Premium Badge & Avatar */}
-            <div className="col-span-1 flex flex-col items-center gap-8 bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-8 border-2 border-accent backdrop-blur">
+            {/* Left: Premium Badge & Avatar & VIP Tier */}
+            <div className="col-span-1 flex flex-col items-center gap-9 bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-8 border-2 border-accent backdrop-blur">
               <PremiumBadge type={user?.tier >= 5 ? "diamond" : user?.tier >= 3 ? "gold" : "silver"} />
               <img
                 src={user?.avatar_url || "/icons/avatar-default.svg"}
@@ -181,23 +176,21 @@ export default function Dashboard({ setGlobalLoading }) {
                 style={{ boxShadow: "0 2px 24px 0 #60A5fa44" }}
               />
               <div className="text-2xl font-extrabold text-white text-center">{user?.display_name || user?.email}</div>
-              <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} />
+              {/* VIP Tier Progress shorter bar */}
+              <div className="w-full flex items-center justify-center">
+                <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} barWidth="180px" />
+              </div>
               <span className="px-3 py-1 rounded-full bg-gradient-to-r from-accent to-secondary text-white font-bold shadow-lg animate-pulse">
                 VIP {user?.tier || 1}
               </span>
             </div>
-            {/* Center: Stats & Balance History */}
-            <div className="col-span-2 flex flex-col gap-8">
-              <div className="grid grid-cols-2 gap-6">
-                <StatsCard title="Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
-                <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
-                <StatsCard title="VIP Tier" value={user?.tier || 1} unit="🏆" icon="/icons/vip.svg" animateShine />
-                <StatsCard title="Best Streak" value={user?.best_streak || streak} unit="days" icon="/icons/trophy.svg" animateSparkle />
-              </div>
-              <div className="rounded-2xl glass-card p-7 border-2 border-accent shadow-xl">
+            {/* Center: Balance History + Stats */}
+            <div className="col-span-2 flex flex-col gap-8 items-center">
+              {/* Balance History at the top, 50% width */}
+              <div className="rounded-2xl glass-card p-7 border-2 border-accent shadow-xl w-[50%] mx-auto">
                 <h3 className="text-lg font-bold text-accent mb-4">Balance History</h3>
                 {ledger.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={100}>
+                  <ResponsiveContainer width="100%" height={90}>
                     <LineChart data={ledger}>
                       <XAxis dataKey="created_at" hide />
                       <YAxis hide domain={['auto', 'auto']} />
@@ -209,14 +202,27 @@ export default function Dashboard({ setGlobalLoading }) {
                   <p className="text-sm text-gray-400">No balance history yet.</p>
                 )}
               </div>
+              {/* Stats Cards below */}
+              <div className="grid grid-cols-2 gap-6 w-full">
+                <StatsCard title="Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
+                <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
+                <StatsCard title="VIP Tier" value={user?.tier || 1} unit="🏆" icon="/icons/vip.svg" animateShine />
+                <StatsCard title="Best Streak" value={user?.best_streak || streak} unit="days" icon="/icons/trophy.svg" animateSparkle />
+              </div>
+              {/* Achievements grid center, beautiful container */}
+              <div className="w-full flex flex-col items-center mt-10">
+                <div className="font-extrabold text-2xl text-accent mb-2">My Achievements:</div>
+                <div className="grid grid-cols-4 md:grid-cols-7 gap-6 w-full max-w-3xl">
+                  <AchievementWall completedOffers={user?.completed_offers || 0} gridMode />
+                </div>
+              </div>
             </div>
-            {/* Right: Offerwalls & Achievements */}
-            <div className="col-span-1 flex flex-col gap-8">
+            {/* Right: Offerwalls */}
+            <div className="col-span-1 flex flex-col items-center gap-8">
               <div className="w-full flex flex-col items-center">
                 <h2 className="mb-4 text-xl font-bold text-white text-center tracking-tight">Premium Offerwalls</h2>
                 <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
               </div>
-              <AchievementWall completedOffers={user?.completed_offers || 0} />
             </div>
           </div>
         </div>
@@ -266,11 +272,13 @@ export default function Dashboard({ setGlobalLoading }) {
     );
   }
 
-  // MOBILE VERSION LAYOUT - vertical, optimal order
+  // MOBILE VERSION LAYOUT
   return (
     <Layout>
-      <ParticleBackground type="waves-coins" />
-      <div className="flex flex-col items-center justify-center min-h-[90vh] w-full">
+      <div className="fixed inset-0 z-0 pointer-events-none" style={{ minHeight: "2500px", height: "2500px" }}>
+        <ParticleBackground type="waves-coins" />
+      </div>
+      <div className="relative flex flex-col items-center justify-center min-h-[90vh] w-full z-10">
         <div
           className="relative bg-gradient-to-br from-[#2C3E50aa] via-[#34495Edd] to-[#000000ee] rounded-3xl shadow-2xl border border-accent backdrop-blur-xl p-4"
           style={{
@@ -334,12 +342,16 @@ export default function Dashboard({ setGlobalLoading }) {
           </div>
 
           {/* Achievements Wall */}
-          {user && <AchievementWall completedOffers={user?.completed_offers || 0} />}
+          {user && (
+            <div className="w-full flex flex-col items-center mt-6">
+              <div className="font-extrabold text-xl text-accent mb-2">My Achievements:</div>
+              <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
+                <AchievementWall completedOffers={user?.completed_offers || 0} gridMode />
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Floating action button */}
         {showFAB && <FloatingActionButton />}
-        {/* Modal offerwall open */}
         {activeOfferwall && (
           <div className="fixed inset-0 z-[1001] bg-black/80 flex items-center justify-center backdrop-blur">
             <div className="glass-card rounded-3xl shadow-2xl border-4 border-accent max-w-3xl w-full p-6 flex flex-col items-center relative animate-fade-in">
@@ -386,7 +398,6 @@ export default function Dashboard({ setGlobalLoading }) {
   );
 }
 
-// StatsCard as before
 function StatsCard({ title, value, unit, icon, animateConfetti, animatePulse, animateShine, animateSparkle }) {
   return (
     <div
@@ -402,7 +413,6 @@ function StatsCard({ title, value, unit, icon, animateConfetti, animatePulse, an
       <h4 className="text-lg font-bold text-white mb-1">{title}</h4>
       <span className="text-3xl font-extrabold text-accent">{value}</span>
       <span className="text-md text-secondary">{unit}</span>
-      {/* Confetti/sparkle/pulse/shine effects */}
       {animateConfetti && <span className="absolute top-2 right-2 confetti" />}
       {animatePulse && <span className="absolute bottom-2 left-2 pulse" />}
       {animateShine && <span className="absolute bottom-2 right-2 shine" />}
