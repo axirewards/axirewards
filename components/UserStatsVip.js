@@ -9,30 +9,41 @@ const TIER_INFO = [
   { level: 5, name: "Diamond", color: "#8fdafd", bg: "linear-gradient(135deg,#232e40 0%,#8fdafd 120%)" },
 ];
 
-// thresholds x10: [0, 10_000, 50_000, 150_000, 500_000, 9_999_999]
 const thresholds = [0, 10000, 50000, 150000, 500000, 9999999];
 
 export default function UserStatsVip({ streak = 0, completedOffers = 0 }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function fetchUser() {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) return setLoading(false);
+      setLoading(true);
+      setError("");
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      if (authError || !authUser) {
+        setError("Nepavyko gauti vartotojo duomenų.");
+        setLoading(false);
+        return;
+      }
+      // Užklausa pagal el. paštą, nes id nėra suderinamas su bigint
       const { data, error } = await supabase
         .from("users")
         .select("points_balance, levelpoints")
-        .eq("id", authUser.id)
+        .eq("email", authUser.email)
         .single();
-      if (error) return setLoading(false);
+      if (error || !data) {
+        setError("Vartotojas nerastas duomenų bazėje.");
+        setLoading(false);
+        return;
+      }
       setUser(data);
       setLoading(false);
     }
     fetchUser();
   }, []);
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[180px]">
         <span className="text-accent animate-pulse">Loading VIP stats...</span>
@@ -40,10 +51,16 @@ export default function UserStatsVip({ streak = 0, completedOffers = 0 }) {
     );
   }
 
-  // points_balance: live balansas, levelpoints: viso laiko surinkti taškai
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-[180px]">
+        <span className="text-red-500 font-bold">{error}</span>
+      </div>
+    );
+  }
+
   const { points_balance = 0, levelpoints = 0 } = user;
 
-  // Tier by levelpoints
   let tier = 1;
   for (let i = thresholds.length - 1; i >= 0; i--) {
     if (levelpoints >= thresholds[i]) {
@@ -57,7 +74,6 @@ export default function UserStatsVip({ streak = 0, completedOffers = 0 }) {
     ? Math.min(100, ((levelpoints - thresholds[tier - 1]) / (thresholds[tier] - thresholds[tier - 1])) * 100)
     : 100;
 
-  // Responsive
   const isMobile = typeof window !== "undefined" ? window.innerWidth < 700 : false;
   const cubeSize = isMobile ? "90vw" : "220px";
   const iconSize = isMobile ? 32 : 44;
