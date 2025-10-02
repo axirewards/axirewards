@@ -9,7 +9,7 @@ export default function UserStats({ user }) {
         </div>
         <div className="p-4 rounded-xl bg-secondary shadow flex flex-col items-center">
           <p className="text-sm text-white mb-2">Completed Offers</p>
-          <p className="text-3xl font-extrabold text-white drop-shadow">{user.completed_offers || 0}</p>
+          <p className="text-3xl font-extrabold text-white drop-shadow">{user.total_completion}</p>
         </div>
         <div className="p-4 rounded-xl bg-primary shadow flex flex-col items-center">
           <p className="text-sm text-white mb-2">User Level</p>
