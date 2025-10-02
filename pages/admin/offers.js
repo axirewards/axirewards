@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
+import AdminNavbar from '../../components/AdminNavbar'
 import { supabase } from '../../lib/supabaseClient'
 import { isAdmin } from '../../lib/userUtils'
 
@@ -25,7 +26,6 @@ export default function AdminOffers() {
     device_type: 'all',
     status: 'active'
   })
-
   // --- ADMIN CHECK ---
   useEffect(() => {
     async function checkAdmin() {
@@ -48,32 +48,27 @@ export default function AdminOffers() {
     }
     checkAdmin()
   }, [router])
-
   // --- DATA FETCH ---
   useEffect(() => {
     if (!userChecked) return
     fetchPartners()
     fetchOffers()
   }, [filterPartner, filterStatus, searchTitle, userChecked])
-
   const fetchPartners = async () => {
     const { data, error } = await supabase.from('partners').select('*')
     if (error) setError(error.message)
     else setPartners(data)
   }
-
   const fetchOffers = async () => {
     setLoading(true)
     let query = supabase
       .from('offers')
       .select('*, partner:partner_id(*)')
       .order('created_at', { ascending: false })
-
     if (filterPartner) query = query.eq('partner_id', filterPartner)
     if (filterStatus) query = query.eq('status', filterStatus)
     if (searchTitle)
       query = query.ilike('title', `%${searchTitle}%`)
-
     const { data, error } = await query
     if (error) {
       setError(error.message)
@@ -83,7 +78,6 @@ export default function AdminOffers() {
     }
     setLoading(false)
   }
-
   // --- OFFER STATUS ---
   const toggleStatus = async (offerId, currentStatus) => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
@@ -91,7 +85,6 @@ export default function AdminOffers() {
     if (error) setError(error.message)
     else fetchOffers()
   }
-
   // --- OFFER DELETE ---
   const deleteOffer = async (offerId) => {
     if (!confirm('Are you sure you want to delete this offer?')) return
@@ -99,11 +92,9 @@ export default function AdminOffers() {
     if (error) setError(error.message)
     else fetchOffers()
   }
-
   // --- OFFER EDIT INLINE ---
   const [editingOfferId, setEditingOfferId] = useState(null)
   const [editingOfferData, setEditingOfferData] = useState({})
-
   const startEdit = (offer) => {
     setEditingOfferId(offer.id)
     setEditingOfferData({ ...offer })
@@ -130,7 +121,6 @@ export default function AdminOffers() {
       fetchOffers()
     }
   }
-
   // --- OFFER CREATE ---
   const createOffer = async () => {
     if (
@@ -157,7 +147,6 @@ export default function AdminOffers() {
       fetchOffers()
     }
   }
-
   // --- PARTNER LABEL ---
   const getPartnerLabel = (code) => {
     if (!code) return ''
@@ -166,17 +155,15 @@ export default function AdminOffers() {
     if (code.toLowerCase().includes('loot')) return 'Lootably'
     return code.toUpperCase()
   }
-
   return (
     <Layout admin>
+      <AdminNavbar user={user} />
       <div className="max-w-7xl mx-auto p-6">
         <h1 className="text-3xl font-bold text-primary mb-6">Admin Offers</h1>
-
         {/* Error */}
         {error && (
           <div className="mb-4 text-red-600 font-bold">{error}</div>
         )}
-
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-4 items-center">
           <select
@@ -191,7 +178,6 @@ export default function AdminOffers() {
               </option>
             ))}
           </select>
-
           <select
             className="border rounded p-2 dark:bg-gray-800 dark:text-white"
             value={filterStatus}
@@ -201,7 +187,6 @@ export default function AdminOffers() {
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
-
           <input
             type="text"
             placeholder="Search by title..."
@@ -209,7 +194,6 @@ export default function AdminOffers() {
             value={searchTitle}
             onChange={(e) => setSearchTitle(e.target.value)}
           />
-
           <button
             className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
             onClick={() => setShowCreate(true)}
@@ -217,7 +201,6 @@ export default function AdminOffers() {
             + Create Offer
           </button>
         </div>
-
         {/* Create Offer Modal */}
         {showCreate && (
           <div className="fixed z-40 left-0 top-0 w-full h-full bg-black bg-opacity-40 flex items-center justify-center">
@@ -285,7 +268,6 @@ export default function AdminOffers() {
             </div>
           </div>
         )}
-
         {/* Offers Table */}
         {loading ? (
           <p>Loading offers...</p>
