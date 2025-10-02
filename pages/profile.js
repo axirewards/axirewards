@@ -1,9 +1,26 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Layout from '../components/Layout'
-import UserStats from '../components/UserStats'
 import { supabase } from '../lib/supabaseClient'
 import DeleteAccountButton from '../components/DeleteAccountButton'
+
+const TIER_INFO = [
+  { level: 1, name: "Bronze", color: "#A66B3B", bg: "linear-gradient(135deg,#232e40 0%,#A66B3B 120%)" },
+  { level: 2, name: "Silver", color: "#bfcbdc", bg: "linear-gradient(135deg,#232e40 0%,#bfcbdc 120%)" },
+  { level: 3, name: "Gold", color: "#FFD700", bg: "linear-gradient(135deg,#232e40 0%,#FFD700 120%)" },
+  { level: 4, name: "Platinum", color: "#7b6cfb", bg: "linear-gradient(135deg,#232e40 0%,#7b6cfb 120%)" },
+  { level: 5, name: "Diamond", color: "#8fdafd", bg: "linear-gradient(135deg,#232e40 0%,#8fdafd 120%)" },
+]
+const thresholds = [0, 10000, 50000, 150000, 500000, 9999999];
+
+function getUserTier(levelpoints) {
+  for (let i = thresholds.length - 1; i >= 0; i--) {
+    if (levelpoints >= thresholds[i]) {
+      return TIER_INFO[i] || TIER_INFO[0];
+    }
+  }
+  return TIER_INFO[0];
+}
 
 export default function Profile({ setGlobalLoading }) {
   const router = useRouter()
@@ -93,6 +110,9 @@ export default function Profile({ setGlobalLoading }) {
     </Layout>
   )
 
+  // Calculate user tier and level
+  const tier = getUserTier(user.levelpoints || 0)
+
   return (
     <Layout>
       <div className="min-h-[80vh] flex flex-col justify-between">
@@ -110,32 +130,31 @@ export default function Profile({ setGlobalLoading }) {
             </div>
           </div>
 
-          <UserStats user={user} />
-
-          <div className="bg-card shadow-md rounded-2xl p-6 mb-2">
-            <h2 className="text-xl font-semibold mb-2 text-primary">Crypto Wallet <span className="font-normal text-sm text-gray-400">(POLYGON Wallet)</span></h2>
-            <div className="flex flex-col md:flex-row gap-2 items-start md:items-center">
-              <input
-                type="text"
-                value={wallet}
-                onChange={(e) => setWallet(e.target.value)}
-                className="flex-1 border border-gray-700 rounded-lg p-2 bg-black text-white placeholder-gray-400"
-                placeholder="Enter your Polygon wallet address"
-                autoComplete="off"
-              />
-              <button
-                onClick={handleWalletUpdate}
-                disabled={saving}
-                className="bg-primary text-white px-5 py-2 rounded-lg font-semibold shadow transition hover:bg-blue-700 disabled:opacity-60"
+          {/* User stats section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="bg-card rounded-xl shadow p-5 flex flex-col items-center justify-center">
+              <span className="text-xs uppercase font-bold text-gray-500 mb-2">Level</span>
+              <span
+                className="font-bold text-lg"
+                style={{
+                  color: tier.color,
+                  background: tier.bg,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent"
+                }}
               >
-                {saving ? "Saving..." : "Save"}
-              </button>
+                {tier.name} (Lvl {tier.level})
+              </span>
+              <span className="text-xs text-gray-400 mt-1">Points: {user.levelpoints || 0}</span>
             </div>
-            <p className="mt-2 text-xs text-red-500 font-bold">
-              * You must enter a Polygon crypto wallet address (starts with 0x...)
-            </p>
-            {walletError && <p className="mt-2 text-xs text-red-500">{walletError}</p>}
-            {walletSuccess && <p className="mt-2 text-xs text-green-500">{walletSuccess}</p>}
+            <div className="bg-card rounded-xl shadow p-5 flex flex-col items-center justify-center">
+              <span className="text-xs uppercase font-bold text-gray-500 mb-2">Completed Offers</span>
+              <span className="font-bold text-lg text-accent">{user.total_completions || 0}</span>
+            </div>
+            <div className="bg-card rounded-xl shadow p-5 flex flex-col items-center justify-center">
+              <span className="text-xs uppercase font-bold text-gray-500 mb-2">Wallet</span>
+              <span className="font-bold text-lg text-white break-all">{user.wallet_address ? user.wallet_address : "Not set"}</span>
+            </div>
           </div>
 
           <div className="bg-card shadow-md rounded-2xl p-6 mb-4">
