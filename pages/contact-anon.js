@@ -14,7 +14,7 @@ export default function ContactAnon() {
             className="drop-shadow-lg"
           />
         </div>
-        <h1 className="text-4xl font-extrabold text-accent mb-6 text-center drop-shadow">Contact Us (Anonymous)</h1>
+        <h1 className="text-4xl font-extrabold text-accent mb-6 text-center drop-shadow">Contact Us</h1>
         <p className="text-lg text-blue-900 mb-6 text-center max-w-lg font-semibold">
           If you encounter any issues or have questions, please contact us directly by email.<br />
           Our support team responds within <span className="font-bold text-accent">24 hours</span>.<br />
