@@ -1,38 +1,39 @@
 import React, { useRef, useEffect } from "react";
 
 /**
- * Luxury animated background: waves, coins, particles.
- * Works both on desktop and mobile.
+ * Ultra luxury animated background: waves, coins, particles.
+ * Navy blue theme, covers even largest PC screens.
  * Use type="waves-coins", "particles", etc.
  */
 export default function ParticleBackground({ type = "waves-coins" }) {
   const canvasRef = useRef();
 
   useEffect(() => {
-    // Simple animated background (waves + shimmering coins).
-    // For ultra luxury, use a canvas with animated gradients and circles.
+    // Super large canvas for all screens
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     let animationFrameId;
-    let width = window.innerWidth;
-    let height = window.innerHeight;
+    // Always set much larger than viewport for scroll
+    let width = Math.max(window.innerWidth, 3000);
+    let height = Math.max(window.innerHeight, 3000);
 
     canvas.width = width;
     canvas.height = height;
 
+    // More coins for big screens
     const coins = [];
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < Math.floor(width / 150); i++) {
       coins.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        r: 16 + Math.random() * 26,
-        speed: 0.7 + Math.random() * 1.2,
+        r: 18 + Math.random() * 28,
+        speed: 0.6 + Math.random() * 1.3,
         color: [
-          "#60A5FA",
-          "#3B82F6",
-          "#FFD700",
-          "#7b6cfb",
-          "#1E3A8A",
+          "#23395d", // DARK navy
+          "#1E3A8A", // navy
+          "#2C3E50", // navy blue
+          "#3B82F6", // blue accent
+          "#FFD700", // gold
         ][Math.floor(Math.random() * 5)],
         angle: Math.random() * Math.PI * 2,
       });
@@ -41,37 +42,39 @@ export default function ParticleBackground({ type = "waves-coins" }) {
     function draw() {
       ctx.clearRect(0, 0, width, height);
 
-      // Gradient background
+      // Navy gradient background
       const grad = ctx.createLinearGradient(0, 0, width, height);
-      grad.addColorStop(0, "#1E3A8A");
-      grad.addColorStop(0.5, "#3B82F6");
+      grad.addColorStop(0, "#1E2746");
+      grad.addColorStop(0.22, "#1E3A8A");
+      grad.addColorStop(0.44, "#23395d");
+      grad.addColorStop(0.66, "#2C3E50");
       grad.addColorStop(1, "#060A38");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, width, height);
 
-      // Waves
+      // Waves - navy/blue/gold
       for (let i = 0; i < 3; i++) {
-        ctx.globalAlpha = 0.08 + i * 0.03;
+        ctx.globalAlpha = 0.09 + i * 0.04;
         ctx.beginPath();
-        for (let x = 0; x < width; x += 16) {
+        for (let x = 0; x < width; x += 18) {
           ctx.lineTo(
             x,
             height / 2 +
-              Math.sin(x / 200 + Date.now() / 900 + i * 2) * (22 + i * 12)
+              Math.sin(x / (180 + i * 35) + Date.now() / (900 + i * 200)) * (28 + i * 14)
           );
         }
         ctx.lineTo(width, height);
         ctx.lineTo(0, height);
         ctx.closePath();
-        ctx.fillStyle = ["#60A5FA", "#3B82F6", "#7b6cfb"][i];
+        ctx.fillStyle = ["#23395d", "#3B82F6", "#FFD700"][i];
         ctx.fill();
       }
       ctx.globalAlpha = 1;
 
-      // Coins
-      coins.forEach((coin, idx) => {
+      // Coins - navy and gold
+      coins.forEach((coin) => {
         coin.y -= coin.speed;
-        coin.angle += 0.02;
+        coin.angle += 0.018;
         if (coin.y < -coin.r) {
           coin.y = height + coin.r;
           coin.x = Math.random() * width;
@@ -82,9 +85,9 @@ export default function ParticleBackground({ type = "waves-coins" }) {
         ctx.beginPath();
         ctx.arc(0, 0, coin.r, 0, Math.PI * 2);
         ctx.fillStyle = coin.color;
-        ctx.shadowColor = "#fff";
-        ctx.shadowBlur = 18;
-        ctx.globalAlpha = 0.16 + 0.18 * Math.abs(Math.sin(coin.angle));
+        ctx.shadowColor = "#FFD700";
+        ctx.shadowBlur = 13;
+        ctx.globalAlpha = 0.15 + 0.15 * Math.abs(Math.sin(coin.angle));
         ctx.fill();
         ctx.globalAlpha = 1;
         ctx.restore();
@@ -96,8 +99,8 @@ export default function ParticleBackground({ type = "waves-coins" }) {
 
     // Responsive canvas
     function handleResize() {
-      width = window.innerWidth;
-      height = window.innerHeight;
+      width = Math.max(window.innerWidth, 3000);
+      height = Math.max(window.innerHeight, 3000);
       canvas.width = width;
       canvas.height = height;
     }
@@ -118,8 +121,11 @@ export default function ParticleBackground({ type = "waves-coins" }) {
         left: 0,
         width: "100vw",
         height: "100vh",
+        minWidth: "3000px",
+        minHeight: "3000px",
         zIndex: 0,
         pointerEvents: "none",
+        background: "linear-gradient(135deg, #1E2746 0%, #23395d 60%, #060A38 100%)",
       }}
       aria-hidden
     />
