@@ -8,7 +8,6 @@ import TheoremOfferwall from "../components/TheoremOfferwall";
 import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import ParticleBackground from "../components/ParticleBackground";
 import PremiumBadge from "../components/PremiumBadge";
 import VIPTierProgress from "../components/VIPTierProgress";
 import OfferwallCarousel from "../components/OfferwallCarousel";
@@ -159,94 +158,93 @@ export default function Dashboard({ setGlobalLoading }) {
   if (!isMobile) {
     return (
       <Layout>
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <ParticleBackground type="waves-coins" />
-        </div>
-        <div className="relative flex flex-col items-center justify-center min-h-screen w-full z-10">
-          <div className="w-full max-w-7xl mx-auto grid grid-cols-12 gap-8 py-12 px-6">
-            {/* Left: Badge, Avatar, VIP Progress */}
-            <div className="col-span-3 flex flex-col items-start gap-8 bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-8 border-2 border-accent backdrop-blur min-h-[490px]">
-              <div className="flex flex-col items-center w-full">
+        <div className="relative flex flex-col items-center justify-start min-h-[90vh] max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row items-center justify-center w-full mb-8 gap-4">
+            <h1 className="text-4xl font-extrabold text-white text-center drop-shadow mb-3">
+              Dashboard
+            </h1>
+          </div>
+
+          {/* Stats Cards / User / VIP */}
+          {user && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-10 w-full justify-center">
+              <div className="bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-7 border-2 border-accent backdrop-blur flex flex-col items-center">
                 <PremiumBadge type={user?.tier >= 5 ? "diamond" : user?.tier >= 3 ? "gold" : "silver"} />
                 <img
                   src={user?.avatar_url || "/icons/avatar-default.svg"}
                   alt="Avatar"
-                  className="w-24 h-24 rounded-full border-4 border-accent shadow-xl mt-3"
-                  style={{ boxShadow: "0 2px 24px 0 #60A5fa44" }}
+                  className="w-20 h-20 rounded-full border-4 border-accent shadow-xl mt-3"
+                  style={{ boxShadow: "0 2px 18px 0 #60A5fa44" }}
                 />
-                <div className="text-2xl font-extrabold text-white text-center truncate w-full max-w-[320px] mt-3">{user?.display_name || user?.email}</div>
+                <div className="text-lg font-extrabold text-white text-center truncate w-full max-w-[180px] mt-2 mb-2">{user?.display_name || user?.email}</div>
+                <div className="w-full flex items-center justify-center mt-1">
+                  <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
+                </div>
+                <span className="mt-2 px-3 py-1 rounded-full bg-gradient-to-r from-accent to-secondary text-white font-bold shadow-lg animate-pulse text-sm">
+                  VIP {user?.tier || 1}
+                </span>
               </div>
-              <div className="w-full flex items-center justify-center mt-2">
-                <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
-              </div>
-              <span className="mt-3 px-3 py-1 rounded-full bg-gradient-to-r from-accent to-secondary text-white font-bold shadow-lg animate-pulse">
-                VIP {user?.tier || 1}
-              </span>
+              <StatsCard title="Points Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
+              <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
+              <StatsCard title="VIP Tier" value={user?.tier || 1} unit="🏆" icon="/icons/vip.svg" animateShine />
             </div>
+          )}
 
-            {/* Center: Balance History + Stats */}
-            <div className="col-span-6 flex flex-col items-center gap-10">
-              {/* Balance History */}
-              <div className="rounded-2xl glass-card p-7 border-2 border-accent shadow-xl w-full max-w-2xl mx-auto">
-                <h3 className="text-lg font-bold text-accent mb-4">Balance History</h3>
-                {ledger.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={90}>
-                    <LineChart data={ledger}>
-                      <XAxis dataKey="created_at" hide />
-                      <YAxis hide domain={['auto', 'auto']} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="balance_after" stroke="#60A5FA" strokeWidth={3} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <p className="text-sm text-gray-400">No balance history yet.</p>
-                )}
-              </div>
-              {/* Stats Cards */}
-              <div className="grid grid-cols-2 gap-7 w-full max-w-2xl">
-                <StatsCard title="Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
-                <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
-                <StatsCard title="VIP Tier" value={user?.tier || 1} unit="🏆" icon="/icons/vip.svg" animateShine />
-                <StatsCard title="Best Streak" value={user?.best_streak || streak} unit="days" icon="/icons/trophy.svg" animateSparkle />
-              </div>
+          {/* Balance History */}
+          {user && (
+            <div className="rounded-2xl glass-card p-6 mb-8 border-2 border-accent shadow-xl w-full max-w-3xl mx-auto">
+              <h3 className="text-lg font-bold text-accent mb-2">Balance History</h3>
+              {ledger.length > 0 ? (
+                <ResponsiveContainer width="100%" height={80}>
+                  <LineChart data={ledger}>
+                    <XAxis dataKey="created_at" hide />
+                    <YAxis hide domain={['auto', 'auto']} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="balance_after" stroke="#60A5FA" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-sm text-gray-400">No balance history yet.</p>
+              )}
             </div>
+          )}
 
-            {/* Right: Offerwalls */}
-            <div className="col-span-3 flex flex-col items-center gap-8 justify-center min-h-[490px]">
-              <div className="w-full flex flex-col items-center">
-                <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
-              </div>
+          {/* Offerwalls Section */}
+          <div className="w-full mt-8 flex flex-col items-center justify-center">
+            <h2 className="mb-6 text-2xl font-bold text-white text-center tracking-tight">Premium Offerwalls</h2>
+            <div className="w-full flex flex-col items-center justify-center">
+              <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
             </div>
+            {/* Modal offerwall open */}
+            {activeOfferwall && (
+              <div className="fixed inset-0 z-[1001] bg-black/80 flex items-center justify-center backdrop-blur">
+                <div className="glass-card rounded-3xl shadow-2xl border-4 border-accent max-w-3xl w-full p-8 flex flex-col items-center relative animate-fade-in">
+                  <button
+                    className="absolute top-4 right-6 text-accent text-4xl font-extrabold hover:text-blue-700 transition"
+                    onClick={() => setActiveOfferwall(null)}
+                    aria-label="Close"
+                  >
+                    &times;
+                  </button>
+                  {activeOfferwall === "ayet" && (
+                    <AyetOfferwall adSlot={getOfferwallParams("ayet")?.adSlot} height="700px" />
+                  )}
+                  {activeOfferwall === "bitlabs" && (
+                    <BitLabsOfferwall apiKey={getOfferwallParams("bitlabs")?.apiKey} height="700px" />
+                  )}
+                  {activeOfferwall === "cpx" && (
+                    <CpxOfferwall appId={getOfferwallParams("cpx")?.appId} height="700px" />
+                  )}
+                  {activeOfferwall === "theorem" && (
+                    <TheoremOfferwall appId={getOfferwallParams("theorem")?.appId} height="700px" />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
+          {showFAB && <FloatingActionButton />}
         </div>
-
-        {/* Modal offerwall open */}
-        {activeOfferwall && (
-          <div className="fixed inset-0 z-[1001] bg-black/80 flex items-center justify-center backdrop-blur">
-            <div className="glass-card rounded-3xl shadow-2xl border-4 border-accent max-w-3xl w-full p-8 flex flex-col items-center relative animate-fade-in">
-              <button
-                className="absolute top-4 right-6 text-accent text-4xl font-extrabold hover:text-blue-700 transition"
-                onClick={() => setActiveOfferwall(null)}
-                aria-label="Close"
-              >
-                &times;
-              </button>
-              {activeOfferwall === "ayet" && (
-                <AyetOfferwall adSlot={getOfferwallParams("ayet")?.adSlot} height="700px" />
-              )}
-              {activeOfferwall === "bitlabs" && (
-                <BitLabsOfferwall apiKey={getOfferwallParams("bitlabs")?.apiKey} height="700px" />
-              )}
-              {activeOfferwall === "cpx" && (
-                <CpxOfferwall appId={getOfferwallParams("cpx")?.appId} height="700px" />
-              )}
-              {activeOfferwall === "theorem" && (
-                <TheoremOfferwall appId={getOfferwallParams("theorem")?.appId} height="700px" />
-              )}
-            </div>
-          </div>
-        )}
-        {showFAB && <FloatingActionButton />}
         <style jsx>{`
           html, body, #__next {
             width: 100vw !important;
@@ -276,9 +274,6 @@ export default function Dashboard({ setGlobalLoading }) {
   // MOBILE VERSION LAYOUT
   return (
     <Layout>
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <ParticleBackground type="waves-coins" />
-      </div>
       <div className="relative flex flex-col items-center justify-center min-h-screen w-full z-10">
         <div
           className="relative bg-gradient-to-br from-[#2C3E50aa] via-[#34495Edd] to-[#000000ee] rounded-3xl shadow-2xl border border-accent backdrop-blur-xl p-4"
@@ -331,7 +326,7 @@ export default function Dashboard({ setGlobalLoading }) {
           {/* Stats Cards */}
           {user && (
             <div className="flex flex-col gap-4 mb-8 w-full">
-              <StatsCard title="Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
+              <StatsCard title="Points Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
               <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
             </div>
           )}
