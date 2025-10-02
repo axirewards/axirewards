@@ -3,13 +3,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { FaCoins } from 'react-icons/fa'
 import { FiMenu, FiX } from 'react-icons/fi'
-import TelOrPc from './TelOrPc'
 
 export default function Navbar({ user, balance = 0, onLogout }) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const isMobile = TelOrPc() === 'mobile'
   const handleDropdown = () => setDropdownOpen((v) => !v)
 
   const links = [
@@ -25,18 +23,11 @@ export default function Navbar({ user, balance = 0, onLogout }) {
     router.push('/dashboard')
   }
 
-  // For PC logout icon after profile link
-  const LogoutIcon = ({ onClick }) => (
-    <button
-      onClick={onClick}
-      className="ml-2 flex items-center justify-center rounded-lg bg-transparent hover:bg-blue-900/80 transition"
-      title="Logout"
-      aria-label="Logout"
-      style={{ padding: '4px 8px' }}
-    >
-      <img src="/icons/logout.png" alt="Logout" style={{ width: 32, height: 32 }} />
-    </button>
-  )
+  // Fix: Make sure mobile logout closes menu and calls onLogout
+  const handleMobileLogout = () => {
+    setMenuOpen(false)
+    if (onLogout) onLogout()
+  }
 
   return (
     <nav className="bg-card text-white px-2 py-3 shadow-xl border-b border-blue-900 sticky top-0 z-40 transition-all">
@@ -52,7 +43,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
-          {links.map((link, idx) => (
+          {links.map((link) => (
             <Link
               key={link.name}
               href={link.href}
@@ -65,8 +56,6 @@ export default function Navbar({ user, balance = 0, onLogout }) {
               {link.name}
             </Link>
           ))}
-          {/* Logout icon after profile link */}
-          {user && <LogoutIcon onClick={onLogout} />}
         </div>
 
         {/* User Info & Dropdown */}
@@ -94,10 +83,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
                   <Link href="/settings" className="block px-4 py-2 hover:bg-blue-50 rounded">Settings</Link>
                   <button
                     className="w-full text-left px-4 py-2 hover:bg-blue-50 rounded"
-                    onClick={() => {
-                      setDropdownOpen(false)
-                      if (onLogout) onLogout()
-                    }}
+                    onClick={onLogout}
                   >Logout</button>
                 </div>
               )}
@@ -131,13 +117,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
                 {link.name}
               </Link>
             ))}
-            <button
-              className="px-6 py-2 hover:bg-blue-900 text-left"
-              onClick={() => {
-                setMenuOpen(false)
-                if (onLogout) onLogout()
-              }}
-            >Logout</button>
+            <button className="px-6 py-2 hover:bg-blue-900 text-left" onClick={handleMobileLogout}>Logout</button>
           </div>
         )}
       </div>
