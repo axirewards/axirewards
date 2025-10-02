@@ -89,7 +89,7 @@ function ConsentPopup() {
           marginBottom: 22,
           letterSpacing: ".01em"
         }}>
-          <Link href="/terms" legacyBehavior>
+          <Link href="/terms-anon" legacyBehavior>
             <a style={{
               marginRight: 18,
               textDecoration: "underline",
@@ -98,7 +98,7 @@ function ConsentPopup() {
               transition: "color .2s",
             }}>Terms of Service</a>
           </Link>
-          <Link href="/privacy" legacyBehavior>
+          <Link href="/privacy-anon" legacyBehavior>
             <a style={{
               textDecoration: "underline",
               color: "#46aaff",
