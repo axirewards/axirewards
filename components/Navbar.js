@@ -3,13 +3,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { FaCoins } from 'react-icons/fa'
 import { FiMenu, FiX } from 'react-icons/fi'
+import TelOrPc from './TelOrPc' // NEW: import device detector
 
 export default function Navbar({ user, balance = 0, onLogout }) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const handleDropdown = () => setDropdownOpen((v) => !v)
+  const isMobile = TelOrPc() === 'mobile' // Uses TelOrPc to detect device
 
+  const handleDropdown = () => setDropdownOpen((v) => !v)
   const links = [
     { href: '/dashboard', name: 'Dashboard' },
     { href: '/earn', name: 'Earn' },
@@ -50,9 +52,21 @@ export default function Navbar({ user, balance = 0, onLogout }) {
               {link.name}
             </Link>
           ))}
+          {/* Logout icon button after Profile */}
+          {user && (
+            <button
+              className="ml-2 flex items-center justify-center bg-transparent hover:bg-blue-800/30 rounded-lg p-2 transition border-none"
+              onClick={onLogout}
+              title="Logout"
+              aria-label="Logout"
+              style={{ boxShadow: 'none' }}
+            >
+              <img src="/icons/logout.png" alt="Logout" style={{ width: 32, height: 32 }} />
+            </button>
+          )}
         </div>
 
-        {/* User Info & Dropdown */}
+        {/* User Info & Dropdown (mobile and desktop) */}
         {user && (
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-2 bg-accent/30 px-3 py-1 rounded-lg text-sm shadow">
@@ -73,11 +87,18 @@ export default function Navbar({ user, balance = 0, onLogout }) {
               {/* Dropdown */}
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-44 bg-white text-gray-900 rounded shadow-lg border z-20 animate-dropdownIn">
-                  <Link href="/profile" className="block px-4 py-2 hover:bg-blue-50 rounded">Profile</Link>
-                  <Link href="/settings" className="block px-4 py-2 hover:bg-blue-50 rounded">Settings</Link>
+                  <Link href="/profile" className="block px-4 py-2 hover:bg-blue-50 rounded"
+                    onClick={() => setDropdownOpen(false)}
+                  >Profile</Link>
+                  <Link href="/settings" className="block px-4 py-2 hover:bg-blue-50 rounded"
+                    onClick={() => setDropdownOpen(false)}
+                  >Settings</Link>
                   <button
                     className="w-full text-left px-4 py-2 hover:bg-blue-50 rounded"
-                    onClick={onLogout}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      if (onLogout) onLogout();
+                    }}
                   >Logout</button>
                 </div>
               )}
@@ -94,7 +115,7 @@ export default function Navbar({ user, balance = 0, onLogout }) {
           {menuOpen ? <FiX size={28} /> : <FiMenu size={28} />}
         </button>
         {/* Mobile menu */}
-        {menuOpen && (
+        {menuOpen && isMobile && (
           <div className="absolute top-full left-0 w-full bg-card text-white shadow-xl flex flex-col gap-2 py-4 z-50 animate-mobileMenuIn">
             <div className="flex items-center justify-center mb-2">
               <img src="/icons/logo.png" alt="AxiRewards" className="w-18 h-18 drop-shadow" />
@@ -111,7 +132,13 @@ export default function Navbar({ user, balance = 0, onLogout }) {
                 {link.name}
               </Link>
             ))}
-            <button className="px-6 py-2 hover:bg-blue-900 text-left" onClick={onLogout}>Logout</button>
+            <button
+              className="px-6 py-2 hover:bg-blue-900 text-left"
+              onClick={() => {
+                setMenuOpen(false);
+                if (onLogout) onLogout();
+              }}
+            >Logout</button>
           </div>
         )}
       </div>
