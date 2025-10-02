@@ -105,7 +105,7 @@ export default function UserStatsVip({
           boxShadow: "0 0 24px 0 #60A5FA44",
         }}
       >
-        <img src="/icons/axicoin.png" alt="Points" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
+        <img src="/icons/axicoin.svg" alt="Points" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
         <span className="font-extrabold text-lg mb-2 text-accent">Points Balance</span>
         <span className="text-3xl font-extrabold text-white">{points}</span>
         <span className="text-xs text-accent font-semibold mt-2">AXI</span>
