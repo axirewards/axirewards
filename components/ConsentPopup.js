@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 
 function getIP() {
-  // Gauk viešą IP iš API (arba backend)
+  // Get public IP from external API
   return fetch('https://api.ipify.org?format=json')
     .then(res => res.json())
     .then(data => data.ip)
@@ -18,17 +18,15 @@ function ConsentPopup() {
   useEffect(() => {
     async function checkConsent() {
       setLoading(true);
-      // Gauk IP
       const userIp = await getIP();
       setIp(userIp);
 
       if (!userIp) {
         setLoading(false);
-        setShow(true); // Jei nepavyko gauti IP, vis tiek rodom consent
+        setShow(true);
         return;
       }
 
-      // Patikrink DB ar jau yra consent
       const { data, error } = await supabase
         .from('consent')
         .select('consent')
@@ -36,9 +34,9 @@ function ConsentPopup() {
         .single();
 
       if (error || !data || !data.consent) {
-        setShow(true); // consent nėra
+        setShow(true);
       } else {
-        setShow(false); // consent jau duotas
+        setShow(false);
       }
       setLoading(false);
     }
@@ -47,7 +45,6 @@ function ConsentPopup() {
 
   const handleAccept = async () => {
     setLoading(true);
-    // Išsaugom consent į DB
     await supabase
       .from('consent')
       .upsert({ ip_address: ip, consent: true });
@@ -61,62 +58,68 @@ function ConsentPopup() {
     <div style={{
       position: "fixed",
       top: 0, left: 0, right: 0, bottom: 0,
-      background: "rgba(0,0,0,0.38)",
+      background: "rgba(0,0,0,0.92)",
       zIndex: 9999,
       display: "flex", alignItems: "center", justifyContent: "center"
     }}>
       <div style={{
-        background: "#fff",
-        borderRadius: "20px",
+        background: "#111",
+        borderRadius: "24px",
         maxWidth: 420,
         width: "90%",
-        padding: "40px 28px",
-        boxShadow: "0 4px 32px rgba(0,0,0,0.20)",
+        padding: "44px 32px",
+        boxShadow: "0 8px 48px rgba(0,0,0,0.45)",
         textAlign: "center",
-        fontFamily: "inherit"
+        fontFamily: "inherit",
+        border: "1.5px solid #222"
       }}>
-        <h2 style={{
-          marginBottom: 10,
-          color: "#222",
-          fontWeight: 700,
-          fontSize: 22,
+        <p style={{
+          fontSize: 17,
+          marginBottom: 28,
+          color: "#fff",
+          fontWeight: 500,
+          lineHeight: 1.6,
           letterSpacing: ".01em"
         }}>
-          Consent Required
-        </h2>
-        <p style={{
-          fontSize: 16,
-          marginBottom: 24,
-          color: "#444",
-          fontWeight: 500
-        }}>
-          By using this website, you agree to our <span style={{fontWeight:600}}>Terms of Service</span> and <span style={{fontWeight:600}}>Privacy Policy</span>.
+          By using our website, you agree to our <span style={{fontWeight:700, color: "#46aaff"}}>Terms of Service</span> and <span style={{fontWeight:700, color: "#46aaff"}}>Privacy Policy</span>.
         </p>
         <div style={{
           fontSize: 13,
-          color: "#888",
-          marginBottom: 18,
+          color: "#eee",
+          marginBottom: 22,
           letterSpacing: ".01em"
         }}>
           <Link href="/terms" legacyBehavior>
-            <a style={{marginRight: 18, textDecoration: "underline", color: "#0070f3"}}>Terms of Service</a>
+            <a style={{
+              marginRight: 18,
+              textDecoration: "underline",
+              color: "#46aaff",
+              fontWeight: 500,
+              transition: "color .2s",
+            }}>Terms of Service</a>
           </Link>
           <Link href="/privacy" legacyBehavior>
-            <a style={{textDecoration: "underline", color: "#0070f3"}}>Privacy Policy</a>
+            <a style={{
+              textDecoration: "underline",
+              color: "#46aaff",
+              fontWeight: 500,
+              transition: "color .2s"
+            }}>Privacy Policy</a>
           </Link>
         </div>
         <button
           style={{
-            background: "linear-gradient(90deg,#0070f3 0,#1c55b2 100%)",
+            background: "linear-gradient(90deg,#46aaff 0,#024eaf 100%)",
             color: "#fff",
             border: "none",
-            borderRadius: 10,
-            padding: "12px 28px",
-            fontSize: 17,
-            fontWeight: 600,
+            borderRadius: 12,
+            padding: "13px 32px",
+            fontSize: 18,
+            fontWeight: 700,
             cursor: loading ? "wait" : "pointer",
-            boxShadow: "0 2px 10px rgba(0,112,243,0.08)",
-            opacity: loading ? 0.6 : 1
+            boxShadow: "0 4px 18px rgba(70,170,255,0.10)",
+            opacity: loading ? 0.6 : 1,
+            letterSpacing: ".02em"
           }}
           onClick={handleAccept}
           disabled={loading}
