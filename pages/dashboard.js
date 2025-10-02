@@ -162,18 +162,20 @@ export default function Dashboard({ setGlobalLoading }) {
         <div className="fixed inset-0 z-0 pointer-events-none">
           <ParticleBackground type="waves-coins" />
         </div>
-        <div className="relative flex flex-col items-center min-h-screen w-full z-10 overflow-hidden">
-          <div className="w-full max-w-[1700px] mx-auto grid grid-cols-12 gap-10 py-12 px-4">
+        <div className="relative flex flex-col items-center justify-center min-h-screen w-full z-10">
+          <div className="w-full max-w-7xl mx-auto grid grid-cols-12 gap-8 py-12 px-6">
             {/* Left: Badge, Avatar, VIP Progress */}
-            <div className="col-span-4 flex flex-col items-center gap-8 bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-8 border-2 border-accent backdrop-blur min-h-[600px]">
-              <PremiumBadge type={user?.tier >= 5 ? "diamond" : user?.tier >= 3 ? "gold" : "silver"} />
-              <img
-                src={user?.avatar_url || "/icons/avatar-default.svg"}
-                alt="Avatar"
-                className="w-28 h-28 rounded-full border-4 border-accent shadow-xl"
-                style={{ boxShadow: "0 2px 24px 0 #60A5fa44" }}
-              />
-              <div className="text-2xl font-extrabold text-white text-center truncate w-full max-w-[350px]">{user?.display_name || user?.email}</div>
+            <div className="col-span-3 flex flex-col items-start gap-8 bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-8 border-2 border-accent backdrop-blur min-h-[490px]">
+              <div className="flex flex-col items-center w-full">
+                <PremiumBadge type={user?.tier >= 5 ? "diamond" : user?.tier >= 3 ? "gold" : "silver"} />
+                <img
+                  src={user?.avatar_url || "/icons/avatar-default.svg"}
+                  alt="Avatar"
+                  className="w-24 h-24 rounded-full border-4 border-accent shadow-xl mt-3"
+                  style={{ boxShadow: "0 2px 24px 0 #60A5fa44" }}
+                />
+                <div className="text-2xl font-extrabold text-white text-center truncate w-full max-w-[320px] mt-3">{user?.display_name || user?.email}</div>
+              </div>
               <div className="w-full flex items-center justify-center mt-2">
                 <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
               </div>
@@ -183,9 +185,9 @@ export default function Dashboard({ setGlobalLoading }) {
             </div>
 
             {/* Center: Balance History + Stats */}
-            <div className="col-span-5 flex flex-col items-center gap-10">
+            <div className="col-span-6 flex flex-col items-center gap-10">
               {/* Balance History */}
-              <div className="rounded-2xl glass-card p-7 border-2 border-accent shadow-xl w-full max-w-xl mx-auto">
+              <div className="rounded-2xl glass-card p-7 border-2 border-accent shadow-xl w-full max-w-2xl mx-auto">
                 <h3 className="text-lg font-bold text-accent mb-4">Balance History</h3>
                 {ledger.length > 0 ? (
                   <ResponsiveContainer width="100%" height={90}>
@@ -201,7 +203,7 @@ export default function Dashboard({ setGlobalLoading }) {
                 )}
               </div>
               {/* Stats Cards */}
-              <div className="grid grid-cols-2 gap-7 w-full max-w-xl">
+              <div className="grid grid-cols-2 gap-7 w-full max-w-2xl">
                 <StatsCard title="Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
                 <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
                 <StatsCard title="VIP Tier" value={user?.tier || 1} unit="🏆" icon="/icons/vip.svg" animateShine />
@@ -210,7 +212,7 @@ export default function Dashboard({ setGlobalLoading }) {
             </div>
 
             {/* Right: Offerwalls */}
-            <div className="col-span-3 flex flex-col items-center gap-8 justify-center min-h-[600px]">
+            <div className="col-span-3 flex flex-col items-center gap-8 justify-center min-h-[490px]">
               <div className="w-full flex flex-col items-center">
                 <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
               </div>
@@ -250,6 +252,7 @@ export default function Dashboard({ setGlobalLoading }) {
             width: 100vw !important;
             min-height: 100vh !important;
             overflow-x: hidden !important;
+            box-sizing: border-box;
           }
           .glass-card {
             background: rgba(24, 32, 56, 0.86);
@@ -369,6 +372,7 @@ export default function Dashboard({ setGlobalLoading }) {
             width: 100vw !important;
             min-height: 100vh !important;
             overflow-x: hidden !important;
+            box-sizing: border-box;
           }
           .glass-card {
             background: rgba(24, 32, 56, 0.86);
