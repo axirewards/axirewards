@@ -5,9 +5,8 @@ import CpxOfferwall from "./CpxOfferwall";
 import TheoremOfferwall from "./TheoremOfferwall";
 
 /**
- * Ultra-luxury Offerwall Preview Carousel – maximal wow UI/UX,
- * fully responsive for PC & mobile, glassmorphism, smooth animations.
- * Handles offerwall open/close logic and modal rendering inside itself.
+ * OfferwallCarousel – visi offerwallai, hardcoded, modalas ir atidarymas viduje,
+ * kiekvienas atsidaro savo modalą, užsidaro, swipe/arrow veikia.
  */
 const OFFERWALLS = [
   {
@@ -45,19 +44,16 @@ const OFFERWALLS = [
 ];
 
 export default function OfferwallCarousel() {
-  // Current index for carousel
+  // Carousel
   const [current, setCurrent] = useState(0);
   const carouselRef = useRef();
   const [isMobile, setIsMobile] = useState(false);
 
-  // Modal logic
+  // Modal
   const [activeOfferwall, setActiveOfferwall] = useState(null);
 
   useEffect(() => {
-    // Responsive: detect mobile/PC for sizing
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 700);
-    };
+    const checkMobile = () => setIsMobile(window.innerWidth < 700);
     checkMobile();
     window.addEventListener("resize", checkMobile);
 
@@ -87,7 +83,7 @@ export default function OfferwallCarousel() {
   const nextSlide = () => setCurrent(c => (c + 1) % OFFERWALLS.length);
   const prevSlide = () => setCurrent(c => (c - 1 + OFFERWALLS.length) % OFFERWALLS.length);
 
-  // Responsive sizes
+  // Sizes
   const cardMinWidth = isMobile ? "94vw" : "360px";
   const cardMaxWidth = isMobile ? "99vw" : "520px";
   const cardMinHeight = isMobile ? "240px" : "400px";
@@ -97,7 +93,7 @@ export default function OfferwallCarousel() {
   const buttonFontSize = isMobile ? "1.09rem" : "1.15rem";
   const shadowColor = OFFERWALLS[current]?.color || "#60A5FA";
 
-  // Offerwall modal logic (show correct offerwall by key)
+  // Offerwall modal logic
   function renderOfferwallModal() {
     if (!activeOfferwall) return null;
     const wall = OFFERWALLS.find(w => w.key === activeOfferwall);
