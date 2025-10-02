@@ -42,10 +42,10 @@ export default function UserStatsVip() {
       }
       setUser(userData);
 
-      // Completed offers logic
+      // Completed offers logic - grąžina TIKSLŲ skaičių įrašų!
       const { count: offersCount, error: offersError } = await supabase
         .from("completions")
-        .select("id", { count: "exact", head: true })
+        .select("*", { count: "exact", head: true })
         .eq("user_email", userData.email);
       if (!offersError && typeof offersCount === "number") {
         setCompletedOffers(offersCount);
@@ -53,9 +53,7 @@ export default function UserStatsVip() {
         setCompletedOffers(0);
       }
 
-      // Strike (streak) logic
-      // 1. Gauti paskutinius loginus vartotojui
-      // 2. Suskaičiuoti kiek dienų iš eilės buvo loginai be pertraukos >24h
+      // Strike (streak) logic (kaip ir anksčiau)
       const { data: loginsData, error: loginsError } = await supabase
         .from("users")
         .select("last_login_history")
@@ -63,20 +61,17 @@ export default function UserStatsVip() {
         .single();
 
       let loginHistory = [];
-      // last_login_history turi būti masyvas datų (pvz. ["2024-06-01", "2024-06-02", ...])
       if (loginsData && Array.isArray(loginsData.last_login_history)) {
         loginHistory = loginsData.last_login_history.map(d => new Date(d));
       } else if (userData.last_login) {
-        // fallback: jei nėra last_login_history, pabandome paskutinį loginą
         loginHistory = [new Date(userData.last_login)];
       }
 
-      // Suskaičiuoti streak: loginai turi būti kasdien, be praleistų >24h tarpų
       loginHistory.sort((a, b) => b - a); // naujausi pirmi
       let streakCount = 1;
       for (let i = 1; i < loginHistory.length; i++) {
-        const diff = (loginHistory[i - 1] - loginHistory[i]) / (1000 * 60 * 60 * 24); // dienomis
-        if (diff > 1.5) break; // jei daugiau nei 1.5 dienos tarp loginų, streak baigiasi
+        const diff = (loginHistory[i - 1] - loginHistory[i]) / (1000 * 60 * 60 * 24);
+        if (diff > 1.5) break;
         streakCount++;
       }
       setStreak(streakCount);
