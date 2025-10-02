@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Layout from '../components/Layout'
 import UserStats from '../components/UserStats'
 import { supabase } from '../lib/supabaseClient'
+import DeleteAccountButton from '../components/DeleteAccountButton'
 
 export default function Profile({ setGlobalLoading }) {
   const router = useRouter()
@@ -35,11 +36,11 @@ export default function Profile({ setGlobalLoading }) {
         setWallet(userData.wallet_address || '')
       }
 
-      // Fetch last 10 completions
+      // Fetch last 10 completions for this user, from completions table
       if (userData) {
         const { data: completionData, error: completionError } = await supabase
           .from('completions')
-          .select('*, offers(title, description)')
+          .select('*')
           .eq('user_id', userData.id)
           .order('created_at', { ascending: false })
           .limit(10)
@@ -134,29 +135,46 @@ export default function Profile({ setGlobalLoading }) {
             {walletSuccess && <p className="mt-2 text-xs text-green-500">{walletSuccess}</p>}
           </div>
 
-          <div className="bg-card shadow-md rounded-2xl p-6">
+          <div className="bg-card shadow-md rounded-2xl p-6 mb-4">
             <h2 className="text-xl font-semibold mb-2 text-primary">Recent Completed Offers</h2>
             {completions.length === 0 ? (
               <p className="text-gray-400">No records found.</p>
             ) : (
-              <ul className="space-y-2">
-                {completions.map((c) => (
-                  <li key={c.id} className="border-b border-gray-800 py-2">
-                    <p className="font-semibold text-white">{c.offers?.title || 'Offer title'}</p>
-                    <p className="text-sm text-gray-400">{c.offers?.description}</p>
-                    <p className="text-sm text-accent">Points received: {c.credited_points}</p>
-                    <p className="text-xs text-gray-600">{new Date(c.created_at).toLocaleString()}</p>
-                  </li>
-                ))}
-              </ul>
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-accent font-bold border-b border-gray-800">
+                    <th className="py-2">Offer ID</th>
+                    <th className="py-2">Points</th>
+                    <th className="py-2">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {completions.map((c) => (
+                    <tr key={c.id} className="border-b border-gray-800">
+                      <td className="py-2 text-white">{c.partner_callback_id}</td>
+                      <td className="py-2 text-white font-bold">{parseInt(c.credited_points, 10) || 0}</td>
+                      <td className="py-2 text-gray-400">{new Date(c.created_at).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
+          
+          {/* Account deletion button */}
+          <div className="flex justify-end">
+            <DeleteAccountButton email={user.email} />
+          </div>
+          
         </div>
       </div>
       {/* Footer always at bottom */}
       <style jsx>{`
         .bg-card {
           background-color: #0B0B0B;
+        }
+        .text-accent {
+          color: #60A5FA;
         }
       `}</style>
     </Layout>
