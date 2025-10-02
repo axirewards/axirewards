@@ -15,7 +15,6 @@ export default function UserStatsVip() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [completedOffers, setCompletedOffers] = useState(0);
   const [strikeDays, setStrikeDays] = useState(0);
 
   useEffect(() => {
@@ -29,10 +28,10 @@ export default function UserStatsVip() {
         return;
       }
 
-      // Get user info
+      // Get user info including total_completions
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("points_balance, levelpoints, email")
+        .select("points_balance, levelpoints, email, total_completions")
         .eq("email", authUser.email)
         .single();
       if (userError || !userData) {
@@ -41,17 +40,6 @@ export default function UserStatsVip() {
         return;
       }
       setUser(userData);
-
-      // Completed offers logic
-      const { count: offersCount, error: offersError } = await supabase
-        .from("completions")
-        .select("*", { count: "exact", head: true })
-        .eq("user_email", userData.email);
-      if (!offersError && typeof offersCount === "number") {
-        setCompletedOffers(offersCount);
-      } else {
-        setCompletedOffers(0);
-      }
 
       // Strike days iš loginhistory lentelės
       const { data: loginHistoryData, error: loginHistoryError } = await supabase
@@ -86,7 +74,7 @@ export default function UserStatsVip() {
     );
   }
 
-  const { points_balance = 0, levelpoints = 0 } = user || {};
+  const { points_balance = 0, levelpoints = 0, total_completions = 0 } = user || {};
 
   let tier = 1;
   for (let i = thresholds.length - 1; i >= 0; i--) {
@@ -209,7 +197,7 @@ export default function UserStatsVip() {
       >
         <img src="/icons/check.svg" alt="Completed" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
         <span className="font-extrabold text-lg mb-2" style={{ color: "#5AF599" }}>Completed Offers</span>
-        <span className="text-3xl font-extrabold text-white">{completedOffers}</span>
+        <span className="text-3xl font-extrabold text-white">{total_completions}</span>
         <span className="text-xs text-green-300 font-semibold mt-2">Offers</span>
       </div>
       <style jsx>{`
