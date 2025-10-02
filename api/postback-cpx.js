@@ -30,6 +30,7 @@ export default async function handler(req, res) {
   const userIdRaw = parseInt(payload.user_id);
   const transactionId = (payload.trans_id || '').toString();
   const offerIdPartner = (payload.offer_id || '').toString();
+  const offerId = (payload.offer_id_partner || '').toString(); // <-- NEW: supports both offer_id and offer_id_partner
   const amountLocal = Math.floor(Number(payload.amount_local) || 0);
   const amountUsd = Number(payload.amount_usd) || 0;
   const status = String(payload.status);
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
   if (
     !userIdRaw ||
     !transactionId ||
-    !offerIdPartner ||
+    (!offerIdPartner && !offerId) ||
     isNaN(amountLocal) ||
     isNaN(amountUsd) ||
     !status
@@ -54,7 +55,7 @@ export default async function handler(req, res) {
       {
         user_id: userIdRaw,
         transaction_id: transactionId,
-        offer_id_partner: offerIdPartner,
+        offer_id_partner: offerIdPartner || offerId,
         raw_payload: payload,
         ip,
         country,
@@ -111,7 +112,7 @@ export default async function handler(req, res) {
     let { data: offer, error: offerError } = await supabase
       .from('offers')
       .select('*')
-      .eq('offer_id_partner', offerIdPartner)
+      .eq('offer_id_partner', offerIdPartner || offerId)
       .eq('partner_id', partner.id)
       .single();
 
@@ -121,8 +122,8 @@ export default async function handler(req, res) {
         .from('offers')
         .insert({
           partner_id: partner.id,
-          offer_id_partner: offerIdPartner,
-          title: `CPX offer ${offerIdPartner}`,
+          offer_id_partner: offerIdPartner || offerId,
+          title: `CPX offer ${offerIdPartner || offerId}`,
           country: country,
           status: 'active',
         })
@@ -134,12 +135,12 @@ export default async function handler(req, res) {
       offer = createdOffer;
     }
 
-    // Insert credited completion
+    // Insert credited completion - NOW BOTH FIELDS ADDED
     const { data: completion, error: completionError } = await supabase
       .from('completions')
       .insert({
         user_id: user.id,
-        offer_id: offer.id, // <--- TEISINGAI! DB offers.id
+        offer_id: offer.id, // DB offers.id
         partner_id: partner.id,
         partner_callback_id: transactionId,
         credited_points: amountLocal,
@@ -147,6 +148,8 @@ export default async function handler(req, res) {
         ip: ip,
         device_info: {},
         country: country,
+        offer_id_partner: offerIdPartner || offerId, // <--- NEW FIELD
+        offer_id_raw: offerId || offerIdPartner,      // <--- NEW FIELD (for completeness)
       })
       .select()
       .single();
