@@ -1,16 +1,57 @@
 import React, { useState, useRef, useEffect } from "react";
+import AyetOfferwall from "./AyetOfferwall";
+import BitLabsOfferwall from "./BitLabsOfferwall";
+import CpxOfferwall from "./CpxOfferwall";
+import TheoremOfferwall from "./TheoremOfferwall";
 
 /**
  * Ultra-luxury Offerwall Preview Carousel – maximal wow UI/UX,
  * fully responsive for PC & mobile, glassmorphism, smooth animations.
- * Props: offerwalls – array of offerwall objects ({ key, name, logo, color, description })
- *        onOpen – function to open offerwall modal
+ * Handles offerwall open/close logic and modal rendering inside itself.
  */
-export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
+const OFFERWALLS = [
+  {
+    key: "ayet",
+    name: "Ayet Studios",
+    logo: "/icons/ayetlogo.png",
+    color: "#60A5FA",
+    adSlot: "23274",
+    description: "Complete surveys, apps and tasks for premium AXI rewards.",
+  },
+  {
+    key: "bitlabs",
+    name: "BitLabs",
+    logo: "/icons/bitlabslogo.png",
+    color: "#62D6FB",
+    apiKey: "2dfb7d19-2974-4085-b686-181bcb681b70",
+    description: "Complete surveys and earn AXI points with BitLabs.",
+  },
+  {
+    key: "cpx",
+    name: "CPX Research",
+    logo: "/icons/cpxlogo.png",
+    color: "#5AF599",
+    appId: "29422",
+    description: "Complete surveys and earn AXI points with CPX Research.",
+  },
+  {
+    key: "theorem",
+    name: "TheoremReach",
+    logo: "/icons/theoremreachlogo.png",
+    color: "#7b6cfb",
+    appId: "24198",
+    description: "Complete surveys and earn AXI points with TheoremReach.",
+  },
+];
+
+export default function OfferwallCarousel() {
   // Current index for carousel
   const [current, setCurrent] = useState(0);
   const carouselRef = useRef();
   const [isMobile, setIsMobile] = useState(false);
+
+  // Modal logic
+  const [activeOfferwall, setActiveOfferwall] = useState(null);
 
   useEffect(() => {
     // Responsive: detect mobile/PC for sizing
@@ -43,8 +84,8 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
     };
   }, []);
 
-  const nextSlide = () => setCurrent(c => (c + 1) % offerwalls.length);
-  const prevSlide = () => setCurrent(c => (c - 1 + offerwalls.length) % offerwalls.length);
+  const nextSlide = () => setCurrent(c => (c + 1) % OFFERWALLS.length);
+  const prevSlide = () => setCurrent(c => (c - 1 + OFFERWALLS.length) % OFFERWALLS.length);
 
   // Responsive sizes
   const cardMinWidth = isMobile ? "94vw" : "360px";
@@ -54,7 +95,38 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
   const descFontSize = isMobile ? "1.06rem" : "1.24rem";
   const nameFontSize = isMobile ? "1.31rem" : "1.48rem";
   const buttonFontSize = isMobile ? "1.09rem" : "1.15rem";
-  const shadowColor = offerwalls[current]?.color || "#60A5FA";
+  const shadowColor = OFFERWALLS[current]?.color || "#60A5FA";
+
+  // Offerwall modal logic (show correct offerwall by key)
+  function renderOfferwallModal() {
+    if (!activeOfferwall) return null;
+    const wall = OFFERWALLS.find(w => w.key === activeOfferwall);
+    return (
+      <div className="fixed inset-0 z-[1001] bg-black/80 flex items-center justify-center backdrop-blur">
+        <div className="glass-card rounded-3xl shadow-2xl border-4 border-accent max-w-3xl w-full p-8 flex flex-col items-center relative animate-fade-in">
+          <button
+            className="absolute top-4 right-6 text-accent text-4xl font-extrabold hover:text-blue-700 transition"
+            onClick={() => setActiveOfferwall(null)}
+            aria-label="Close"
+          >
+            &times;
+          </button>
+          {wall.key === "ayet" && (
+            <AyetOfferwall adSlot={wall.adSlot} height="700px" />
+          )}
+          {wall.key === "bitlabs" && (
+            <BitLabsOfferwall apiKey={wall.apiKey} height="700px" />
+          )}
+          {wall.key === "cpx" && (
+            <CpxOfferwall appId={wall.appId} height="700px" />
+          )}
+          {wall.key === "theorem" && (
+            <TheoremOfferwall appId={wall.appId} height="700px" />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col items-center mt-2 mb-8 px-2">
@@ -69,8 +141,8 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
           onClick={prevSlide}
           aria-label="Prev"
           style={{
-            opacity: offerwalls.length > 1 ? 1 : 0,
-            pointerEvents: offerwalls.length > 1 ? "auto" : "none",
+            opacity: OFFERWALLS.length > 1 ? 1 : 0,
+            pointerEvents: OFFERWALLS.length > 1 ? "auto" : "none",
             width: isMobile ? 38 : 48,
             height: isMobile ? 38 : 48,
           }}
@@ -79,7 +151,7 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
         </button>
 
         {/* Carousel main offerwall card */}
-        {offerwalls.length > 0 && (
+        {OFFERWALLS.length > 0 && (
           <div className="flex flex-col items-center justify-center w-full mx-auto">
             <div
               className="relative group glass-card px-7 py-8 rounded-3xl shadow-2xl border-4 flex flex-col items-center justify-center cursor-pointer transition-all duration-400 hover:scale-[1.035] hover:shadow-accent"
@@ -92,7 +164,7 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
                 background: `linear-gradient(120deg, #151a2b 65%, ${shadowColor}33 100%)`,
                 overflow: "hidden",
               }}
-              onClick={() => onOpen && onOpen(offerwalls[current].key)}
+              onClick={() => setActiveOfferwall(OFFERWALLS[current].key)}
             >
               {/* Animated ring with glow */}
               <div
@@ -116,8 +188,8 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
               />
               {/* Logo */}
               <img
-                src={offerwalls[current].logo}
-                alt={offerwalls[current].name + " logo"}
+                src={OFFERWALLS[current].logo}
+                alt={OFFERWALLS[current].name + " logo"}
                 className="object-contain mb-4 drop-shadow-lg animate-bounce-slow"
                 style={{
                   width: logoSize,
@@ -136,7 +208,7 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
                   textShadow: `0 2px 16px ${shadowColor}44, 0 1px 2px #181e38`,
                   zIndex: 2,
                 }}>
-                {offerwalls[current].name}
+                {OFFERWALLS[current].name}
               </div>
               <div className="text-gray-300 px-2 text-center mb-3"
                 style={{
@@ -145,20 +217,20 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
                   fontWeight: 500,
                   lineHeight: isMobile ? "1.18" : "1.22",
                 }}>
-                {offerwalls[current].description}
+                {OFFERWALLS[current].description}
               </div>
               {/* Open button */}
               <button
                 className="px-6 py-2 rounded-full font-bold bg-gradient-to-br from-accent to-secondary text-white shadow-lg hover:scale-105 active:scale-95 transition"
                 style={{ fontSize: buttonFontSize, zIndex: 3, marginTop: "8px", letterSpacing: "0.04em" }}
-                onClick={e => { e.stopPropagation(); onOpen && onOpen(offerwalls[current].key); }}
+                onClick={e => { e.stopPropagation(); setActiveOfferwall(OFFERWALLS[current].key); }}
               >
                 Open Offerwall
               </button>
             </div>
             {/* Carousel dots */}
             <div className="flex flex-row gap-2 mt-5 items-center justify-center">
-              {offerwalls.map((_, idx) => (
+              {OFFERWALLS.map((_, idx) => (
                 <button
                   key={idx}
                   className={`w-4 h-4 rounded-full border-2 border-accent transition-all duration-300 ${
@@ -180,8 +252,8 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
           onClick={nextSlide}
           aria-label="Next"
           style={{
-            opacity: offerwalls.length > 1 ? 1 : 0,
-            pointerEvents: offerwalls.length > 1 ? "auto" : "none",
+            opacity: OFFERWALLS.length > 1 ? 1 : 0,
+            pointerEvents: OFFERWALLS.length > 1 ? "auto" : "none",
             width: isMobile ? 38 : 48,
             height: isMobile ? 38 : 48,
           }}
@@ -189,6 +261,8 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
           <svg width="24" height="24" fill="none"><path d="M10 6l6 6-6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
+      {/* Render offerwall modal (if active) */}
+      {renderOfferwallModal()}
       <style jsx>{`
         .glass-card {
           background: rgba(24, 32, 56, 0.965);
@@ -208,6 +282,13 @@ export default function OfferwallCarousel({ offerwalls = [], onOpen }) {
         @keyframes bounce-slow {
           0% { transform: translateY(0);}
           100% { transform: translateY(-8px);}
+        }
+        .animate-fade-in {
+          animation: fadeInModal 0.28s cubic-bezier(.23,1,.32,1);
+        }
+        @keyframes fadeInModal {
+          from { opacity: 0; transform: scale(0.98);}
+          to { opacity: 1; transform: scale(1);}
         }
       `}</style>
     </div>
