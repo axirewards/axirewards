@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
 import Image from "next/image";
 import ConsentPopup from "../components/ConsentPopup";
+import IndexFooter from "../components/IndexFooter";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -139,6 +140,8 @@ export default function LoginPage() {
       </main>
       {/* Consent Popup always rendered, handles its own logic */}
       <ConsentPopup />
+      {/* Footer for anonymous links */}
+      <IndexFooter />
       {/* Animations */}
       <style jsx>{`
         .animate-fade-in { animation: fadeIn 0.55s ease; }
