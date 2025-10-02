@@ -15,7 +15,14 @@ export default function LoginPage() {
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) router.replace("/dashboard");
+      if (user) {
+        // Update last_login if user is already logged in
+        await supabase
+          .from("users")
+          .update({ last_login: new Date().toISOString() })
+          .eq("email", user.email);
+        router.replace("/dashboard");
+      }
     };
     checkUser();
   }, [router]);
@@ -35,6 +42,15 @@ export default function LoginPage() {
     if (error) {
       setErrorMsg(error.message);
     } else {
+      // On next visit to dashboard, last_login will be updated,
+      // but try to update it here for immediate logins too
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        await supabase
+          .from("users")
+          .update({ last_login: new Date().toISOString() })
+          .eq("email", user.email);
+      }
       setInfoMsg("Check your email for the magic login link. If you don't see it, check your spam folder. Link is valid for 5 minutes.");
     }
 
@@ -51,6 +67,17 @@ export default function LoginPage() {
       options: { redirectTo: `${window.location.origin}/dashboard` },
     });
 
+    if (!error) {
+      // On next visit to dashboard, last_login will be updated,
+      // but try to update it here for immediate logins too
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        await supabase
+          .from("users")
+          .update({ last_login: new Date().toISOString() })
+          .eq("email", user.email);
+      }
+    }
     if (error) setErrorMsg(error.message);
   };
 
