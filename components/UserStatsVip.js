@@ -11,13 +11,14 @@ const TIER_INFO = [
 
 const thresholds = [0, 10000, 50000, 150000, 500000, 9999999];
 
-export default function UserStatsVip({ streak = 0, completedOffers = 0 }) {
+export default function UserStatsVip({ streak = 0 }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [completedOffers, setCompletedOffers] = useState(0);
 
   useEffect(() => {
-    async function fetchUser() {
+    async function fetchUserAndOffers() {
       setLoading(true);
       setError("");
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
@@ -38,9 +39,21 @@ export default function UserStatsVip({ streak = 0, completedOffers = 0 }) {
         return;
       }
       setUser(data);
+
+      // Užkrauti completedOffers iš completions lentelės pagal user_email
+      const { count: offersCount, error: offersError } = await supabase
+        .from("completions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_email", authUser.email);
+      if (!offersError && typeof offersCount === "number") {
+        setCompletedOffers(offersCount);
+      } else {
+        setCompletedOffers(0);
+      }
+
       setLoading(false);
     }
-    fetchUser();
+    fetchUserAndOffers();
   }, []);
 
   if (loading) {
