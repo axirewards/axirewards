@@ -29,7 +29,6 @@ export default async function handler(req, res) {
   // Extract CPX fields
   const userIdRaw = parseInt(payload.user_id);
   const transactionId = (payload.trans_id || '').toString();
-  // Accept both offer_id and offer_id_partner from incoming payload
   const offerIdPartner = (payload.offer_id_partner || payload.offer_id || '').toString();
   const amountLocal = Math.floor(Number(payload.amount_local) || 0);
   const amountUsd = Number(payload.amount_usd) || 0;
@@ -108,40 +107,26 @@ export default async function handler(req, res) {
     const { data: partner, error: partnerError } = await supabase.from('partners').select('*').eq('code', 'cpx').single();
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' });
 
-    // Fetch offer (by partner offer id)
-    let { data: offer, error: offerError } = await supabase
-      .from('offers')
+    // Try to find completion by offer_id_partner and user_id
+    const { data: existingCompletion, error: completionFindError } = await supabase
+      .from('completions')
       .select('*')
+      .eq('user_id', user.id)
       .eq('offer_id_partner', offerIdPartner)
-      .eq('partner_id', partner.id)
       .single();
 
-    // If offer does not exist, create it automatically!
-    if (offerError || !offer) {
-      const { data: createdOffer, error: createError } = await supabase
-        .from('offers')
-        .insert({
-          partner_id: partner.id,
-          offer_id_partner: offerIdPartner,
-          title: `CPX offer ${offerIdPartner}`,
-          country: country,
-          status: 'active',
-        })
-        .select()
-        .single();
-      if (createError || !createdOffer) {
-        return res.status(500).json({ error: 'Failed to create offer automatically', details: createError?.message });
-      }
-      offer = createdOffer;
+    if (existingCompletion) {
+      // If found, treat as already processed
+      return res.status(200).json({ status: 'already_processed', completion_id: existingCompletion.id });
     }
 
-    // Insert credited completion with both offer_id and offer_id_partner
+    // Insert credited completion with user_email, offer_id_partner
     const { data: completion, error: completionError } = await supabase
       .from('completions')
       .insert({
         user_id: user.id,
-        offer_id: offer.id, // DB offers.id
-        offer_id_partner: offerIdPartner, // partner offer id
+        user_email: user.email, // New field for tracking by email
+        offer_id_partner: offerIdPartner, // partner offer id (from CPX)
         partner_id: partner.id,
         partner_callback_id: transactionId,
         credited_points: amountLocal,
