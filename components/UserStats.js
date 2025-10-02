@@ -5,15 +5,21 @@ export default function UserStats({ user }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="p-4 rounded-xl bg-accent shadow flex flex-col items-center">
           <p className="text-sm text-white mb-2">Points Balance</p>
-          <p className="text-3xl font-extrabold text-white drop-shadow">{user.points_balance}</p>
+          <p className="text-3xl font-extrabold text-white drop-shadow">
+            {parseInt(user.points_balance, 10) || 0}
+          </p>
         </div>
         <div className="p-4 rounded-xl bg-secondary shadow flex flex-col items-center">
           <p className="text-sm text-white mb-2">Completed Offers</p>
-          <p className="text-3xl font-extrabold text-white drop-shadow">{user.total_completion}</p>
+          <p className="text-3xl font-extrabold text-white drop-shadow">
+            {parseInt(user.total_completions, 10) || 0}
+          </p>
         </div>
         <div className="p-4 rounded-xl bg-primary shadow flex flex-col items-center">
           <p className="text-sm text-white mb-2">User Level</p>
-          <p className="text-3xl font-extrabold text-white drop-shadow">{user.tier}</p>
+          <p className="text-3xl font-extrabold text-white drop-shadow">
+            {user.tier || 1}
+          </p>
         </div>
       </div>
     </div>
