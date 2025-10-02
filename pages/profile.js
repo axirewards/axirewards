@@ -36,12 +36,12 @@ export default function Profile({ setGlobalLoading }) {
         setWallet(userData.wallet_address || '')
       }
 
-      // Fetch last 10 completions for this user, from completions table
+      // Fetch last 10 completions for this user using completions.user_email === users.email
       if (userData) {
         const { data: completionData, error: completionError } = await supabase
           .from('completions')
           .select('*')
-          .eq('user_id', userData.id)
+          .eq('user_email', userData.email)
           .order('created_at', { ascending: false })
           .limit(10)
         if (completionError) console.error(completionError)
@@ -99,12 +99,15 @@ export default function Profile({ setGlobalLoading }) {
         <div className="max-w-4xl mx-auto w-full p-6 space-y-8">
           <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
             <h1 className="text-3xl font-extrabold text-primary mb-3 md:mb-0">Profile</h1>
-            <button
-              onClick={handleLogout}
-              className="rounded-lg bg-card px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-900 shadow-lg border border-gray-800"
-            >
-              Logout
-            </button>
+            <div className="flex gap-3">
+              <DeleteAccountButton email={user.email} />
+              <button
+                onClick={handleLogout}
+                className="rounded-lg bg-card px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-900 shadow-lg border border-gray-800"
+              >
+                Logout
+              </button>
+            </div>
           </div>
 
           <UserStats user={user} />
@@ -160,12 +163,6 @@ export default function Profile({ setGlobalLoading }) {
               </table>
             )}
           </div>
-          
-          {/* Account deletion button */}
-          <div className="flex justify-end">
-            <DeleteAccountButton email={user.email} />
-          </div>
-          
         </div>
       </div>
       {/* Footer always at bottom */}
