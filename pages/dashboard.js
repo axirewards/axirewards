@@ -158,7 +158,7 @@ export default function Dashboard({ setGlobalLoading }) {
   if (!isMobile) {
     return (
       <Layout>
-        <div className="relative flex flex-col items-center justify-start min-h-[90vh] max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 py-8">
+        <div className="relative flex flex-col items-center justify-start min-h-[96vh] w-full" style={{maxWidth:'100vw'}}>
           {/* Header */}
           <div className="flex flex-col md:flex-row items-center justify-center w-full mb-8 gap-4">
             <h1 className="text-4xl font-extrabold text-white text-center drop-shadow mb-3">
@@ -168,9 +168,9 @@ export default function Dashboard({ setGlobalLoading }) {
 
           {/* Stats Cards / User / VIP */}
           {user && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-10 w-full justify-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-10 w-full justify-center" style={{maxWidth:'97vw'}}>
               <div className="bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-7 border-2 border-accent backdrop-blur flex flex-col items-center">
-                {/* Avatar, badge, status REMOVED from here */}
+                {/* Only VIPTierProgress here, no badge/avatar/status from dashboard */}
                 <div className="w-full flex items-center justify-center mt-1">
                   <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
                 </div>
@@ -183,7 +183,7 @@ export default function Dashboard({ setGlobalLoading }) {
 
           {/* Balance History */}
           {user && (
-            <div className="rounded-2xl glass-card p-6 mb-8 border-2 border-accent shadow-xl w-full max-w-3xl mx-auto">
+            <div className="rounded-2xl glass-card p-6 mb-8 border-2 border-accent shadow-xl w-full" style={{maxWidth:'650px'}}>
               <h3 className="text-lg font-bold text-accent mb-2">Balance History</h3>
               {ledger.length > 0 ? (
                 <ResponsiveContainer width="100%" height={80}>
@@ -201,7 +201,7 @@ export default function Dashboard({ setGlobalLoading }) {
           )}
 
           {/* Offerwalls Section */}
-          <div className="w-full mt-8 flex flex-col items-center justify-center">
+          <div className="w-full mt-8 flex flex-col items-center justify-center" style={{maxWidth:'97vw'}}>
             <h2 className="mb-6 text-2xl font-bold text-white text-center tracking-tight">Premium Offerwalls</h2>
             <div className="w-full flex flex-col items-center justify-center">
               <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
@@ -276,18 +276,16 @@ export default function Dashboard({ setGlobalLoading }) {
             border: "3px solid #60A5FA33",
           }}
         >
-          {/* Premium Badge & Avatar removed from VIPTierProgress container */}
+          {/* Only VIPTierProgress here, no badge/avatar/status from dashboard */}
           {user && (
-            <div className="flex flex-col items-center mb-6 gap-2">
-              <div className="w-full flex items-center justify-center mt-1">
-                <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
-              </div>
+            <div className="w-full flex items-center justify-center mt-1 mb-6">
+              <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
             </div>
           )}
 
           {/* Balance History */}
           {user && (
-            <div className="rounded-2xl glass-card p-4 mb-6 border-2 border-accent shadow-xl w-full">
+            <div className="rounded-2xl glass-card p-4 mb-6 border-2 border-accent shadow-xl w-full" style={{maxWidth:'650px'}}>
               <h3 className="text-md font-bold text-accent mb-2">Balance History</h3>
               {ledger.length > 0 ? (
                 <ResponsiveContainer width="100%" height={70}>
@@ -313,7 +311,7 @@ export default function Dashboard({ setGlobalLoading }) {
           )}
 
           {/* Offerwall Carousel */}
-          <div className="w-full flex flex-col items-center mt-8 mb-8">
+          <div className="w-full flex flex-col items-center mt-8 mb-8" style={{maxWidth:'97vw'}}>
             <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
           </div>
         </div>
