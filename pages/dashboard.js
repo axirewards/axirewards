@@ -170,20 +170,10 @@ export default function Dashboard({ setGlobalLoading }) {
           {user && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-10 w-full justify-center">
               <div className="bg-gradient-to-br from-[#232e40dd] to-[#0B0B0Bcc] rounded-3xl shadow-2xl p-7 border-2 border-accent backdrop-blur flex flex-col items-center">
-                <PremiumBadge type={user?.tier >= 5 ? "diamond" : user?.tier >= 3 ? "gold" : "silver"} />
-                <img
-                  src={user?.avatar_url || "/icons/avatar-default.svg"}
-                  alt="Avatar"
-                  className="w-20 h-20 rounded-full border-4 border-accent shadow-xl mt-3"
-                  style={{ boxShadow: "0 2px 18px 0 #60A5fa44" }}
-                />
-                <div className="text-lg font-extrabold text-white text-center truncate w-full max-w-[180px] mt-2 mb-2">{user?.display_name || user?.email}</div>
+                {/* Avatar, badge, status REMOVED from here */}
                 <div className="w-full flex items-center justify-center mt-1">
                   <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
                 </div>
-                <span className="mt-2 px-3 py-1 rounded-full bg-gradient-to-r from-accent to-secondary text-white font-bold shadow-lg animate-pulse text-sm">
-                  VIP {user?.tier || 1}
-                </span>
               </div>
               <StatsCard title="Points Balance" value={user?.points_balance || 0} unit="AXI" icon="/icons/coin.svg" animateConfetti />
               <StatsCard title="Daily Streak" value={streak} unit="🔥" icon="/icons/fire.svg" animatePulse />
@@ -286,21 +276,12 @@ export default function Dashboard({ setGlobalLoading }) {
             border: "3px solid #60A5FA33",
           }}
         >
-          {/* Premium Badge & Avatar */}
+          {/* Premium Badge & Avatar removed from VIPTierProgress container */}
           {user && (
             <div className="flex flex-col items-center mb-6 gap-2">
-              <PremiumBadge type={user?.tier >= 5 ? "diamond" : user?.tier >= 3 ? "gold" : "silver"} />
-              <img
-                src={user?.avatar_url || "/icons/avatar-default.svg"}
-                alt="Avatar"
-                className="w-16 h-16 rounded-full border-4 border-accent shadow-xl"
-                style={{ boxShadow: "0 2px 18px 0 #60A5fa44" }}
-              />
-              <div className="text-lg font-extrabold text-white text-center truncate max-w-[220px]">{user?.display_name || user?.email}</div>
-              <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
-              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-accent to-secondary text-white font-bold shadow-lg animate-pulse text-sm">
-                VIP {user?.tier || 1}
-              </span>
+              <div className="w-full flex items-center justify-center mt-1">
+                <VIPTierProgress tier={user?.tier || 1} points={user?.points_balance || 0} email={user?.email} />
+              </div>
             </div>
           )}
 
