@@ -122,7 +122,7 @@ export default function UserStatsVip({
           boxShadow: "0 0 24px 0 #FF6A3D44",
         }}
       >
-        <img src="/icons/fire.svg" alt="Streak" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
+        <img src="/icons/fire.png" alt="Streak" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
         <span className="font-extrabold text-lg mb-2" style={{ color: "#FF6A3D" }}>Daily Streak</span>
         <span className="text-3xl font-extrabold text-white">{streak}</span>
         <span className="text-xs text-orange-300 font-semibold mt-2">🔥 Days</span>
@@ -139,7 +139,7 @@ export default function UserStatsVip({
           boxShadow: "0 0 24px 0 #5AF59944",
         }}
       >
-        <img src="/icons/check.svg" alt="Completed" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
+        <img src="/icons/check.png" alt="Completed" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
         <span className="font-extrabold text-lg mb-2" style={{ color: "#5AF599" }}>Completed Offers</span>
         <span className="text-3xl font-extrabold text-white">{completedOffers}</span>
         <span className="text-xs text-green-300 font-semibold mt-2">Offers</span>
