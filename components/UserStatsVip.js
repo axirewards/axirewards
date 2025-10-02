@@ -16,7 +16,7 @@ export default function UserStatsVip() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [completedOffers, setCompletedOffers] = useState(0);
-  const [streak, setStreak] = useState(0);
+  const [strikeDays, setStrikeDays] = useState(0);
 
   useEffect(() => {
     async function fetchUserAndStats() {
@@ -32,7 +32,7 @@ export default function UserStatsVip() {
       // Get user info
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("points_balance, levelpoints, last_login, email")
+        .select("points_balance, levelpoints, email")
         .eq("email", authUser.email)
         .single();
       if (userError || !userData) {
@@ -42,7 +42,7 @@ export default function UserStatsVip() {
       }
       setUser(userData);
 
-      // Completed offers logic - grąžina TIKSLŲ skaičių įrašų!
+      // Completed offers logic
       const { count: offersCount, error: offersError } = await supabase
         .from("completions")
         .select("*", { count: "exact", head: true })
@@ -53,28 +53,17 @@ export default function UserStatsVip() {
         setCompletedOffers(0);
       }
 
-      // Strike (streak) logic (kaip ir anksčiau)
-      const { data: loginsData, error: loginsError } = await supabase
-        .from("users")
-        .select("last_login_history")
-        .eq("email", userData.email)
+      // Strike days iš loginhistory lentelės
+      const { data: loginHistoryData, error: loginHistoryError } = await supabase
+        .from("loginhistory")
+        .select("strike_days")
+        .eq("user_email", userData.email)
         .single();
-
-      let loginHistory = [];
-      if (loginsData && Array.isArray(loginsData.last_login_history)) {
-        loginHistory = loginsData.last_login_history.map(d => new Date(d));
-      } else if (userData.last_login) {
-        loginHistory = [new Date(userData.last_login)];
+      if (!loginHistoryError && loginHistoryData && typeof loginHistoryData.strike_days === "number") {
+        setStrikeDays(loginHistoryData.strike_days);
+      } else {
+        setStrikeDays(0);
       }
-
-      loginHistory.sort((a, b) => b - a); // naujausi pirmi
-      let streakCount = 1;
-      for (let i = 1; i < loginHistory.length; i++) {
-        const diff = (loginHistory[i - 1] - loginHistory[i]) / (1000 * 60 * 60 * 24);
-        if (diff > 1.5) break;
-        streakCount++;
-      }
-      setStreak(streakCount);
 
       setLoading(false);
     }
@@ -203,7 +192,7 @@ export default function UserStatsVip() {
       >
         <img src="/icons/fire.png" alt="Streak" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
         <span className="font-extrabold text-lg mb-2" style={{ color: "#FF6A3D" }}>Daily Streak</span>
-        <span className="text-3xl font-extrabold text-white">{streak}</span>
+        <span className="text-3xl font-extrabold text-white">{strikeDays}</span>
         <span className="text-xs text-orange-300 font-semibold mt-2">🔥 Days</span>
       </div>
       {/* Completed Offers Cube */}
