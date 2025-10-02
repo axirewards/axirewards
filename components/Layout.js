@@ -6,8 +6,17 @@ import BannerAadsLeft from './BannerAadsLeft'
 import BannerAadsRight from './BannerAadsRight'
 import { Transition } from '@headlessui/react'
 import { supabase } from '../lib/supabaseClient'
+import { useRouter } from 'next/router'
 
 export default function Layout({ children }) {
+  const router = useRouter()
+
+  // Disable layout for anon policy pages
+  const anonRoutes = ['/privacy-anon', '/terms-anon', '/contact-anon']
+  if (anonRoutes.includes(router.pathname)) {
+    return <>{children}</>
+  }
+
   // DB settings for banners
   const [showSideBanners, setShowSideBanners] = useState(true)
   const [showBottomBanner, setShowBottomBanner] = useState(true)
