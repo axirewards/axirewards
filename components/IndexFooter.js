@@ -6,9 +6,9 @@ export default function IndexFooter() {
       <div className="max-w-3xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 px-4">
         {/* Links */}
         <div className="flex flex-wrap gap-6 text-sm items-center justify-center">
-          <a href="/privacy" className="hover:underline opacity-80">Privacy Policy</a>
-          <a href="/terms" className="hover:underline opacity-80">Terms of Service</a>
-          <a href="/contact" className="hover:underline opacity-80">Contact</a>
+          <a href="/privacy-anon" className="hover:underline opacity-80">Privacy Policy</a>
+          <a href="/terms-anon" className="hover:underline opacity-80">Terms of Service</a>
+          <a href="/contact-anon" className="hover:underline opacity-80">Contact</a>
         </div>
         {/* Social icons */}
         <div className="flex gap-4 items-center justify-center">
