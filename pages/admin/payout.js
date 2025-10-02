@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
 import AdminNavbar from '../../components/AdminNavbar'
 import { supabase } from '../../lib/supabaseClient'
+import { isAdmin } from '../../lib/userUtils'
 
 export default function AdminPayout({ setGlobalLoading }) {
   const [payouts, setPayouts] = useState([])
@@ -13,9 +14,35 @@ export default function AdminPayout({ setGlobalLoading }) {
   const [markPaidSuccess, setMarkPaidSuccess] = useState('')
   const [userMap, setUserMap] = useState({})
   const [refresh, setRefresh] = useState(0)
+  const [user, setUser] = useState(null)
+  const [userChecked, setUserChecked] = useState(false)
+
+  // Admin check on mount
+  useEffect(() => {
+    async function checkAdmin() {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser || !authUser.email) {
+        window.location.replace('/index')
+        return
+      }
+      const { data: dbUser, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', authUser.email)
+        .single()
+      if (dbError || !dbUser || !isAdmin(dbUser)) {
+        window.location.replace('/dashboard')
+        return
+      }
+      setUser(dbUser)
+      setUserChecked(true)
+    }
+    checkAdmin()
+  }, [])
 
   // Fetch payouts on mount and when refresh
   useEffect(() => {
+    if (!userChecked) return
     if (typeof setGlobalLoading === "function") setGlobalLoading(true)
     setLoading(true)
     setError('')
@@ -51,7 +78,7 @@ export default function AdminPayout({ setGlobalLoading }) {
       }
     }
     fetchPayouts()
-  }, [setGlobalLoading, refresh])
+  }, [setGlobalLoading, refresh, userChecked])
 
   // Mark payout as paid (and log admin action!)
   const handleMarkPaid = async (payout) => {
@@ -72,7 +99,7 @@ export default function AdminPayout({ setGlobalLoading }) {
 
       // Log admin action
       await supabase.from('admin_logs').insert({
-        admin_user: 'admin', // can replace with logged in admin email
+        admin_user: user?.email || 'admin',
         action: 'payout_paid',
         details: { payout_id: payout.id, user_id: payout.user_id, amount: payout.points_amount },
         created_at: new Date().toISOString()
@@ -94,7 +121,7 @@ export default function AdminPayout({ setGlobalLoading }) {
 
   return (
     <Layout admin>
-      <AdminNavbar />
+      <AdminNavbar user={user} />
       <div className="min-h-screen flex flex-col">
         <div className="max-w-7xl mx-auto w-full p-6 flex-grow flex flex-col">
           <h1 className="text-3xl font-bold text-primary mb-6">Admin Payout Management</h1>
