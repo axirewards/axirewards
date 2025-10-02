@@ -7,7 +7,6 @@ import CpxOfferwall from "../components/CpxOfferwall";
 import TheoremOfferwall from "../components/TheoremOfferwall";
 import { supabase } from "../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import UserStatsVip from "../components/UserStatsVip";
 import OfferwallCarousel from "../components/OfferwallCarousel";
 import FloatingActionButton from "../components/FloatingActionButton";
@@ -157,15 +156,14 @@ export default function Dashboard({ setGlobalLoading }) {
   if (!isMobile) {
     return (
       <Layout>
-        <div className="relative flex flex-col items-center justify-start min-h-[96vh] w-full" style={{maxWidth:'100vw'}}>
+        <div className="relative flex flex-col items-center justify-start min-h-screen w-full" style={{maxWidth:'100vw'}}>
           {/* Header */}
-          <div className="flex flex-col md:flex-row items-center justify-center w-full mb-8 gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-4">
             <h1 className="text-4xl font-extrabold text-white text-center drop-shadow mb-3">
               Dashboard
             </h1>
           </div>
-
-          {/* User Stats / VIP (all 4 cubes in one component) */}
+          {/* User Stats / VIP */}
           {user && (
             <UserStatsVip
               tier={user?.tier || 1}
@@ -174,28 +172,8 @@ export default function Dashboard({ setGlobalLoading }) {
               completedOffers={user?.completed_offers || 0}
             />
           )}
-
-          {/* Balance History */}
-          {user && (
-            <div className="rounded-2xl glass-card p-6 mb-8 border-2 border-accent shadow-xl w-full" style={{maxWidth:'650px'}}>
-              <h3 className="text-lg font-bold text-accent mb-2">Balance History</h3>
-              {ledger.length > 0 ? (
-                <ResponsiveContainer width="100%" height={80}>
-                  <LineChart data={ledger}>
-                    <XAxis dataKey="created_at" hide />
-                    <YAxis hide domain={['auto', 'auto']} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="balance_after" stroke="#60A5FA" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="text-sm text-gray-400">No balance history yet.</p>
-              )}
-            </div>
-          )}
-
-          {/* Offerwalls Section */}
-          <div className="w-full mt-8 flex flex-col items-center justify-center" style={{maxWidth:'97vw'}}>
+          {/* Offerwalls Section - moved right below stats */}
+          <div className="w-full flex flex-col items-center justify-center" style={{maxWidth:'97vw', marginTop:'18px'}}>
             <h2 className="mb-6 text-2xl font-bold text-white text-center tracking-tight">Premium Offerwalls</h2>
             <div className="w-full flex flex-col items-center justify-center">
               <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
@@ -270,7 +248,7 @@ export default function Dashboard({ setGlobalLoading }) {
             border: "3px solid #60A5FA33",
           }}
         >
-          {/* User Stats / VIP (all 4 cubes in one component) */}
+          {/* User Stats / VIP */}
           {user && (
             <UserStatsVip
               tier={user?.tier || 1}
@@ -279,28 +257,9 @@ export default function Dashboard({ setGlobalLoading }) {
               completedOffers={user?.completed_offers || 0}
             />
           )}
-
-          {/* Balance History */}
-          {user && (
-            <div className="rounded-2xl glass-card p-4 mb-6 border-2 border-accent shadow-xl w-full" style={{maxWidth:'650px'}}>
-              <h3 className="text-md font-bold text-accent mb-2">Balance History</h3>
-              {ledger.length > 0 ? (
-                <ResponsiveContainer width="100%" height={70}>
-                  <LineChart data={ledger}>
-                    <XAxis dataKey="created_at" hide />
-                    <YAxis hide domain={['auto', 'auto']} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="balance_after" stroke="#60A5FA" strokeWidth={3} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="text-xs text-gray-400">No balance history yet.</p>
-              )}
-            </div>
-          )}
-
-          {/* Offerwall Carousel */}
-          <div className="w-full flex flex-col items-center mt-8 mb-8" style={{maxWidth:'97vw'}}>
+          {/* Offerwall Carousel - moved right below stats */}
+          <div className="w-full flex flex-col items-center mt-5 mb-4" style={{maxWidth:'97vw'}}>
+            <h2 className="mb-5 text-xl font-bold text-white text-center tracking-tight">Premium Offerwalls</h2>
             <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
           </div>
         </div>
