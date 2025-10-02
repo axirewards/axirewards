@@ -1,9 +1,9 @@
 import React from "react";
 
 /**
- * Top-notch ultra-luxury AchievementWall.
- * Responsive, beautiful grid container, glassmorphism, animated, shadow, luxury badge effects.
- * Achievements auto-adapt to PC and mobile view, always centered, wow effect.
+ * Supreme ultra-premium AchievementWall.
+ * Responsive, glassy, compact, wow grid – fits dashboard perfectly.
+ * Achievements auto-adapt to PC and mobile. Perfect for bottom of dashboard.
  */
 const ACHIEVEMENTS = [
   {
@@ -57,35 +57,33 @@ const ACHIEVEMENTS = [
   },
 ];
 
-export default function AchievementWall({ completedOffers = 0, gridMode = false }) {
-  // Responsive grid: 2 columns on mobile, 4-7 columns on desktop
-  // Container width adapts automatically
+export default function AchievementWall({ completedOffers = 0 }) {
+  // Responsive grid: 2 columns on mobile, 4-7 columns on desktop, fits in one row if space allows
   return (
     <div
-      className="achievement-wall-container w-full flex flex-col items-center justify-center py-8 px-2"
+      className="achievement-wall-container w-full flex flex-col items-center justify-center py-6 px-2"
       style={{
-        background: "rgba(18, 24, 38, 0.87)",
-        borderRadius: "2.5rem",
-        boxShadow: "0 8px 54px 0 #1E3A8A44, 0 2px 12px 0 #60A5fa33",
-        backdropFilter: "blur(18px)",
-        border: "2.5px solid #1E3A8A55",
-        maxWidth: "100vw",
+        background: "rgba(18, 24, 38, 0.93)",
+        borderRadius: "1.7rem",
+        boxShadow: "0 8px 28px 0 #1E3A8A33, 0 2px 8px 0 #60A5fa33",
+        backdropFilter: "blur(13px)",
+        border: "2px solid #1E3A8A44",
+        maxWidth: "97vw",
+        margin: "0 auto",
       }}
     >
-      <div className="w-full flex items-center justify-center mb-8">
-        <span className="font-extrabold text-2xl md:text-3xl tracking-tight text-accent uppercase drop-shadow-lg bg-gradient-to-r from-[#7b6cfb] via-[#60A5FA] to-[#FFD700] bg-clip-text text-transparent">
-          My Achievement Wall
+      <div className="w-full flex items-center justify-center mb-4">
+        <span className="font-extrabold text-xl md:text-2xl tracking-tight text-accent uppercase drop-shadow bg-gradient-to-r from-[#7b6cfb] via-[#60A5FA] to-[#FFD700] bg-clip-text text-transparent">
+          Achievements
         </span>
       </div>
       <div
         className={
-          "grid gap-6 items-stretch justify-center w-full " +
-          (gridMode
-            ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7"
-            : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7")
+          "grid gap-3 items-center justify-center w-full " +
+          "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7"
         }
         style={{
-          maxWidth: "1100px",
+          maxWidth: "950px",
           margin: "0 auto",
         }}
       >
@@ -94,81 +92,81 @@ export default function AchievementWall({ completedOffers = 0, gridMode = false 
           return (
             <div
               key={ach.id}
-              className={`achievement-card flex flex-col items-center justify-center px-4 py-5 rounded-2xl shadow-xl border-2 transition-all duration-400 ${
+              className={`achievement-card flex flex-col items-center justify-center px-2 py-3 rounded-xl shadow-lg border transition-all duration-350 ${
                 unlocked
-                  ? "border-accent bg-gradient-to-br from-[#60A5FA33] to-[#7b6cfb44] shadow-accent animate-pop"
+                  ? "border-accent bg-gradient-to-br from-[#60A5FA22] to-[#7b6cfb22] shadow-accent animate-pop"
                   : "border-gray-800 bg-gradient-to-br from-[#181e38bb] to-[#202e49bb] opacity-60"
               }`}
               style={{
-                minWidth: "140px",
-                maxWidth: "180px",
-                minHeight: "200px",
+                minWidth: "96px",
+                maxWidth: "120px",
+                minHeight: "124px",
                 boxShadow: unlocked
-                  ? "0 0 32px 0 #60A5fa55, 0 2px 22px 0 #7b6cfb77"
-                  : "0 0 18px 0 #181e38bb",
+                  ? "0 0 18px 0 #60A5fa33, 0 2px 8px 0 #7b6cfb55"
+                  : "0 0 8px 0 #181e38bb",
                 position: "relative",
                 display: "flex",
                 alignItems: "center",
               }}
             >
               <div
-                className="achievement-icon-bg absolute top-4 left-1/2 transform -translate-x-1/2"
+                className="achievement-icon-bg absolute top-2 left-1/2 transform -translate-x-1/2"
                 style={{
-                  width: unlocked ? 54 : 38,
-                  height: unlocked ? 54 : 38,
+                  width: unlocked ? 36 : 23,
+                  height: unlocked ? 36 : 23,
                   borderRadius: "50%",
                   background: unlocked
-                    ? "radial-gradient(circle, #60A5FA33 0%, #7b6cfb11 70%, transparent 100%)"
+                    ? "radial-gradient(circle, #60A5FA22 0%, #7b6cfb11 70%, transparent 100%)"
                     : "radial-gradient(circle, #232e40 0%, #181e38 70%, transparent 100%)",
                   filter: unlocked
-                    ? "blur(2.5px) brightness(1.15)"
-                    : "blur(1.5px) opacity(0.7)",
+                    ? "blur(1.8px) brightness(1.10)"
+                    : "blur(1.1px) opacity(0.6)",
                   zIndex: 1,
                 }}
               />
               <img
                 src={ach.icon}
                 alt={ach.title}
-                className={`w-12 h-12 mb-3 z-10 ${unlocked ? "animate-spin-slow" : ""}`}
+                className={`w-8 h-8 mb-1 z-10 ${unlocked ? "animate-spin-slow" : ""}`}
                 style={{
                   filter: unlocked
-                    ? "drop-shadow(0 0 12px #60A5FA) brightness(1.12)"
-                    : "grayscale(70%) opacity(0.58)",
+                    ? "drop-shadow(0 0 8px #60A5FA) brightness(1.10)"
+                    : "grayscale(70%) opacity(0.47)",
                 }}
               />
               <span
-                className={`font-extrabold text-md md:text-lg text-center ${unlocked ? "text-accent" : "text-gray-400"} mb-2`}
+                className={`font-bold text-[0.97em] text-center ${unlocked ? "text-accent" : "text-gray-400"} mb-1`}
                 style={{
-                  letterSpacing: "0.05em",
+                  letterSpacing: "0.04em",
                   textShadow: unlocked
-                    ? "0 0 7px #60A5FA, 0 1px 2px #181e38"
+                    ? "0 0 3px #60A5FA, 0 1px 2px #181e38"
                     : "none",
+                  maxWidth: "96px",
                 }}
               >
                 {ach.title}
               </span>
               <span
-                className={`text-xs text-center ${unlocked ? "text-white" : "text-gray-500"} mb-2 px-1`}
+                className={`text-[0.81em] text-center ${unlocked ? "text-white" : "text-gray-500"} mb-1 px-1`}
                 style={{
                   fontWeight: "400",
-                  lineHeight: "1.2",
-                  maxWidth: "148px",
-                  minHeight: "34px",
-                  marginTop: "-2px",
+                  lineHeight: "1.15",
+                  maxWidth: "99px",
+                  minHeight: "18px",
                 }}
               >
                 {ach.description}
               </span>
               <span
-                className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-extrabold ${unlocked ? "bg-accent text-white shadow-lg animate-twinkle" : "bg-gray-700 text-gray-400"}`}
+                className={`absolute top-2 right-2 px-1 py-0.5 rounded-full text-[0.75em] font-extrabold ${unlocked ? "bg-accent text-white shadow animate-twinkle" : "bg-gray-700 text-gray-400"}`}
                 style={{
                   zIndex: 20,
                   fontSize: "0.8em",
-                  letterSpacing: "0.07em",
-                  boxShadow: unlocked ? "0 0 10px #60A5FA88" : "none",
+                  letterSpacing: "0.055em",
+                  boxShadow: unlocked ? "0 0 4px #60A5FA88" : "none",
                 }}
               >
-                {unlocked ? "Unlocked" : `${ach.threshold}`}
+                {unlocked ? "✓" : ach.threshold}
               </span>
             </div>
           );
@@ -176,41 +174,41 @@ export default function AchievementWall({ completedOffers = 0, gridMode = false 
       </div>
       <style jsx>{`
         .achievement-wall-container {
-          transition: box-shadow 0.3s cubic-bezier(.23,1,.32,1);
+          transition: box-shadow 0.19s cubic-bezier(.23,1,.32,1);
         }
         .achievement-card {
-          transition: box-shadow 0.33s cubic-bezier(.23,1,.32,1), background 0.14s;
+          transition: box-shadow 0.21s cubic-bezier(.23,1,.32,1), background 0.11s;
         }
         @media (max-width: 900px) {
           .achievement-wall-container {
             border-radius: 1.15rem;
-            padding: 24px 4px !important;
+            padding: 14px 2px !important;
           }
           .achievement-card {
-            min-width: 110px !important;
-            max-width: 98vw !important;
-            min-height: 140px !important;
-            padding: 12px 4px !important;
+            min-width: 83px !important;
+            max-width: 94vw !important;
+            min-height: 90px !important;
+            padding: 7px 2px !important;
           }
         }
         @media (max-width: 700px) {
           .achievement-wall-container {
-            padding: 14px 2px !important;
+            padding: 8px 1px !important;
             border-radius: 0.7rem;
           }
           .achievement-card {
-            min-width: 92px !important;
+            min-width: 72px !important;
             max-width: 98vw !important;
-            min-height: 98px !important;
-            padding: 8px 2px !important;
+            min-height: 68px !important;
+            padding: 4px 1px !important;
           }
           .achievement-icon-bg {
-            width: 36px !important;
-            height: 36px !important;
+            width: 18px !important;
+            height: 18px !important;
           }
         }
         .animate-spin-slow {
-          animation: spin 2.8s linear infinite;
+          animation: spin 2.4s linear infinite;
         }
         @keyframes spin {
           0% { transform: rotate(0deg);}
@@ -221,14 +219,14 @@ export default function AchievementWall({ completedOffers = 0, gridMode = false 
         }
         @keyframes pop {
           0% { transform: scale(1);}
-          100% { transform: scale(1.07);}
+          100% { transform: scale(1.04);}
         }
         .animate-twinkle {
-          animation: twinkle 2.2s ease-in-out infinite alternate;
+          animation: twinkle 1.8s ease-in-out infinite alternate;
         }
         @keyframes twinkle {
-          0% { box-shadow: 0 0 10px #60A5FA88; }
-          100% { box-shadow: 0 0 24px #7b6cfb77; }
+          0% { box-shadow: 0 0 7px #60A5FA88; }
+          100% { box-shadow: 0 0 14px #7b6cfb77; }
         }
       `}</style>
     </div>
