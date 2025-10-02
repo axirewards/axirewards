@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
+import AdminNavbar from '../../components/AdminNavbar'
 import { supabase } from '../../lib/supabaseClient'
 import { isAdmin } from '../../lib/userUtils'
 
@@ -130,197 +131,200 @@ export default function AdminPartners() {
 
   return (
     <Layout admin>
-      <div className="max-w-7xl mx-auto p-6">
-        <h1 className="text-3xl font-bold text-primary mb-6">Admin Partners</h1>
-        {error && (
-          <div className="mb-4 text-red-600 font-bold">{error}</div>
-        )}
-        <div className="flex flex-col md:flex-row gap-4 items-center mb-5">
-          <input
-            type="text"
-            placeholder="Search partners by name..."
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
-            className="border rounded p-2 w-full md:w-64 dark:bg-gray-700 dark:text-white"
-          />
-          <button
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-            onClick={() => setShowCreate(true)}
-          >
-            + Add Partner
-          </button>
-        </div>
-        {showCreate && (
-          <div className="fixed z-40 left-0 top-0 w-full h-full bg-black bg-opacity-40 flex items-center justify-center">
-            <div className="bg-white p-6 rounded shadow-xl min-w-[350px] relative">
-              <button
-                className="absolute top-2 right-3 text-xl"
-                onClick={() => setShowCreate(false)}
-              >✕</button>
-              <h2 className="text-lg mb-3 font-bold">New Partner</h2>
-              <div className="flex flex-col gap-3">
-                <input
-                  type="text"
-                  placeholder="Code"
-                  value={newPartner.code}
-                  onChange={(e) => setNewPartner({ ...newPartner, code: e.target.value })}
-                  className="border rounded p-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={newPartner.name}
-                  onChange={(e) => setNewPartner({ ...newPartner, name: e.target.value })}
-                  className="border rounded p-2"
-                />
-                <input
-                  type="number"
-                  placeholder="Revenue %"
-                  value={newPartner.revenue_share}
-                  min={0}
-                  max={100}
-                  onChange={(e) =>
-                    setNewPartner({ ...newPartner, revenue_share: parseFloat(e.target.value) })
-                  }
-                  className="border rounded p-2"
-                />
-                <input
-                  type="number"
-                  placeholder="Net Terms"
-                  value={newPartner.net_terms}
-                  min={0}
-                  onChange={(e) =>
-                    setNewPartner({ ...newPartner, net_terms: parseInt(e.target.value) })
-                  }
-                  className="border rounded p-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Callback Secret"
-                  value={newPartner.callback_secret}
-                  onChange={(e) =>
-                    setNewPartner({ ...newPartner, callback_secret: e.target.value })}
-                  className="border rounded p-2"
-                />
+      <AdminNavbar user={user} />
+      <div className="min-h-screen flex flex-col">
+        <div className="max-w-7xl mx-auto p-6 flex-grow">
+          <h1 className="text-3xl font-bold text-primary mb-6">Admin Partners</h1>
+          {error && (
+            <div className="mb-4 text-red-600 font-bold">{error}</div>
+          )}
+          <div className="flex flex-col md:flex-row gap-4 items-center mb-5">
+            <input
+              type="text"
+              placeholder="Search partners by name..."
+              value={filter}
+              onChange={e => setFilter(e.target.value)}
+              className="border rounded p-2 w-full md:w-64 dark:bg-gray-700 dark:text-white"
+            />
+            <button
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              onClick={() => setShowCreate(true)}
+            >
+              + Add Partner
+            </button>
+          </div>
+          {showCreate && (
+            <div className="fixed z-40 left-0 top-0 w-full h-full bg-black bg-opacity-40 flex items-center justify-center">
+              <div className="bg-white p-6 rounded shadow-xl min-w-[350px] relative">
                 <button
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2"
-                  onClick={addPartner}
-                >
-                  Create Partner
-                </button>
+                  className="absolute top-2 right-3 text-xl"
+                  onClick={() => setShowCreate(false)}
+                >✕</button>
+                <h2 className="text-lg mb-3 font-bold">New Partner</h2>
+                <div className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    placeholder="Code"
+                    value={newPartner.code}
+                    onChange={(e) => setNewPartner({ ...newPartner, code: e.target.value })}
+                    className="border rounded p-2"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={newPartner.name}
+                    onChange={(e) => setNewPartner({ ...newPartner, name: e.target.value })}
+                    className="border rounded p-2"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Revenue %"
+                    value={newPartner.revenue_share}
+                    min={0}
+                    max={100}
+                    onChange={(e) =>
+                      setNewPartner({ ...newPartner, revenue_share: parseFloat(e.target.value) })
+                    }
+                    className="border rounded p-2"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Net Terms"
+                    value={newPartner.net_terms}
+                    min={0}
+                    onChange={(e) =>
+                      setNewPartner({ ...newPartner, net_terms: parseInt(e.target.value) })
+                    }
+                    className="border rounded p-2"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Callback Secret"
+                    value={newPartner.callback_secret}
+                    onChange={(e) =>
+                      setNewPartner({ ...newPartner, callback_secret: e.target.value })}
+                    className="border rounded p-2"
+                  />
+                  <button
+                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2"
+                    onClick={addPartner}
+                  >
+                    Create Partner
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        {loading ? (
-          <p>Loading partners...</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white dark:bg-gray-800 shadow rounded">
-              <thead className="bg-gray-100 dark:bg-gray-700">
-                <tr>
-                  <th className="py-2 px-4 text-left">Code</th>
-                  <th className="py-2 px-4 text-left">Name</th>
-                  <th className="py-2 px-4 text-left">Revenue %</th>
-                  <th className="py-2 px-4 text-left">Net Terms</th>
-                  <th className="py-2 px-4 text-left">Callback Secret</th>
-                  <th className="py-2 px-4 text-left">Enabled</th>
-                  <th className="py-2 px-4 text-left">Created</th>
-                  <th className="py-2 px-4 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {partners.map((p) => (
-                  <tr key={p.id} className="border-b border-gray-200 dark:border-gray-700">
-                    <td className="py-2 px-4 font-bold">{p.code}</td>
-                    <td className="py-2 px-4">{editingId === p.id ?
-                      <input
-                        type="text"
-                        value={editingData.name}
-                        onChange={e => setEditingData({ ...editingData, name: e.target.value })}
-                        className="border rounded p-1 w-32 dark:bg-gray-700 dark:text-white"
-                      /> : p.name}</td>
-                    <td className="py-2 px-4">{editingId === p.id ?
-                      <input
-                        type="number"
-                        value={editingData.revenue_share}
-                        min={0}
-                        max={100}
-                        onChange={e => setEditingData({ ...editingData, revenue_share: parseFloat(e.target.value) })}
-                        className="border rounded p-1 w-20 dark:bg-gray-700 dark:text-white"
-                      /> : p.revenue_share
-                    }</td>
-                    <td className="py-2 px-4">{editingId === p.id ?
-                      <input
-                        type="number"
-                        value={editingData.net_terms}
-                        min={0}
-                        onChange={e => setEditingData({ ...editingData, net_terms: parseInt(e.target.value) })}
-                        className="border rounded p-1 w-20 dark:bg-gray-700 dark:text-white"
-                      /> : p.net_terms
-                    }</td>
-                    <td className="py-2 px-4">{editingId === p.id ?
-                      <input
-                        type="text"
-                        value={editingData.callback_secret}
-                        onChange={e => setEditingData({ ...editingData, callback_secret: e.target.value })}
-                        className="border rounded p-1 w-32 dark:bg-gray-700 dark:text-white"
-                      /> : p.callback_secret
-                    }</td>
-                    <td className="py-2 px-4">
-                      <span
-                        className={`inline-block px-2 py-1 rounded text-xs font-bold ${p.is_enabled ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-700'}`}
-                      >
-                        {p.is_enabled ? 'Enabled' : 'Paused'}
-                      </span>
-                    </td>
-                    <td className="py-2 px-4">{new Date(p.created_at).toLocaleDateString()}</td>
-                    <td className="py-2 px-4 flex gap-2">
-                      {/* Enable/Disable button */}
-                      <button
-                        className={p.is_enabled ? "bg-yellow-400 text-gray-900 px-2 py-1 rounded hover:bg-yellow-500" : "bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"}
-                        onClick={() => togglePartnerEnabled(p.id, !p.is_enabled)}
-                        title={p.is_enabled ? "Pause partner (hide everywhere)" : "Resume partner (show everywhere)"}
-                      >
-                        {p.is_enabled ? "Pause" : "Resume"}
-                      </button>
-                      {editingId === p.id ? (
-                        <>
-                          <button
-                            className="bg-green-600 text-white px-2 py-1 rounded"
-                            onClick={saveEdit}
-                          >Save</button>
-                          <button
-                            className="bg-gray-400 text-white px-2 py-1 rounded"
-                            onClick={cancelEdit}
-                          >Cancel</button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600"
-                            onClick={() => startEdit(p)}
-                          >Edit</button>
-                          <button
-                            className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
-                            onClick={() => deletePartner(p.id)}
-                          >Delete</button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {partners.length === 0 && (
+          )}
+          {loading ? (
+            <p className="text-primary animate-pulse py-12 text-center">Loading partners...</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white dark:bg-gray-800 shadow rounded text-sm">
+                <thead className="bg-gray-100 dark:bg-gray-700">
                   <tr>
-                    <td colSpan={8} className="py-3 px-4 text-center text-gray-400">
-                      No partners found.
-                    </td>
+                    <th className="py-2 px-4 text-left">Code</th>
+                    <th className="py-2 px-4 text-left">Name</th>
+                    <th className="py-2 px-4 text-left">Revenue %</th>
+                    <th className="py-2 px-4 text-left">Net Terms</th>
+                    <th className="py-2 px-4 text-left">Callback Secret</th>
+                    <th className="py-2 px-4 text-left">Enabled</th>
+                    <th className="py-2 px-4 text-left">Created</th>
+                    <th className="py-2 px-4 text-left">Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {partners.map((p) => (
+                    <tr key={p.id} className="border-b border-gray-200 dark:border-gray-700">
+                      <td className="py-2 px-4 font-bold">{p.code}</td>
+                      <td className="py-2 px-4">{editingId === p.id ?
+                        <input
+                          type="text"
+                          value={editingData.name}
+                          onChange={e => setEditingData({ ...editingData, name: e.target.value })}
+                          className="border rounded p-1 w-32 dark:bg-gray-700 dark:text-white"
+                        /> : p.name}</td>
+                      <td className="py-2 px-4">{editingId === p.id ?
+                        <input
+                          type="number"
+                          value={editingData.revenue_share}
+                          min={0}
+                          max={100}
+                          onChange={e => setEditingData({ ...editingData, revenue_share: parseFloat(e.target.value) })}
+                          className="border rounded p-1 w-20 dark:bg-gray-700 dark:text-white"
+                        /> : p.revenue_share
+                      }</td>
+                      <td className="py-2 px-4">{editingId === p.id ?
+                        <input
+                          type="number"
+                          value={editingData.net_terms}
+                          min={0}
+                          onChange={e => setEditingData({ ...editingData, net_terms: parseInt(e.target.value) })}
+                          className="border rounded p-1 w-20 dark:bg-gray-700 dark:text-white"
+                        /> : p.net_terms
+                      }</td>
+                      <td className="py-2 px-4">{editingId === p.id ?
+                        <input
+                          type="text"
+                          value={editingData.callback_secret}
+                          onChange={e => setEditingData({ ...editingData, callback_secret: e.target.value })}
+                          className="border rounded p-1 w-32 dark:bg-gray-700 dark:text-white"
+                        /> : p.callback_secret
+                      }</td>
+                      <td className="py-2 px-4">
+                        <span
+                          className={`inline-block px-2 py-1 rounded text-xs font-bold ${p.is_enabled ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-700'}`}
+                        >
+                          {p.is_enabled ? 'Enabled' : 'Paused'}
+                        </span>
+                      </td>
+                      <td className="py-2 px-4">{new Date(p.created_at).toLocaleDateString()}</td>
+                      <td className="py-2 px-4 flex gap-2">
+                        {/* Enable/Disable button */}
+                        <button
+                          className={p.is_enabled ? "bg-yellow-400 text-gray-900 px-2 py-1 rounded hover:bg-yellow-500" : "bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"}
+                          onClick={() => togglePartnerEnabled(p.id, !p.is_enabled)}
+                          title={p.is_enabled ? "Pause partner (hide everywhere)" : "Resume partner (show everywhere)"}
+                        >
+                          {p.is_enabled ? "Pause" : "Resume"}
+                        </button>
+                        {editingId === p.id ? (
+                          <>
+                            <button
+                              className="bg-green-600 text-white px-2 py-1 rounded"
+                              onClick={saveEdit}
+                            >Save</button>
+                            <button
+                              className="bg-gray-400 text-white px-2 py-1 rounded"
+                              onClick={cancelEdit}
+                            >Cancel</button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600"
+                              onClick={() => startEdit(p)}
+                            >Edit</button>
+                            <button
+                              className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                              onClick={() => deletePartner(p.id)}
+                            >Delete</button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {partners.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="py-3 px-4 text-center text-gray-400">
+                        No partners found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   )
