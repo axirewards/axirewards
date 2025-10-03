@@ -54,13 +54,29 @@ export default function EarnPc({ setGlobalLoading, router }) {
 
   return (
     <Layout>
-      <div className="min-h-[80vh] w-full flex flex-col items-center justify-center">
-        <div className="w-full max-w-7xl py-14 px-6">
-          <h1 className="text-5xl font-extrabold text-white text-center mb-16 drop-shadow-xl tracking-tight">
+      {/* Premium zoom-out and lifted content for PC */}
+      <div className="min-h-[80vh] w-full flex flex-col items-center justify-start" style={{ zoom: 0.88 }}>
+        <div className="w-full max-w-7xl pt-8 pb-14 px-6">
+          <h1 className="text-5xl font-extrabold text-white text-center mb-12 drop-shadow-xl tracking-tight"
+            style={{
+              background: "linear-gradient(90deg, #60A5FA 0%, #7b6cfb 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              color: "transparent",
+              letterSpacing: "0.04em",
+              boxShadow: "0 2px 24px #60A5fa22"
+            }}>
             Earn Rewards
           </h1>
-          <div className="flex justify-center mb-14">
-            <p className="text-2xl text-zinc-300 text-center max-w-3xl font-medium">
+          <div className="flex justify-center mb-10">
+            <p className="text-2xl text-zinc-300 text-center max-w-3xl font-medium"
+              style={{
+                background: "rgba(24,32,56,0.82)",
+                borderRadius: "1.2rem",
+                padding: "8px 24px",
+                boxShadow: "0 2px 14px #60A5fa22"
+              }}>
               Choose your earning method. Surveys, apps, ads – everything in one place, with a seamless Axirewards experience.
             </p>
           </div>
@@ -69,7 +85,7 @@ export default function EarnPc({ setGlobalLoading, router }) {
             {categories.map(cat => (
               <button
                 key={cat.key}
-                className={`group relative bg-gradient-to-tr ${cat.color} rounded-3xl shadow-2xl flex flex-col items-center justify-center px-8 py-16 transition-all duration-200 
+                className={`group relative bg-gradient-to-tr ${cat.color} rounded-3xl shadow-2xl flex flex-col items-center justify-center px-8 py-16 transition-all duration-200
                   hover:scale-[1.05] hover:shadow-accent focus:outline-none focus:ring-4 focus:ring-accent
                   ${hovered === cat.key ? 'ring-4 ring-accent/60' : ''}
                 `}
@@ -80,6 +96,11 @@ export default function EarnPc({ setGlobalLoading, router }) {
                 onMouseEnter={() => setHovered(cat.key)}
                 onMouseLeave={() => setHovered(null)}
                 aria-label={cat.name}
+                style={{
+                  boxShadow: hovered === cat.key
+                    ? "0 8px 44px #38bdf8cc, 0 1.5px 8px #0B0B0B"
+                    : "0 6px 32px #38bdf833, 0 1.5px 6px #0B0B0B"
+                }}
               >
                 <div className={`mb-8 transition-all duration-200 ${hovered === cat.key ? 'scale-110 drop-shadow-2xl' : 'scale-100'}`}>
                   {cat.icon}
