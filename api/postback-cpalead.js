@@ -11,8 +11,7 @@
  * - Always logs full raw payload for auditing.
  * - Title always "CPA Lead", description always "You completed an offer."
  * - Compatible with AXI Rewards schema.
- * - Idempotency: checks only for completions with matching lead_id + campaign_id + userId (all together).
- *   This allows multiple completions with same lead_id for different users/offers, and prevents "already processed" from random duplicate test postbacks.
+ * - Idempotency: checks completions by partner_callback_id only (matches DB constraint).
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -24,14 +23,9 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 export default async function handler(req, res) {
   let payload = {}
   try {
-    // Accept GET and POST for compatibility
     if (req.method === 'POST') {
       if (typeof req.body === 'string') {
-        try {
-          payload = JSON.parse(req.body)
-        } catch (e) {
-          payload = req.body
-        }
+        try { payload = JSON.parse(req.body) } catch (e) { payload = req.body }
       } else {
         payload = req.body
       }
@@ -77,13 +71,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Idempotency check: only block if same user, same offer, same lead_id (transactionId)
+    // Idempotency: match DB unique constraint
     const { data: existingCompletions, error: checkError } = await supabase
       .from('completions')
       .select('id')
       .eq('partner_callback_id', transactionId)
-      .eq('offer_id_partner', offerIdPartner)
-      .eq('user_id', userIdRaw)
 
     if (checkError) {
       console.error('Completions check error:', checkError)
