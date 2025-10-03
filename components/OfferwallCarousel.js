@@ -3,6 +3,7 @@ import AyetOfferwall from "./AyetOfferwall";
 import BitLabsOfferwall from "./BitLabsOfferwall";
 import CpxOfferwall from "./CpxOfferwall";
 import TheoremOfferwall from "./TheoremOfferwall";
+import CpaLeadOfferwall from "./CpaLeadOfferwall"; // <-- pridėta
 
 export default function OfferwallCarousel({ offerwalls = [] }) {
   const [current, setCurrent] = useState(0);
@@ -76,6 +77,9 @@ export default function OfferwallCarousel({ offerwalls = [] }) {
           )}
           {wall.key === "theorem" && (
             <TheoremOfferwall appId={wall.appId} height="700px" />
+          )}
+          {wall.key === "cpalead" && (
+            <CpaLeadOfferwall height="700px" /> // <- CPAlead offerwall modal
           )}
         </div>
       </div>
