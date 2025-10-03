@@ -127,8 +127,8 @@ export default function PayoutPc({ setGlobalLoading, router }) {
 
   return (
     <Layout>
-      {/* ZOOM OUT effect for PC */}
-      <div className="min-h-[80vh] flex flex-col justify-between" style={{ zoom: 0.93 }}>
+      {/* More premium ZOOM OUT effect for PC */}
+      <div className="min-h-[80vh] flex flex-col justify-between" style={{ zoom: 0.88 }}>
         <div className="max-w-5xl mx-auto w-full px-8 py-12 space-y-12 relative">
           <h1 className="text-5xl font-extrabold text-white text-center mb-10 drop-shadow">Payout</h1>
           <div className="bg-card shadow-2xl rounded-3xl p-10 space-y-10 relative">
