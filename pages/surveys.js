@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import BitLabsOfferwall from "../components/BitLabsOfferwall";
 import CpxOfferwall from "../components/CpxOfferwall";
@@ -33,8 +34,19 @@ const SURVEY_PROVIDERS = [
 ];
 
 export default function Surveys({ setGlobalLoading }) {
+  const router = useRouter()
   const [enabledKeys, setEnabledKeys] = useState([]);
   const [activeSurvey, setActiveSurvey] = useState(null);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/index')
+      }
+    }
+    checkAuth()
+  }, [router])
 
   useEffect(() => {
     if (typeof setGlobalLoading === "function") setGlobalLoading(true);
