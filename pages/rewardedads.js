@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 
@@ -34,9 +35,20 @@ function getDeviceType() {
 }
 
 export default function RewardedAds({ setGlobalLoading }) {
+  const router = useRouter();
   const [enabledKeys, setEnabledKeys] = useState([]);
   const [activeAd, setActiveAd] = useState(null);
   const [deviceType, setDeviceType] = useState("pc");
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/index');
+      }
+    }
+    checkAuth();
+  }, [router]);
 
   useEffect(() => {
     setDeviceType(getDeviceType());
