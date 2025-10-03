@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 /**
  * AchievementWall – now supports 10 ultra-premium compact achievements.
@@ -78,8 +79,42 @@ const ACHIEVEMENTS = [
   },
 ];
 
-export default function AchievementWall({ completedOffers = 0 }) {
-  // Responsive grid: 2 columns on mobile, 4-10 columns on desktop, fits in one row if space allows
+export default function AchievementWall({ userId }) {
+  const [completedOffers, setCompletedOffers] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchCompletions() {
+      setLoading(true);
+      if (!userId) {
+        setCompletedOffers(0);
+        setLoading(false);
+        return;
+      }
+      // Užkrovimas iš Supabase pagal userId
+      const { data, error } = await supabase
+        .from("users")
+        .select("total_completions")
+        .eq("id", userId)
+        .single();
+
+      if (error || !data) {
+        setCompletedOffers(0);
+      } else {
+        setCompletedOffers(data.total_completions || 0);
+      }
+      setLoading(false);
+    }
+    fetchCompletions();
+  }, [userId]);
+
+  if (loading)
+    return (
+      <div className="achievement-wall-container py-5 px-2 flex items-center justify-center">
+        <span className="text-accent font-bold">Kraunama jūsų pasiekimai...</span>
+      </div>
+    );
+
   return (
     <div
       className="achievement-wall-container w-full flex flex-col items-center justify-center py-5 px-2"
