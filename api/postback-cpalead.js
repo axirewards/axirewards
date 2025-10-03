@@ -1,18 +1,3 @@
-/**
- * CPAlead Offerwall Postback Handler for AXI Rewards
- * - Handles CPAlead offerwall conversions and credits user points in Supabase/Postgres DB.
- * - Maps CPAlead macros to parameters:
- *   subid      → userId,
- *   virtual_currency → points,
- *   payout     → USD amount,
- *   campaign_id → offer_id_partner,
- *   country_iso → country.
- * - Always logs full raw payload for auditing.
- * - Title always "CPA Lead", description always "You completed an offer."
- * - Compatible with AXI Rewards schema.
- * - NO idempotency check: always inserts a new completion.
- */
-
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -22,14 +7,9 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 export default async function handler(req, res) {
   let payload = {}
   try {
-    // Accept GET and POST for compatibility
     if (req.method === 'POST') {
       if (typeof req.body === 'string') {
-        try {
-          payload = JSON.parse(req.body)
-        } catch (e) {
-          payload = req.body
-        }
+        try { payload = JSON.parse(req.body) } catch (e) { payload = req.body }
       } else {
         payload = req.body
       }
@@ -51,39 +31,43 @@ export default async function handler(req, res) {
   const ip = payload.ip_address || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || ''
   const country = payload.country_iso || payload.country || payload.geo || 'ALL'
   const status = 'credited'
-
-  // Title and description: always fixed
   const offerTitle = "CPA Lead"
   const offerDescription = "You completed an offer."
 
   // Validate required params
-  if (
-    !userIdRaw ||
-    !transactionId ||
-    !offerIdPartner ||
-    isNaN(amountLocal)
-  ) {
+  if (!userIdRaw || !transactionId || !offerIdPartner || isNaN(amountLocal)) {
     return res.status(400).json({ error: 'Missing required CPAlead parameters', payload })
   }
 
   // Log raw postback (never throw error on log)
   try {
-    await supabase.from('postback_logs').insert([
-      {
-        user_id: userIdRaw,
-        transaction_id: transactionId,
-        offer_id_partner: offerIdPartner,
-        raw_payload: payload,
-        ip,
-        country,
-        received_at: new Date().toISOString(),
-      },
-    ])
+    await supabase.from('postback_logs').insert([{
+      user_id: userIdRaw,
+      transaction_id: transactionId,
+      offer_id_partner: offerIdPartner,
+      raw_payload: payload,
+      ip,
+      country,
+      received_at: new Date().toISOString(),
+    }])
   } catch (e) {
     console.error('Failed to log postback:', e)
   }
 
   try {
+    // ID check for UNIQUE constraint
+    const { data: existingCompletions, error: checkError } = await supabase
+      .from('completions')
+      .select('id')
+      .eq('partner_callback_id', transactionId)
+    if (checkError) {
+      console.error('Completions check error:', checkError)
+      return res.status(500).json({ error: 'Internal server error', details: checkError.message })
+    }
+    if (Array.isArray(existingCompletions) && existingCompletions.length > 0) {
+      return res.status(200).json({ status: 'already_processed', completion_id: existingCompletions[0].id })
+    }
+
     // Fetch user
     const { data: userData, error: userError } = await supabase
       .from('users').select('id,email').eq('id', userIdRaw)
@@ -96,7 +80,7 @@ export default async function handler(req, res) {
     const partner = Array.isArray(partnerData) && partnerData.length > 0 ? partnerData[0] : null
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' })
 
-    // Insert credited completion (NO idempotency check!)
+    // Insert credited completion
     const { data: completionInsertData, error: completionError } = await supabase
       .from('completions')
       .insert({
