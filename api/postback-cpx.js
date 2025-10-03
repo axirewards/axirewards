@@ -36,10 +36,6 @@ export default async function handler(req, res) {
   const ip = payload.ip_click || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
   const country = payload.country || 'ALL';
 
-  // Extract title/description from payload or fallback
-  const offerTitle = payload.title?.toString().trim() || "CPX Offer";
-  const offerDescription = payload.description?.toString().trim() || "You completed an offer";
-
   // Validate required CPX params
   if (
     !userIdRaw ||
@@ -81,7 +77,7 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: 'Rate limit exceeded: max 5 per minute per user.' });
     }
 
-    // Idempotency check by partner_callback_id
+    // Idempotency check
     const { data: existing, error: checkError } = await supabase
       .from('completions')
       .select('*')
@@ -111,7 +107,7 @@ export default async function handler(req, res) {
     const { data: partner, error: partnerError } = await supabase.from('partners').select('*').eq('code', 'cpx').single();
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' });
 
-    // Try to find completion by offer_id_partner and user_id (legacy check, can be removed if not needed)
+    // Try to find completion by offer_id_partner and user_id
     const { data: existingCompletion, error: completionFindError } = await supabase
       .from('completions')
       .select('*')
@@ -124,13 +120,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'already_processed', completion_id: existingCompletion.id });
     }
 
-    // Insert credited completion with title/description from CPX
+    // Insert credited completion with user_email, offer_id_partner
     const { data: completion, error: completionError } = await supabase
       .from('completions')
       .insert({
         user_id: user.id,
-        user_email: user.email,
-        offer_id_partner: offerIdPartner,
+        user_email: user.email, // New field for tracking by email
+        offer_id_partner: offerIdPartner, // partner offer id (from CPX)
         partner_id: partner.id,
         partner_callback_id: transactionId,
         credited_points: amountLocal,
@@ -138,8 +134,6 @@ export default async function handler(req, res) {
         ip: ip,
         device_info: {},
         country: country,
-        title: offerTitle,
-        description: offerDescription,
       })
       .select()
       .single();
