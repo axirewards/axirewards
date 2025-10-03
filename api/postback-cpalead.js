@@ -11,8 +11,7 @@
  * - Compatible with AXI Rewards schema.
  * - Idempotency: checks completions by user_id + offer_id_partner (allows new unique offers per user, prevents duplicate for same user).
  * - completions.partner_callback_id = completions.offer_id_partner (always identical).
- * - Credits points ONLY via Supabase RPC (increment_user_points) after successful completion insert!
- * - NO credited_points field in completions insert (prevents double crediting).
+ * - Always credits points using Supabase RPC (increment_user_points) after successful completion insert!
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -110,7 +109,7 @@ export default async function handler(req, res) {
     const partner = Array.isArray(partnerData) && partnerData.length > 0 ? partnerData[0] : null
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' })
 
-    // Insert completion (NO credited_points field)
+    // Insert credited completion (credited_points always set correctly)
     const { data: completionInsertData, error: completionError } = await supabase
       .from('completions')
       .insert({
@@ -119,6 +118,7 @@ export default async function handler(req, res) {
         offer_id_partner: offerIdPartner,
         partner_id: partner.id,
         partner_callback_id: transactionId,
+        credited_points: amountLocal,
         status: status,
         ip: ip,
         device_info: {},
@@ -132,7 +132,7 @@ export default async function handler(req, res) {
       ? completionInsertData[0]
       : completionInsertData
 
-    // Credit points ONLY via Supabase RPC after completion is inserted!
+    // ALWAYS credit points with Supabase RPC after completion is inserted!
     const { data: newBalance, error: rpcError } = await supabase.rpc(
       'increment_user_points',
       { uid: user.id, pts: amountLocal, ref_completion: completion.id }
