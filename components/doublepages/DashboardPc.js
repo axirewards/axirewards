@@ -225,7 +225,7 @@ export default function DashboardPc({ setGlobalLoading }) {
         {/* Achievement Wall - perfect distance below offerwall carousel */}
         <div className="w-full flex flex-col items-center justify-center" style={{maxWidth:'97vw', marginTop:'2.9vw', marginBottom:'2vw'}}>
           {user && (
-            <AchievementWall completedOffers={user?.completed_offers || 0} />
+            <AchievementWall userId={user.id} />
           )}
         </div>
         {showFAB && <FloatingActionButton />}
