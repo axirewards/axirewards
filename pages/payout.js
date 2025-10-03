@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import { supabase } from '../lib/supabaseClient'
 import { pointsToCurrency } from '../lib/pointsConversion'
+import { useRouter } from 'next/router'
 
 export default function Payout({ setGlobalLoading }) {
+  const router = useRouter()
   const [user, setUser] = useState(null)
   const [wallet, setWallet] = useState('')
   const [pointsToRedeem, setPointsToRedeem] = useState('')
@@ -18,8 +20,7 @@ export default function Payout({ setGlobalLoading }) {
     async function fetchData() {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
       if (!currentUser) {
-        setLoading(false)
-        if (typeof setGlobalLoading === "function") setGlobalLoading(false)
+        router.push('/index')
         return
       }
 
