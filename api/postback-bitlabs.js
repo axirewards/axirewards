@@ -25,11 +25,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid payload format' });
   }
 
-  // BitLabs mapping (matching their doc order exactly)
-  const uid = payload.user_id;
-  const tx = payload.transaction_id;
-  const val = payload.rewards;
-  const raw = payload.value;
+  // BitLabs callback mapping (for uid, tx, val, raw, hash)
+  const uid = payload.uid;
+  const tx = payload.tx;
+  const val = payload.val;
+  const raw = payload.raw;
   const hash = payload.hash;
 
   // Debug: parodyk visas reikšmes
