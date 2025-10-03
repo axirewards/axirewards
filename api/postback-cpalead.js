@@ -2,11 +2,10 @@
  * CPAlead Offerwall Postback Handler for AXI Rewards
  * - Handles CPAlead offerwall conversions and credits user points in Supabase/Postgres DB.
  * - Maps CPAlead macros to parameters: subid → userId, payout → USD amount, campaign_id → offer_id_partner.
- * - Tracks each conversion by partner_callback_id (unique).
  * - Always logs full raw payload for auditing.
- * - Strict idempotency: same partner_callback_id cannot be processed twice.
  * - Fallbacks for missing title/description: title = "CPAlead Offer", description = "You completed an offer."
  * - Compatible with AXI Rewards schema.
+ * - NO idempotency check: always inserts a new completion.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -85,22 +84,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Strict idempotency: check by partner_callback_id (transactionId)
-    const { data: existing, error: checkError } = await supabase
-      .from('completions')
-      .select('*')
-      .eq('partner_callback_id', transactionId)
-    const existingCompletion = Array.isArray(existing) && existing.length > 0 ? existing[0] : null
-
-    if (checkError) {
-      console.error('Idempotency check error:', checkError)
-      return res.status(500).json({ error: 'Internal server error', details: checkError.message })
-    }
-
-    if (existingCompletion) {
-      return res.status(200).json({ status: 'already_processed', completion_id: existingCompletion.id })
-    }
-
     // Fetch user
     const { data: userData, error: userError } = await supabase
       .from('users').select('id,email').eq('id', userIdRaw)
@@ -113,7 +96,7 @@ export default async function handler(req, res) {
     const partner = Array.isArray(partnerData) && partnerData.length > 0 ? partnerData[0] : null
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' })
 
-    // Insert credited completion
+    // Insert credited completion (NO idempotency check!)
     const { data: completionInsertData, error: completionError } = await supabase
       .from('completions')
       .insert({
