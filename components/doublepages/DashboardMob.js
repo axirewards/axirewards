@@ -159,68 +159,100 @@ export default function DashboardMob({ setGlobalLoading }) {
           width: '100vw',
           minHeight: '100dvh',
           boxSizing: 'border-box',
-          background: 'none', // Use project global bg (as per globals.css)
+          background: 'none',
           overflowX: 'hidden'
         }}
       >
         {/* Headline */}
-        <div className="w-full flex items-center justify-center mt-5 mb-2 px-2">
+        <div className="w-full flex items-center justify-center mt-4 mb-1 px-2">
           {user && (
             <span
-              className="font-bold text-2xl text-white drop-shadow text-center py-3 px-6 rounded-xl"
+              className="font-extrabold text-[2.1rem] leading-tight text-center"
               style={{
-                background: "linear-gradient(90deg, #60A5FA 0%, #7b6cfb 100%)",
+                background: "linear-gradient(90deg, #7b6cfb 0%, #60A5FA 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
                 color: "transparent",
-                letterSpacing: "0.055em",
+                letterSpacing: "0.065em",
                 boxShadow: "0 2px 14px #60A5fa22",
-                maxWidth: "98vw",
-                overflowWrap: "break-word"
+                maxWidth: "96vw",
+                overflowWrap: "break-word",
+                textShadow: "0 1px 12px #232e40",
+                padding: "0.5em 0.2em",
+                borderRadius: "1.2rem"
               }}
             >
-              Welcome, <span style={{
+              Hey&nbsp;
+              <span style={{
                 color: "#FFD700",
+                background: "none",
+                WebkitBackgroundClip: "unset",
+                WebkitTextFillColor: "unset",
+                fontWeight: 900,
+                letterSpacing: "0.08em",
+                textShadow: "0 2px 12px #FFD70033, 0 1px 2px #181e38",
+                fontSize: "1.05em"
+              }}>{user.email.split("@")[0]}</span>
+              , welcome to <span style={{
+                color: "#7b6cfb",
                 background: "none",
                 WebkitBackgroundClip: "unset",
                 WebkitTextFillColor: "unset",
                 fontWeight: 800,
                 letterSpacing: "0.07em",
-                textShadow: "0 1px 7px #FFD70066",
-              }}>{user.email}</span>!
+                textShadow: "0 2px 8px #60A5FA77"
+              }}>AXI Rewards!</span>
+              <br />
+              <span style={{
+                display: "block",
+                fontWeight: 500,
+                fontSize: "1.09rem",
+                color: "#CFE4FF",
+                marginTop: "0.2em",
+                opacity: 0.92,
+                textShadow: "0 1px 4px #232e40"
+              }}>
+                Unlock offers, claim rewards, and rise up the leaderboard.
+              </span>
             </span>
           )}
         </div>
 
         {/* User Stats / VIP */}
         {user && (
-          <div className="w-full px-2" style={{ marginTop: '3vw', maxWidth: '100vw' }}>
+          <div className="w-full px-2" style={{ marginTop: '2vw', maxWidth: '100vw' }}>
             <UserStatsVip
               tier={user?.tier || 1}
               points={user?.points_balance || 0}
               streak={streak}
               completedOffers={user?.completed_offers || 0}
+              size="compact-premium"
             />
           </div>
         )}
 
         {/* Offerwalls */}
-        <section className="w-full flex flex-col items-center mt-6 mb-3 px-2" style={{ maxWidth: '100vw' }}>
-          <h2 className="mb-3 text-xl font-bold text-white text-center tracking-tight"
+        <section className="w-full flex flex-col items-center mt-5 mb-2 px-1" style={{ maxWidth: '100vw' }}>
+          <h2 className="mb-2 text-[1.22rem] font-extrabold text-white text-center tracking-tight"
             style={{
-              letterSpacing: "0.05em",
+              letterSpacing: "0.06em",
               fontFamily: "inherit",
-              paddingBottom: "2px",
-              maxWidth: "92vw"
+              paddingBottom: "1px",
+              maxWidth: "90vw"
             }}>
             Premium Offerwalls
           </h2>
-          <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
+          <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} compact />
         </section>
 
         {/* Achievement Wall */}
-        <section className="w-full flex flex-col items-center justify-center" style={{ maxWidth: '100vw', marginTop: '5vw', marginBottom: '3vw' }}>
+        <section className="w-full flex flex-col items-center justify-center" style={{
+          maxWidth: '100vw',
+          marginTop: '3vw',
+          marginBottom: '2vw',
+          padding: "0 2vw"
+        }}>
           {user && (
             <AchievementWall userId={user.id} />
           )}
@@ -228,43 +260,43 @@ export default function DashboardMob({ setGlobalLoading }) {
 
         {/* Offerwall Modal */}
         {activeOfferwall && (
-          <div className="fixed inset-0 z-[1001] bg-black/85 flex items-center justify-center backdrop-blur-sm">
+          <div className="fixed inset-0 z-[1001] bg-black/90 flex items-center justify-center backdrop-blur-sm">
             <div
               className="glass-card rounded-2xl shadow-2xl border-4 border-accent max-w-[99vw] w-[99vw] p-1 flex flex-col items-center relative animate-fade-in"
               style={{
-                minHeight: "70vh",
+                minHeight: "62vh",
                 maxHeight: "99vh",
                 overflowY: "auto",
                 boxSizing: "border-box"
               }}
             >
               <button
-                className="absolute top-3 right-5 text-accent text-3xl font-extrabold hover:text-blue-700 transition"
+                className="absolute top-2.5 right-4 text-accent text-2xl font-extrabold hover:text-blue-700 transition"
                 onClick={() => setActiveOfferwall(null)}
                 aria-label="Close"
                 style={{
                   background: "rgba(24,32,56,0.82)",
-                  borderRadius: "1.4rem",
-                  padding: "3px 13px",
+                  borderRadius: "1.2rem",
+                  padding: "2px 10px",
                   zIndex: 2
                 }}
               >
                 &times;
               </button>
               {activeOfferwall === "ayet" && (
-                <AyetOfferwall adSlot={getOfferwallParams("ayet")?.adSlot} height="600px" />
+                <AyetOfferwall adSlot={getOfferwallParams("ayet")?.adSlot} height="520px" />
               )}
               {activeOfferwall === "bitlabs" && (
-                <BitLabsOfferwall apiKey={getOfferwallParams("bitlabs")?.apiKey} height="600px" />
+                <BitLabsOfferwall apiKey={getOfferwallParams("bitlabs")?.apiKey} height="520px" />
               )}
               {activeOfferwall === "cpx" && (
-                <CpxOfferwall appId={getOfferwallParams("cpx")?.appId} height="600px" />
+                <CpxOfferwall appId={getOfferwallParams("cpx")?.appId} height="520px" />
               )}
               {activeOfferwall === "theorem" && (
-                <TheoremOfferwall appId={getOfferwallParams("theorem")?.appId} height="600px" />
+                <TheoremOfferwall appId={getOfferwallParams("theorem")?.appId} height="520px" />
               )}
               {activeOfferwall === "cpalead" && (
-                <CpaLeadOfferwall height="600px" iframeUrl={getOfferwallParams("cpalead")?.iframeUrl} />
+                <CpaLeadOfferwall height="520px" iframeUrl={getOfferwallParams("cpalead")?.iframeUrl} />
               )}
             </div>
           </div>
@@ -272,7 +304,7 @@ export default function DashboardMob({ setGlobalLoading }) {
 
         {/* Error display */}
         {error && (
-          <div className="w-full flex items-center justify-center mt-4">
+          <div className="w-full flex items-center justify-center mt-3">
             <span className="text-red-500 font-bold text-center text-sm" style={{ maxWidth: '90vw' }}>{error}</span>
           </div>
         )}
@@ -285,18 +317,24 @@ export default function DashboardMob({ setGlobalLoading }) {
           box-sizing: border-box;
         }
         .glass-card {
-          background: rgba(24, 32, 56, 0.94);
+          background: rgba(24, 32, 56, 0.97);
           backdrop-filter: blur(22px);
-          border-radius: 1.5rem;
-          box-shadow: 0 2px 32px 0 #60A5fa22, 0 1.5px 8px 0 #60A5fa33;
-          border: 2.5px solid #60A5FA55;
+          border-radius: 1.2rem;
+          box-shadow: 0 2px 28px 0 #60A5fa22, 0 1.5px 8px 0 #7b6cfb22;
+          border: 2.5px solid #7b6cfb55;
         }
         .animate-fade-in {
-          animation: fadeInModal 0.28s cubic-bezier(.23,1,.32,1);
+          animation: fadeInModal 0.23s cubic-bezier(.23,1,.32,1);
         }
         @keyframes fadeInModal {
-          from { opacity: 0; transform: scale(0.98);}
+          from { opacity: 0; transform: scale(0.96);}
           to { opacity: 1; transform: scale(1);}
+        }
+        @media (max-width: 700px) {
+          .glass-card {
+            border-radius: 0.75rem;
+            padding: 1vw !important;
+          }
         }
       `}</style>
     </Layout>
