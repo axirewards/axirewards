@@ -9,7 +9,7 @@
  * - Always logs full raw payload for auditing.
  * - Title always "CPA Lead", description always "You completed an offer."
  * - Compatible with AXI Rewards schema.
- * - Idempotency: checks completions by offer_id_partner ONLY (allows new unique offers per user, even if campaign_id repeats for different users).
+ * - Idempotency: checks completions by user_id + offer_id_partner (allows new unique offers per user, prevents duplicate for same user).
  * - completions.partner_callback_id = completions.offer_id_partner (always identical).
  * - Always credits points using Supabase RPC (increment_user_points) after successful completion insert!
  */
@@ -41,9 +41,20 @@ export default async function handler(req, res) {
   // CPAlead macros → parameters
   const userIdRaw = parseInt(payload.subid)
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
-  // partner_callback_id = offer_id_partner (identical)
+  // partner_callback_id = offer_id_partner (identical, per your instructions)
   const transactionId = offerIdPartner
-  const amountLocal = Math.floor(Number(payload.virtual_currency) || 0)
+  // credited_points: try virtual_currency, else fallback payout * 700
+  let amountLocal = 0
+  if (payload.virtual_currency !== undefined && payload.virtual_currency !== null && !isNaN(Number(payload.virtual_currency))) {
+    amountLocal = Math.floor(Number(payload.virtual_currency))
+  } else if (payload.payout !== undefined && !isNaN(Number(payload.payout))) {
+    amountLocal = Math.floor(Number(payload.payout) * 700)
+  }
+  // If still 0, it's an error (never credit 0 points)
+  if (amountLocal <= 0) {
+    return res.status(400).json({ error: 'Missing or invalid points (virtual_currency/payout)', payload })
+  }
+
   const ip = payload.ip_address || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || ''
   const country = payload.country_iso || payload.country || payload.geo || 'ALL'
   const status = 'credited'
@@ -51,7 +62,7 @@ export default async function handler(req, res) {
   const offerDescription = "You completed an offer."
 
   // Validate required params
-  if (!userIdRaw || !offerIdPartner || isNaN(amountLocal)) {
+  if (!userIdRaw || !offerIdPartner) {
     return res.status(400).json({ error: 'Missing required CPAlead parameters', payload })
   }
 
@@ -71,10 +82,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Idempotency: block only if completions with same offer_id_partner exists
+    // Idempotency: block only if completions with same user_id + offer_id_partner exists
     const { data: existingCompletions, error: checkError } = await supabase
       .from('completions')
       .select('id')
+      .eq('user_id', userIdRaw)
       .eq('offer_id_partner', offerIdPartner)
 
     if (checkError) {
@@ -97,7 +109,7 @@ export default async function handler(req, res) {
     const partner = Array.isArray(partnerData) && partnerData.length > 0 ? partnerData[0] : null
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' })
 
-    // Insert credited completion
+    // Insert credited completion (credited_points always set correctly)
     const { data: completionInsertData, error: completionError } = await supabase
       .from('completions')
       .insert({
@@ -105,8 +117,8 @@ export default async function handler(req, res) {
         user_email: user.email,
         offer_id_partner: offerIdPartner,
         partner_id: partner.id,
-        partner_callback_id: transactionId, // identiškai pasiimamas iš offer_id_partner
-        credited_points: amountLocal, // BŪTINA kad būtų teisingi taškai
+        partner_callback_id: transactionId,
+        credited_points: amountLocal,
         status: status,
         ip: ip,
         device_info: {},
@@ -133,6 +145,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       status: 'credited',
+      credited_points: amountLocal,
       new_balance: creditedBalance,
       completion_id: completion.id,
     })
