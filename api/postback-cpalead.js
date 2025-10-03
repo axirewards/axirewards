@@ -6,13 +6,12 @@
  *   virtual_currency → points,
  *   payout          → USD amount,
  *   campaign_id     → offer_id_partner,
- *   lead_id         → partner_callback_id (transactionId),
+ *   campaign_name   → partner_callback_id (to avoid duplicate constraint issues),
  *   country_iso     → country.
  * - Always logs full raw payload for auditing.
  * - Title always "CPA Lead", description always "You completed an offer."
  * - Compatible with AXI Rewards schema.
- * - Idempotency: checks completions by offer_id_partner ONLY (campaign_id from CPAlead).
- *   This allows multiple completions with same partner_callback_id as long as offer_id_partner (CPA campaign_id) is unique for each offer.
+ * - Idempotency: checks completions by offer_id_partner only (allows new unique offers per user, blocks only exact same offer_id_partner for user).
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -41,7 +40,8 @@ export default async function handler(req, res) {
 
   // CPAlead macros → parameters
   const userIdRaw = parseInt(payload.subid)
-  const transactionId = (payload.lead_id || payload.click_id || payload.transaction_id || payload.transactionid || payload.subid || '').toString()
+  // Use campaign_name as partner_callback_id to avoid DB constraint errors (never use subid/user id!)
+  const transactionId = (payload.campaign_name || '').toString()
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
   const payoutUsd = Number(payload.payout) || 0
   const amountLocal = Math.floor(Number(payload.virtual_currency) || 0)
@@ -72,12 +72,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Idempotency: allow new completion for each unique offer_id_partner for the user
+    // Idempotency: block only if same user_id and same offer_id_partner exists
     const { data: existingCompletions, error: checkError } = await supabase
       .from('completions')
       .select('id')
       .eq('user_id', userIdRaw)
       .eq('offer_id_partner', offerIdPartner)
+
     if (checkError) {
       console.error('Completions check error:', checkError)
       return res.status(500).json({ error: 'Internal server error', details: checkError.message })
