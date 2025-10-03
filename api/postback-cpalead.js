@@ -1,17 +1,10 @@
 /**
  * CPAlead Offerwall Postback Handler for AXI Rewards
  * - Handles CPAlead offerwall conversions and credits user points in Supabase/Postgres DB.
- * - Maps CPAlead macros to parameters:
- *   subid           → userId,
- *   virtual_currency → points,
- *   campaign_id     → offer_id_partner (and partner_callback_id, both identical),
- *   country_iso     → country.
- * - Always logs full raw payload for auditing.
- * - Title always "CPA Lead", description always "You completed an offer."
- * - Compatible with AXI Rewards schema.
- * - Idempotency: checks completions by user_id + offer_id_partner (allows new unique offers per user).
- * - completions.partner_callback_id = completions.offer_id_partner (always identical).
- * - ALWAYS credits points using Supabase RPC (increment_user_points) after successful completion insert!
+ * - Taškai visada imami iš virtual_currency (jei yra), arba tiesiog iš payout (jei nėra virtual_currency), be jokių daugiklių!
+ * - Idempotency: tikrina pagal user_id + offer_id_partner.
+ * - completions.partner_callback_id = completions.offer_id_partner.
+ * - Visada kviečia Supabase RPC, kad pridėtų taškus.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -43,7 +36,7 @@ export default async function handler(req, res) {
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
   const transactionId = offerIdPartner
 
-  // Tik naudok virtual_currency kaip taškus, payout naudok TIK jei virtual_currency nėra ir NEDAUGINK!
+  // Taškai: virtual_currency, o payout naudoti TIK jei virtual_currency NĖRA, be jokių daugiklių!
   let amountLocal = 0
   if (
     payload.virtual_currency !== undefined &&
@@ -58,8 +51,6 @@ export default async function handler(req, res) {
     !isNaN(Number(payload.payout)) &&
     Number(payload.payout) > 0
   ) {
-    // payout jau yra USD, bet CPAlead jau paskaičiuoja ratio offerwall'e, tad tau reikia paimti payout * ratio TIK jei offerwall ratio NENUSTATYTA!
-    // DABAR PRIIMK payout kaip points, jei virtual_currency nėra, NEDIDINK!
     amountLocal = Math.floor(Number(payload.payout))
   }
   if (amountLocal <= 0) {
@@ -77,7 +68,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required CPAlead parameters', payload })
   }
 
-  // Log raw postback
+  // Log raw postback (never throw error on log)
   try {
     await supabase.from('postback_logs').insert([{
       user_id: userIdRaw,
@@ -120,7 +111,7 @@ export default async function handler(req, res) {
     const partner = Array.isArray(partnerData) && partnerData.length > 0 ? partnerData[0] : null
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' })
 
-    // Insert credited completion
+    // Insert credited completion (credited_points always set correctly)
     const { data: completionInsertData, error: completionError } = await supabase
       .from('completions')
       .insert({
