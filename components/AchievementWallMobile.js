@@ -202,10 +202,11 @@ export default function AchievementWallMobile({ userId }) {
       {/* Achievement Modal */}
       {modal && (
         <div className="fixed inset-0 z-[1500] bg-black/70 flex items-center justify-center backdrop-blur-sm">
-          <div className="relative flex flex-col items-center justify-center bg-gradient-to-br from-[#181e38] via-[#232e40] to-[#60A5FA22] rounded-xl border-2 border-accent shadow-xl px-4 py-4 max-w-[92vw] min-w-[82vw] animate-fade-in"
+          <div className="achievement-modal-pop relative flex flex-col items-center justify-center bg-gradient-to-br from-[#181e38] via-[#232e40] to-[#60A5FA22] rounded-xl border-2 border-accent shadow-xl px-4 py-4 max-w-[92vw] min-w-[82vw] animate-pop-modal"
             style={{
               boxShadow: "0 3px 22px #60A5FA33, 0 2px 10px #FFD70022",
-              position: "relative"
+              position: "relative",
+              animation: "popModal 0.31s cubic-bezier(.23,1,.32,1)", // Pop effect on open
             }}
           >
             <button
@@ -291,6 +292,14 @@ export default function AchievementWallMobile({ userId }) {
         @keyframes twinkle {
           0% { box-shadow: 0 0 6px #60A5FA88; }
           100% { box-shadow: 0 0 12px #7b6cfb77; }
+        }
+        .animate-pop-modal {
+          animation: popModal 0.31s cubic-bezier(.23,1,.32,1);
+        }
+        @keyframes popModal {
+          0% { transform: scale(0.89);}
+          60% { transform: scale(1.08);}
+          100% { transform: scale(1);}
         }
         .animate-fade-in {
           animation: fadeInModal 0.19s cubic-bezier(.23,1,.32,1);
