@@ -3,7 +3,7 @@
  * - Handles CPAlead offerwall conversions and credits user points in Supabase/Postgres DB.
  * - Maps CPAlead macros to parameters:
  *   subid           → userId,
- *   virtual_currency → points,
+ *   virtual_currency → points (NEVER use payout!),
  *   campaign_id     → offer_id_partner (and partner_callback_id, both identical),
  *   country_iso     → country.
  * - Always logs full raw payload for auditing.
@@ -41,11 +41,15 @@ export default async function handler(req, res) {
   // CPAlead macros → parameters
   const userIdRaw = parseInt(payload.subid)
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
-  // partner_callback_id = offer_id_partner (identical, per your instructions)
+  // partner_callback_id = offer_id_partner (identical)
   const transactionId = offerIdPartner
-  // credited_points: ALWAYS use virtual_currency from CPAlead (NEVER recalculate payout!)
-  const amountLocal = Math.floor(Number(payload.virtual_currency) || 0)
-  if (!amountLocal || isNaN(amountLocal) || amountLocal <= 0) {
+  // credited_points: ONLY virtual_currency!
+  let amountLocal = 0
+  if (payload.virtual_currency !== undefined && payload.virtual_currency !== null && !isNaN(Number(payload.virtual_currency))) {
+    amountLocal = Math.floor(Number(payload.virtual_currency))
+  }
+  // If not present or zero, error!
+  if (amountLocal <= 0) {
     return res.status(400).json({ error: 'Missing or invalid points (virtual_currency)', payload })
   }
 
@@ -111,8 +115,8 @@ export default async function handler(req, res) {
         user_email: user.email,
         offer_id_partner: offerIdPartner,
         partner_id: partner.id,
-        partner_callback_id: transactionId,
-        credited_points: amountLocal,
+        partner_callback_id: transactionId, // identiškai pasiimamas iš offer_id_partner
+        credited_points: amountLocal, // BŪTINA kad būtų teisingi taškai
         status: status,
         ip: ip,
         device_info: {},
