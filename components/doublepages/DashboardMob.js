@@ -10,7 +10,8 @@ import { supabase } from "../../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import UserStatsVipMobile from "../UserStatsVipMobile";
 import OfferwallCarousel from "../OfferwallCarousel";
-import AchievementWall from "../AchievementWall";
+import AchievementWallMobile from "../AchievementWallMobile"; // <-- pakeista import
+// import AchievementWall from "../AchievementWall"; // nebereikia mobile
 
 const OFFERWALLS = [
   {
@@ -263,10 +264,10 @@ export default function DashboardMob({ setGlobalLoading }) {
           <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
         </section>
 
-        {/* Achievement Wall */}
+        {/* Achievement Wall - MOBILE */}
         <section className="w-full flex flex-col items-center justify-center" style={{ maxWidth: '100vw', marginTop: '5vw', marginBottom: '3vw' }}>
           {user && (
-            <AchievementWall userId={user.id} />
+            <AchievementWallMobile userId={user.id} />
           )}
         </section>
 
