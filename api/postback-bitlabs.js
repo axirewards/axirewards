@@ -21,28 +21,32 @@ export default async function handler(req, res) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  // Map params to completions fields
-  const userId = payload.user_id || payload.uid;
-  const transactionId = payload.transaction_id || payload.tx;
-  const creditedPointsRaw = payload.reward || payload.val;
-  const moneyRaw = payload.value || payload.raw; // USD value, can be null
-  const status = payload.status;
+  // Map BitLabs params to completions fields
+  const userId = payload.uid || payload.user_id;
+  const transactionId = payload.tx || payload.transaction_id;
+  const creditedPointsRaw = payload.val || payload.reward;
+  const moneyRaw = payload.raw || payload.value; // USD value
+  const status = payload.offer_state || payload.status; // COMPLETED, CHARGEBACK, etc.
   const currency = payload.currency;
   const offerId = payload.offer_id;
-  const surveyId = payload.survey_id;
-  const offerType = payload.offer_type;
+  const offerName = payload.offer_name;
+  const title = payload.vc_title || 'Bit Labs';
   const country = payload.country || payload.geo || 'ALL';
   const ip = payload.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
   const userAgent = payload.user_agent || req.headers['user-agent'] || '';
   const deviceInfo = payload.device_info || {};
-  const signature = payload.signature;
+  const hash = payload.hash;
+  const signature = payload.signature; // If used
 
   // Signature calculation (user_id + transaction_id + reward + value + secret)
   const sigData = `${userId}${transactionId}${creditedPointsRaw}${moneyRaw}${BITLABS_SECRET}`;
   const expectedSignature = crypto.createHash('sha256').update(sigData).digest('hex');
   if (BITLABS_SECRET) {
-    if (signature !== expectedSignature) {
+    if (signature && signature !== expectedSignature) {
       return res.status(403).json({ error: 'Invalid BitLabs signature', debug: { payload, sigData, expectedSignature } });
+    }
+    if (hash && hash !== expectedSignature) {
+      return res.status(403).json({ error: 'Invalid BitLabs hash', debug: { payload, sigData, expectedSignature } });
     }
   }
 
@@ -85,14 +89,13 @@ export default async function handler(req, res) {
         money: moneyRaw,
         currency,
         offer_id: offerId,
-        survey_id: surveyId,
-        offer_type: offerType,
+        offer_name: offerName,
         country,
         ip,
         user_agent: userAgent,
         device_info: deviceInfo,
-        status: status === 'chargeback' ? 'reversed' : (status === 'completed' ? 'credited' : status || 'credited'),
-        title: 'Bit Labs',
+        status: status === 'CHARGEBACK' ? 'reversed' : (status === 'COMPLETED' ? 'credited' : status || 'credited'),
+        title,
         description: 'You completed an offer.'
       })
       .select()
