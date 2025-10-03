@@ -2,16 +2,14 @@
  * CPAlead Offerwall Postback Handler for AXI Rewards
  * - Handles CPAlead offerwall conversions and credits user points in Supabase/Postgres DB.
  * - Maps CPAlead macros to parameters:
- *   subid           → userId,
- *   virtual_currency → points,
- *   payout          → USD amount,
- *   campaign_id     → offer_id_partner,
- *   lead_id         → partner_callback_id (transactionId),
- *   country_iso     → country.
+ *   campaign_id     → completions.offer_id_partner,
+ *   subid2          → completions.user_id and completions.partner_callback_id,
+ *   virtual_currency → completions.credited_points,
+ *   country_iso     → completions.country.
  * - Always logs full raw payload for auditing.
  * - Title always "CPA Lead", description always "You completed an offer."
  * - Compatible with AXI Rewards schema.
- * - Idempotency: checks completions by partner_callback_id (matches DB constraint!).
+ * - Idempotency: checks completions by offer_id_partner (campaign_id) only.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -39,13 +37,12 @@ export default async function handler(req, res) {
   }
 
   // CPAlead macros → parameters
-  const userIdRaw = parseInt(payload.subid)
-  const transactionId = (payload.lead_id || payload.click_id || payload.transaction_id || payload.transactionid || payload.subid || '').toString()
-  const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
-  const payoutUsd = Number(payload.payout) || 0
+  const offerIdPartner = (payload.campaign_id || '').toString()
+  const userIdRaw = parseInt(payload.subid2)
+  const transactionId = (payload.subid2 || '').toString() // subid2 as unique id for partner_callback_id
   const amountLocal = Math.floor(Number(payload.virtual_currency) || 0)
   const ip = payload.ip_address || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || ''
-  const country = payload.country_iso || payload.country || payload.geo || 'ALL'
+  const country = payload.country_iso || 'ALL'
   const status = 'credited'
   const offerTitle = "CPA Lead"
   const offerDescription = "You completed an offer."
@@ -71,11 +68,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Idempotency: block only if completions with same partner_callback_id exists (matches DB constraint!)
+    // Idempotency: block only if completions with same offer_id_partner exists
     const { data: existingCompletions, error: checkError } = await supabase
       .from('completions')
       .select('id')
-      .eq('partner_callback_id', transactionId)
+      .eq('offer_id_partner', offerIdPartner)
 
     if (checkError) {
       console.error('Completions check error:', checkError)
