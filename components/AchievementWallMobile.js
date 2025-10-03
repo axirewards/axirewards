@@ -112,14 +112,26 @@ export default function AchievementWallMobile({ userId }) {
     );
 
   return (
-    <div className="w-full flex flex-col items-center justify-center py-3 px-1" style={{ maxWidth: '100vw', margin: '0 auto' }}>
-      <div className="w-full flex items-center justify-center mb-3">
+    <div
+      className="achievement-wall-mobile-container w-full flex flex-col items-center justify-center py-3 px-1"
+      style={{
+        maxWidth: '99vw',
+        margin: '0 auto',
+        background: "rgba(18,24,38,0.89)",
+        borderRadius: "0.89rem",
+        boxShadow: "0 3px 14px 0 #1E3A8A29, 0 2px 8px 0 #60A5FA22",
+        backdropFilter: "blur(7px)",
+        border: "1.5px solid #1E3A8A44",
+        minHeight: "112px",
+      }}
+    >
+      <div className="w-full flex items-center justify-center mb-2">
         <span className="font-extrabold text-[1.07rem] tracking-tight text-accent uppercase drop-shadow bg-gradient-to-r from-[#7b6cfb] via-[#60A5FA] to-[#FFD700] bg-clip-text text-transparent">
           Achievements
         </span>
       </div>
       {/* Mobile grid - super compact */}
-      <div className="grid grid-cols-5 gap-2 w-full max-w-[425px] mx-auto">
+      <div className="grid grid-cols-5 gap-2 w-full max-w-[410px] mx-auto">
         {ACHIEVEMENTS.map((ach) => {
           const unlocked = completedOffers >= ach.threshold;
           return (
@@ -132,13 +144,13 @@ export default function AchievementWallMobile({ userId }) {
                 }
                 `}
               style={{
-                minWidth: "54px",
-                maxWidth: "64px",
-                minHeight: "72px",
-                padding: "7px 2px",
+                minWidth: "50px",
+                maxWidth: "62px",
+                minHeight: "60px",
+                padding: "6px 2px",
                 boxShadow: unlocked
-                  ? "0 0 12px 0 #60A5fa22, 0 2px 8px 0 #FFD70033"
-                  : "0 0 6px 0 #181e3899",
+                  ? "0 0 10px 0 #60A5fa18, 0 2px 6px 0 #FFD70022"
+                  : "0 0 4px 0 #181e3899",
                 cursor: "pointer",
                 position: "relative",
               }}
@@ -147,23 +159,23 @@ export default function AchievementWallMobile({ userId }) {
               <img
                 src={ach.icon}
                 alt={ach.title}
-                className={`w-7 h-7 mb-2 z-10 ${unlocked ? "animate-spin-slow" : ""}`}
+                className={`w-6 h-6 mb-1.5 z-10 ${unlocked ? "animate-spin-slow" : ""}`}
                 style={{
                   filter: unlocked
-                    ? "drop-shadow(0 0 8px #60A5FA) brightness(1.07)"
-                    : "grayscale(75%) opacity(0.40)",
+                    ? "drop-shadow(0 0 7px #60A5FA) brightness(1.08)"
+                    : "grayscale(75%) opacity(0.37)",
                   transition: "filter 0.2s",
                 }}
               />
               <span
-                className={`font-bold text-[0.84em] text-center mb-0.5`}
+                className={`font-bold text-[0.79em] text-center mb-0.5`}
                 style={{
                   color: unlocked ? "#60A5FA" : "#444",
                   letterSpacing: "0.03em",
                   textShadow: unlocked
-                    ? "0 0 4px #60A5FA, 0 1px 2px #181e38"
+                    ? "0 0 3px #60A5FA, 0 1px 2px #181e38"
                     : "none",
-                  maxWidth: "62px",
+                  maxWidth: "59px",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -172,12 +184,12 @@ export default function AchievementWallMobile({ userId }) {
                 {ach.title}
               </span>
               <span
-                className={`absolute top-1 right-1 px-1 py-0.5 rounded-full text-[0.72em] font-extrabold ${unlocked ? "bg-accent text-white shadow animate-twinkle" : "bg-gray-700 text-gray-400"}`}
+                className={`absolute top-1 right-1 px-1 py-0.5 rounded-full text-[0.68em] font-extrabold ${unlocked ? "bg-accent text-white shadow animate-twinkle" : "bg-gray-700 text-gray-400"}`}
                 style={{
                   zIndex: 20,
-                  fontSize: "0.82em",
+                  fontSize: "0.75em",
                   letterSpacing: "0.045em",
-                  boxShadow: unlocked ? "0 0 3px #60A5FA77" : "none",
+                  boxShadow: unlocked ? "0 0 2px #60A5FA77" : "none",
                 }}
               >
                 {unlocked ? "✓" : ach.threshold}
@@ -190,20 +202,20 @@ export default function AchievementWallMobile({ userId }) {
       {/* Achievement Modal */}
       {modal && (
         <div className="fixed inset-0 z-[1500] bg-black/70 flex items-center justify-center backdrop-blur-sm">
-          <div className="relative flex flex-col items-center justify-center bg-gradient-to-br from-[#181e38] via-[#232e40] to-[#60A5FA22] rounded-2xl border-4 border-accent shadow-xl px-5 py-6 max-w-[94vw] min-w-[80vw] animate-fade-in"
+          <div className="relative flex flex-col items-center justify-center bg-gradient-to-br from-[#181e38] via-[#232e40] to-[#60A5FA22] rounded-xl border-2 border-accent shadow-xl px-4 py-4 max-w-[92vw] min-w-[82vw] animate-fade-in"
             style={{
-              boxShadow: "0 4px 32px #60A5FA44, 0 2px 12px #FFD70033",
+              boxShadow: "0 3px 22px #60A5FA33, 0 2px 10px #FFD70022",
               position: "relative"
             }}
           >
             <button
               onClick={() => setModal(null)}
-              className="absolute top-2 right-3 text-accent text-2xl font-extrabold hover:text-blue-700 transition"
+              className="absolute top-2 right-3 text-accent text-xl font-extrabold hover:text-blue-700 transition"
               aria-label="Close"
               style={{
                 background: "rgba(24,32,56,0.82)",
-                borderRadius: "1.2rem",
-                padding: "2px 13px",
+                borderRadius: "1.1rem",
+                padding: "2px 11px",
                 zIndex: 2
               }}
             >
@@ -212,49 +224,49 @@ export default function AchievementWallMobile({ userId }) {
             <img
               src={modal.icon}
               alt={modal.title}
-              className={`w-12 h-12 mb-3 ${completedOffers >= modal.threshold ? "" : "grayscale opacity-50"}`}
+              className={`w-10 h-10 mb-2 ${completedOffers >= modal.threshold ? "" : "grayscale opacity-50"}`}
               style={{
                 filter: completedOffers >= modal.threshold
-                  ? "drop-shadow(0 0 12px #60A5FA) brightness(1.09)"
-                  : "grayscale(75%) opacity(0.47)",
+                  ? "drop-shadow(0 0 10px #60A5FA) brightness(1.09)"
+                  : "grayscale(75%) opacity(0.44)",
                 transition: "filter 0.2s",
               }}
             />
             <span
-              className="font-bold text-xl mb-1 text-center"
+              className="font-bold text-[1.18rem] mb-1 text-center"
               style={{
                 color: completedOffers >= modal.threshold ? "#60A5FA" : "#444",
-                letterSpacing: "0.05em",
+                letterSpacing: "0.045em",
                 textShadow: completedOffers >= modal.threshold
-                  ? "0 0 7px #60A5FA, 0 2px 4px #181e38"
+                  ? "0 0 5px #60A5FA, 0 2px 4px #181e38"
                   : "none",
-                maxWidth: "360px",
+                maxWidth: "320px",
                 overflowWrap: "break-word"
               }}
             >
               {modal.title}
             </span>
             <span
-              className="text-[1.09em] text-center mt-2 mb-2 font-medium"
+              className="text-[0.97em] text-center mt-2 mb-2 font-medium"
               style={{
                 color: completedOffers >= modal.threshold ? "#fff" : "#bbb",
                 lineHeight: "1.33",
-                maxWidth: "355px",
+                maxWidth: "305px",
                 fontWeight: 500,
                 textShadow: completedOffers >= modal.threshold
-                  ? "0 0 2px #60A5FA, 0 1px 2px #181e38"
+                  ? "0 0 1.5px #60A5FA, 0 1px 2px #181e38"
                   : "none"
               }}
             >
               {modal.description}
             </span>
             <span
-              className={`absolute top-3 left-3 px-2 py-1 rounded-full text-[0.98em] font-extrabold ${completedOffers >= modal.threshold ? "bg-accent text-white shadow animate-twinkle" : "bg-gray-700 text-gray-400"}`}
+              className={`absolute top-2 left-3 px-2 py-1 rounded-full text-[0.92em] font-extrabold ${completedOffers >= modal.threshold ? "bg-accent text-white shadow animate-twinkle" : "bg-gray-700 text-gray-400"}`}
               style={{
                 zIndex: 20,
-                fontSize: "0.93em",
+                fontSize: "0.89em",
                 letterSpacing: "0.045em",
-                boxShadow: completedOffers >= modal.threshold ? "0 0 7px #60A5FA77" : "none",
+                boxShadow: completedOffers >= modal.threshold ? "0 0 5px #60A5FA77" : "none",
               }}
             >
               {completedOffers >= modal.threshold ? "✓ Unlocked" : `Unlock at ${modal.threshold}`}
@@ -263,6 +275,9 @@ export default function AchievementWallMobile({ userId }) {
         </div>
       )}
       <style jsx>{`
+        .achievement-wall-mobile-container {
+          transition: box-shadow 0.17s cubic-bezier(.23,1,.32,1);
+        }
         .animate-spin-slow {
           animation: spin 2.1s linear infinite;
         }
@@ -274,11 +289,11 @@ export default function AchievementWallMobile({ userId }) {
           animation: twinkle 1.7s ease-in-out infinite alternate;
         }
         @keyframes twinkle {
-          0% { box-shadow: 0 0 7px #60A5FA88; }
-          100% { box-shadow: 0 0 15px #7b6cfb77; }
+          0% { box-shadow: 0 0 6px #60A5FA88; }
+          100% { box-shadow: 0 0 12px #7b6cfb77; }
         }
         .animate-fade-in {
-          animation: fadeInModal 0.24s cubic-bezier(.23,1,.32,1);
+          animation: fadeInModal 0.19s cubic-bezier(.23,1,.32,1);
         }
         @keyframes fadeInModal {
           from { opacity: 0; transform: scale(0.98);}
