@@ -89,61 +89,63 @@ export default async function handler(req, res) {
     const { data: existing, error: checkError } = await supabase
       .from('completions')
       .select('*')
-      .eq('partner_callback_id', transactionId)
-      .single();
+      .eq('partner_callback_id', transactionId);
+    // Supabase grąžina masyvą!
+    const existingCompletion = Array.isArray(existing) && existing.length > 0 ? existing[0] : null;
 
     if (checkError) {
       console.error('Idempotency check error:', checkError);
       return res.status(500).json({ error: 'Internal server error', details: checkError.message });
     }
 
-    if (existing && status === '2') {
-      // Reverse completion if status is '2'
-      await supabase.from('completions').update({ status: 'reversed' }).eq('id', existing.id);
+    if (existingCompletion && status === '2') {
+      await supabase.from('completions').update({ status: 'reversed' }).eq('id', existingCompletion.id);
       const { error: rpcError } = await supabase.rpc('debit_user_points_for_payout', {
-        uid: existing.user_id,
-        pts: existing.credited_points,
-        ref_payout: existing.id,
+        uid: existingCompletion.user_id,
+        pts: existingCompletion.credited_points,
+        ref_payout: existingCompletion.id,
       });
       if (rpcError) throw rpcError;
-      return res.status(200).json({ status: 'reversed', completion_id: existing.id });
+      return res.status(200).json({ status: 'reversed', completion_id: existingCompletion.id });
     }
 
-    if (existing) {
-      // Already processed
-      return res.status(200).json({ status: 'already_processed', completion_id: existing.id });
+    if (existingCompletion) {
+      return res.status(200).json({ status: 'already_processed', completion_id: existingCompletion.id });
     }
 
     // Fetch user
-    const { data: user, error: userError } = await supabase
-      .from('users').select('*').eq('id', userIdRaw).single();
+    const { data: userData, error: userError } = await supabase
+      .from('users').select('*').eq('id', userIdRaw);
+
+    const user = Array.isArray(userData) && userData.length > 0 ? userData[0] : null;
     if (userError || !user) return res.status(404).json({ error: 'User not found' });
 
     // Fetch partner (cpx)
-    const { data: partner, error: partnerError } = await supabase
-      .from('partners').select('*').eq('code', 'cpx').single();
+    const { data: partnerData, error: partnerError } = await supabase
+      .from('partners').select('*').eq('code', 'cpx');
+    const partner = Array.isArray(partnerData) && partnerData.length > 0 ? partnerData[0] : null;
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' });
 
     // Try to find completion by offer_id_partner and user_id (extra safety)
-    const { data: existingCompletion, error: completionFindError } = await supabase
+    const { data: completionFindData, error: completionFindError } = await supabase
       .from('completions')
       .select('*')
       .eq('user_id', user.id)
-      .eq('offer_id_partner', offerIdPartner)
-      .single();
+      .eq('offer_id_partner', offerIdPartner);
 
-    if (completionFindError && completionFindError.message !== 'Multiple rows returned for a single row query.') {
+    const alreadyCompletion = Array.isArray(completionFindData) && completionFindData.length > 0 ? completionFindData[0] : null;
+
+    if (completionFindError) {
       console.error('Completion find error:', completionFindError);
       return res.status(500).json({ error: 'Internal server error', details: completionFindError.message });
     }
 
-    if (existingCompletion) {
-      // Already processed (by offer_id_partner + user_id)
-      return res.status(200).json({ status: 'already_processed', completion_id: existingCompletion.id });
+    if (alreadyCompletion) {
+      return res.status(200).json({ status: 'already_processed', completion_id: alreadyCompletion.id });
     }
 
     // Insert credited completion (always fill title/description from CPX or fallback)
-    const { data: completion, error: completionError } = await supabase
+    const { data: completionInsertData, error: completionError } = await supabase
       .from('completions')
       .insert({
         user_id: user.id,
@@ -159,12 +161,16 @@ export default async function handler(req, res) {
         title: offerTitle,
         description: offerDescription,
       })
-      .select()
-      .single();
+      .select();
 
     if (completionError) throw completionError;
 
-    // Credit or deduct points (levelpoints ir total_balance logika palikta kaip buvo)
+    // Įrašyta completion – iš masyvo paimti pirmą elementą!
+    const completion = Array.isArray(completionInsertData) && completionInsertData.length > 0
+      ? completionInsertData[0]
+      : completionInsertData;
+
+    // Credit or deduct points
     if (status === '2') {
       const { error: rpcError } = await supabase.rpc('debit_user_points_for_payout', {
         uid: user.id,
@@ -182,7 +188,7 @@ export default async function handler(req, res) {
       // newBalance is array with user's new points balance
       const creditedBalance =
         Array.isArray(newBalance) && newBalance.length > 0
-          ? newBalance[0]?.new_balance ?? newBalance[0]
+          ? newBalance[0]?.new_balance ?? newBalance[0]?.cur_balance ?? null
           : null;
       return res.status(200).json({
         status: 'credited',
