@@ -90,6 +90,7 @@ export default async function handler(req, res) {
       .from('completions')
       .select('*')
       .eq('partner_callback_id', transactionId);
+
     // Supabase grąžina masyvą!
     const existingCompletion = Array.isArray(existing) && existing.length > 0 ? existing[0] : null;
 
@@ -125,24 +126,6 @@ export default async function handler(req, res) {
       .from('partners').select('*').eq('code', 'cpx');
     const partner = Array.isArray(partnerData) && partnerData.length > 0 ? partnerData[0] : null;
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' });
-
-    // Try to find completion by offer_id_partner and user_id (extra safety)
-    const { data: completionFindData, error: completionFindError } = await supabase
-      .from('completions')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('offer_id_partner', offerIdPartner);
-
-    const alreadyCompletion = Array.isArray(completionFindData) && completionFindData.length > 0 ? completionFindData[0] : null;
-
-    if (completionFindError) {
-      console.error('Completion find error:', completionFindError);
-      return res.status(500).json({ error: 'Internal server error', details: completionFindError.message });
-    }
-
-    if (alreadyCompletion) {
-      return res.status(200).json({ status: 'already_processed', completion_id: alreadyCompletion.id });
-    }
 
     // Insert credited completion (always fill title/description from CPX or fallback)
     const { data: completionInsertData, error: completionError } = await supabase
