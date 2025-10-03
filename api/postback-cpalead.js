@@ -2,10 +2,11 @@
  * CPAlead Offerwall Postback Handler for AXI Rewards
  * - Handles CPAlead offerwall conversions and credits user points in Supabase/Postgres DB.
  * - Maps CPAlead macros to parameters: subid → userId, payout → USD amount, campaign_id → offer_id_partner.
+ * - Credits points at 100 points per $1 (configurable).
  * - Tracks each conversion by partner_callback_id (unique).
  * - Always logs full raw payload for auditing.
  * - Strict idempotency: same partner_callback_id cannot be processed twice.
- * - Fallbacks for missing title/description: title = "CPAlead Offer", description = "You completed an offer."
+ * - Fallbacks for missing title/description.
  * - Compatible with AXI Rewards schema.
  */
 
@@ -14,6 +15,9 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const supabase = createClient(supabaseUrl, supabaseKey)
+
+// CPAlead: payout ratio (1 USD = 100 points)
+const USD_TO_POINTS_RATIO = 100
 
 export default async function handler(req, res) {
   let payload = {}
@@ -43,7 +47,7 @@ export default async function handler(req, res) {
   const transactionId = (payload.transaction_id || payload.transactionid || payload.click_id || payload.subid || '').toString() // fallback: use subid as partner_callback_id if no click_id/transaction_id
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
   const payoutUsd = Number(payload.payout) || 0
-  const amountLocal = Math.floor(Number(payload.amount_local) || payoutUsd * 700) // CPAlead controls payout→points ratio in their settings; default fallback: 700 points/1 USD
+  const amountLocal = Math.floor(payoutUsd * USD_TO_POINTS_RATIO)
   const ip = payload.ip_address || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || ''
   const country = payload.country || payload.geo || 'ALL'
   const status = 'credited'
@@ -54,7 +58,7 @@ export default async function handler(req, res) {
     : "CPAlead Offer"
   const offerDescription = (payload.offer_description && typeof payload.offer_description === "string" && payload.offer_description.trim().length > 0)
     ? payload.offer_description.trim()
-    : "You completed an offer."
+    : "You completed a CPAlead offer."
 
   // Validate required params
   if (
