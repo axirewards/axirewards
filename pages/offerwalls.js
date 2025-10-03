@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import AyetOfferwall from "../components/AyetOfferwall";
+import CpaLeadOfferwall from "../components/CpaLeadOfferwall"; // pridėta
 import { supabase } from "../lib/supabaseClient";
 
 // Offerwalls providers list (expandable in future)
@@ -13,6 +14,14 @@ const OFFERWALL_PROVIDERS = [
     color: "#60A5FA",
     adSlot: "23274",
     description: "Try apps, games & tasks for AXI rewards.",
+  },
+  {
+    key: "cpalead",
+    name: "CPAlead",
+    logo: "/icons/cpalead.png",
+    color: "#5AF599",
+    iframeUrl: "https://www.mobtrk.link/list/Zkc2uVm",
+    description: "Exclusive offers, apps & bonuses.",
   },
   // Future providers can be added here
 ];
@@ -167,6 +176,9 @@ export default function Offerwalls({ setGlobalLoading }) {
                 </button>
                 {activeOfferwall === "ayet" && (
                   <AyetOfferwall adSlot={OFFERWALL_PROVIDERS.find((p) => p.key === "ayet").adSlot} height="700px" />
+                )}
+                {activeOfferwall === "cpalead" && (
+                  <CpaLeadOfferwall height="700px" iframeUrl={OFFERWALL_PROVIDERS.find((p) => p.key === "cpalead").iframeUrl} />
                 )}
                 {/* Future offerwalls iframe/modal here */}
               </div>
