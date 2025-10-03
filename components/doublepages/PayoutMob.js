@@ -8,6 +8,7 @@ export default function PayoutMob({ setGlobalLoading, router }) {
   const [wallet, setWallet] = useState('')
   const [pointsToRedeem, setPointsToRedeem] = useState('')
   const [payouts, setPayouts] = useState([])
+  const [completions, setCompletions] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [walletMsg, setWalletMsg] = useState('')
@@ -26,7 +27,6 @@ export default function PayoutMob({ setGlobalLoading, router }) {
         .select('*')
         .eq('email', currentUser.email)
         .single()
-
       if (userError) {
         console.error(userError)
         setLoading(false)
@@ -48,9 +48,18 @@ export default function PayoutMob({ setGlobalLoading, router }) {
         .eq('user_id', userData.id)
         .order('requested_at', { ascending: false })
         .limit(10)
-
       if (payoutError) console.error(payoutError)
       else setPayouts(payoutData)
+
+      // Fetch completions for pending paypoints (for countdown)
+      const { data: completionsData, error: completionsError } = await supabase
+        .from('completions')
+        .select('*')
+        .eq('user_id', userData.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (completionsError) console.error(completionsError)
+      else setCompletions(completionsData || [])
 
       setLoading(false)
       if (typeof setGlobalLoading === "function") setGlobalLoading(false)
@@ -115,6 +124,11 @@ export default function PayoutMob({ setGlobalLoading, router }) {
   const pointsInputNum = parseFloat(pointsToRedeem) || 0
   const { usd: inputUsd, eur: inputEur } = pointsToCurrency(pointsInputNum)
   const { usd: balanceUsd, eur: balanceEur } = pointsToCurrency(user?.points_balance || 0)
+  const { usd: readyUsd, eur: readyEur } = pointsToCurrency(user?.paypoints || 0)
+
+  // Pending completions for countdown
+  const pendingCompletions = completions.filter(c => !c.released && c.release_date)
+  const now = new Date()
 
   if (loading)
     return (
@@ -129,77 +143,122 @@ export default function PayoutMob({ setGlobalLoading, router }) {
     <Layout>
       <div className="min-h-[80vh] flex flex-col justify-between bg-card">
         <div className="max-w-md mx-auto w-full px-2 py-7 space-y-7 relative">
-          <h1 className="text-2xl font-extrabold text-white text-center mb-6 drop-shadow">Payout</h1>
+          <h1 className="text-2xl font-extrabold text-white text-center mb-5 drop-shadow">Payout</h1>
+          
+          {/* Points Info Card: Side by Side for mobile */}
+          <div className="bg-card shadow-xl rounded-2xl p-4 flex flex-row items-center justify-between gap-2 mb-5">
+            {/* Left: Your Points Balance */}
+            <div className="flex flex-col items-start flex-1">
+              <p className="text-base font-semibold text-accent mb-2">Your Points</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-white">{user.points_balance || 0}</span>
+                <span className="text-sm text-gray-300">pts</span>
+              </div>
+              <div className="mt-1 text-xs text-accent">
+                ≈ <span className="font-bold">{balanceUsd} USD</span> / <span className="font-bold">{balanceEur} EUR</span>
+              </div>
+            </div>
+            {/* Right: Points Ready for Payout */}
+            <div className="flex flex-col items-end flex-1">
+              <p className="text-base font-semibold text-green-400 mb-2">Ready for Payout</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-green-400">{user.paypoints || 0}</span>
+                <span className="text-sm text-gray-300">pts</span>
+              </div>
+              <div className="mt-1 text-xs text-green-300">
+                ≈ <span className="font-bold">{readyUsd} USD</span> / <span className="font-bold">{readyEur} EUR</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Wallet and Redeem */}
           <div className="bg-card shadow-xl rounded-2xl p-4 space-y-6 relative">
-            {/* Minimum withdrawal badge - INSIDE CONTAINER */}
             <div className="absolute top-2 right-2 z-10">
               <span className="bg-white px-2 py-1 rounded-lg shadow text-xs font-bold text-red-600 border border-red-300 select-none">
                 Min: 10000 points
               </span>
             </div>
             <div>
-              <p className="text-base font-semibold text-accent mb-2">Your Points</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-white">{user.points_balance || 0}</span>
-                <span className="text-sm text-gray-300">points</span>
-              </div>
+              <label className="text-xs font-semibold text-white mb-1 block">Your Wallet (POLYGON)</label>
+              <input
+                type="text"
+                value={wallet}
+                readOnly
+                disabled
+                className="w-full border border-gray-700 rounded-lg p-2 bg-black text-white opacity-80 cursor-not-allowed text-xs"
+                placeholder="Save wallet in Profile"
+              />
+              {walletMsg && (
+                <span className="text-red-500 text-xs mt-1 block">{walletMsg}</span>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-white mb-1 block">Points to Redeem</label>
+              <input
+                type="number"
+                min={10000}
+                max={user.points_balance || 0}
+                placeholder="Enter points amount"
+                className="w-full border border-gray-700 rounded-lg p-2 bg-black text-white text-xs"
+                value={pointsToRedeem}
+                onChange={(e) => setPointsToRedeem(e.target.value)}
+                disabled={!wallet}
+                autoComplete="off"
+              />
+              {pointsError && (
+                <span className="text-red-500 text-xs mt-1 block">{pointsError}</span>
+              )}
               <div className="mt-1 text-xs text-accent">
-                ≈ <span className="font-bold">{balanceUsd} USD</span> / <span className="font-bold">{balanceEur} EUR</span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <div>
-                <label className="text-xs font-semibold text-white mb-1 block">Your Wallet (POLYGON)</label>
-                <input
-                  type="text"
-                  value={wallet}
-                  readOnly
-                  disabled
-                  className="w-full border border-gray-700 rounded-lg p-2 bg-black text-white opacity-80 cursor-not-allowed text-xs"
-                  placeholder="Save wallet in Profile"
-                />
-                {walletMsg && (
-                  <span className="text-red-500 text-xs mt-1 block">{walletMsg}</span>
+                {pointsInputNum > 0 && (
+                  <>
+                    ≈ <span className="font-bold">{inputUsd} USD</span> / <span className="font-bold">{inputEur} EUR</span>
+                  </>
                 )}
               </div>
-              <div>
-                <label className="text-xs font-semibold text-white mb-1 block">Points to Redeem</label>
-                <input
-                  type="number"
-                  min={10000}
-                  max={user.points_balance || 0}
-                  placeholder="Enter points amount"
-                  className="w-full border border-gray-700 rounded-lg p-2 bg-black text-white text-xs"
-                  value={pointsToRedeem}
-                  onChange={(e) => setPointsToRedeem(e.target.value)}
-                  disabled={!wallet}
-                  autoComplete="off"
-                />
-                {pointsError && (
-                  <span className="text-red-500 text-xs mt-1 block">{pointsError}</span>
-                )}
-                <div className="mt-1 text-xs text-accent">
-                  {pointsInputNum > 0 && (
-                    <>
-                      ≈ <span className="font-bold">{inputUsd} USD</span> / <span className="font-bold">{inputEur} EUR</span>
-                    </>
-                  )}
-                </div>
-              </div>
-              <button
-                className={`bg-accent text-white px-4 py-2 rounded-lg font-bold shadow transition hover:bg-blue-700 disabled:opacity-50 mt-2 text-sm`}
-                onClick={handleRequestPayout}
-                disabled={submitting || !wallet || !user?.points_balance || !pointsToRedeem}
-              >
-                {submitting ? 'Sending...' : 'Request Payout'}
-              </button>
             </div>
+            <button
+              className={`bg-accent text-white px-4 py-2 rounded-lg font-bold shadow transition hover:bg-blue-700 disabled:opacity-50 mt-2 text-sm`}
+              onClick={handleRequestPayout}
+              disabled={submitting || !wallet || !user?.points_balance || !pointsToRedeem}
+            >
+              {submitting ? 'Sending...' : 'Request Payout'}
+            </button>
           </div>
 
+          {/* Countdown for Pending Completions */}
+          <div className="bg-card shadow-xl rounded-2xl p-4 mb-4">
+            <h2 className="text-base font-bold mb-3 text-accent">Points Releasing Soon</h2>
+            {pendingCompletions.length === 0 ? (
+              <p className="text-gray-400 text-xs">No pending points are awaiting release.</p>
+            ) : (
+              <ul className="space-y-2">
+                {pendingCompletions.map((c) => {
+                  const daysLeft = Math.max(0, Math.ceil((new Date(c.release_date) - now) / (1000 * 60 * 60 * 24)))
+                  return (
+                    <li key={c.id} className="border-b border-gray-900 py-2 flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-semibold text-sm">{c.credited_points} pts</p>
+                        <p className="text-gray-400 text-xs">
+                          Release date: <span className="font-bold text-accent">{new Date(c.release_date).toLocaleDateString()}</span>
+                        </p>
+                      </div>
+                      <div>
+                        <span className="bg-accent text-white px-3 py-1 rounded-lg font-bold text-xs">
+                          {daysLeft} days left
+                        </span>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Recent Payout Requests */}
           <div className="bg-card shadow-xl rounded-2xl p-4">
             <h2 className="text-base font-bold mb-2 text-white">Recent Payouts</h2>
             {payouts.length === 0 ? (
-              <p className="text-gray-400 text-sm">No records found.</p>
+              <p className="text-gray-400 text-xs">No records found.</p>
             ) : (
               <ul className="space-y-2">
                 {payouts.map((p) => {
