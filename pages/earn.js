@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router'
 import Layout from '../components/Layout'
 import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
 
 const categories = [
   {
@@ -45,6 +46,17 @@ const categories = [
 export default function Earn({ setGlobalLoading }) {
   const router = useRouter()
   const [hovered, setHovered] = useState(null)
+
+  // Redirect to /index if user is not logged in
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/index')
+      }
+    }
+    checkAuth()
+  }, [router])
 
   // UX: Show global spinner for smooth page transitions
   useEffect(() => {
