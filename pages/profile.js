@@ -19,7 +19,7 @@ export default function Profile({ setGlobalLoading }) {
     async function fetchUser() {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
       if (!currentUser) {
-        if (typeof setGlobalLoading === "function") setGlobalLoading(false)
+        router.push('/index')
         return
       }
 
