@@ -1,10 +1,10 @@
 /**
  * CPAlead Offerwall Postback Handler for AXI Rewards
  * - Handles CPAlead offerwall conversions and credits user points in Supabase/Postgres DB.
- * - Taškai visada imami iš virtual_currency (jei yra), arba tiesiog iš payout (jei nėra virtual_currency), be jokių daugiklių!
+ * - Taškai visada imami iš virtual_currency (jei yra), arba payout * 700 (jei nėra virtual_currency).
  * - Idempotency: tikrina pagal user_id + offer_id_partner.
  * - completions.partner_callback_id = completions.offer_id_partner.
- * - Visada kviečia Supabase RPC, kad pridėtų taškus.
+ * - credited_points LENTELEJE NEDĖK RANKA! Taškai pridedami TIK per Supabase RPC (increment_user_points).
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -36,24 +36,24 @@ export default async function handler(req, res) {
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
   const transactionId = offerIdPartner
 
-  // Taškai: virtual_currency, o payout naudoti TIK jei virtual_currency NĖRA, be jokių daugiklių!
-  let amountLocal = 0
+  // Taškai: virtual_currency, o payout naudoti TIK jei virtual_currency NĖRA, payout * 700!
+  let pointsToCredit = 0
   if (
     payload.virtual_currency !== undefined &&
     payload.virtual_currency !== null &&
     !isNaN(Number(payload.virtual_currency)) &&
     Number(payload.virtual_currency) > 0
   ) {
-    amountLocal = Math.floor(Number(payload.virtual_currency))
+    pointsToCredit = Math.floor(Number(payload.virtual_currency))
   } else if (
     payload.payout !== undefined &&
     payload.payout !== null &&
     !isNaN(Number(payload.payout)) &&
     Number(payload.payout) > 0
   ) {
-    amountLocal = Math.floor(Number(payload.payout))
+    pointsToCredit = Math.floor(Number(payload.payout) * 700)
   }
-  if (amountLocal <= 0) {
+  if (pointsToCredit <= 0) {
     return res.status(400).json({ error: 'Missing or invalid points (virtual_currency/payout)', payload })
   }
 
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
     const partner = Array.isArray(partnerData) && partnerData.length > 0 ? partnerData[0] : null
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' })
 
-    // Insert credited completion (credited_points always set correctly)
+    // Insert completion (credited_points NEDĖTI ranka, bus priskirta per RPC funkciją!)
     const { data: completionInsertData, error: completionError } = await supabase
       .from('completions')
       .insert({
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
         offer_id_partner: offerIdPartner,
         partner_id: partner.id,
         partner_callback_id: transactionId,
-        credited_points: amountLocal,
+        // credited_points: pointsToCredit, <-- NEPRIDEDAM RANKA!
         status: status,
         ip: ip,
         device_info: {},
@@ -134,12 +134,18 @@ export default async function handler(req, res) {
       ? completionInsertData[0]
       : completionInsertData
 
-    // Credit points with Supabase RPC after completion is inserted!
+    // Credit points ONLY via Supabase RPC after completion is inserted!
     const { data: newBalance, error: rpcError } = await supabase.rpc(
       'increment_user_points',
-      { uid: user.id, pts: amountLocal, ref_completion: completion.id }
+      { uid: user.id, pts: pointsToCredit, ref_completion: completion.id }
     )
     if (rpcError) throw rpcError
+
+    // Optionally, update credited_points in completions table after RPC
+    await supabase.from('completions')
+      .update({ credited_points: pointsToCredit })
+      .eq('id', completion.id)
+
     const creditedBalance =
       Array.isArray(newBalance) && newBalance.length > 0
         ? newBalance[0]?.new_balance ?? newBalance[0]?.cur_balance ?? null
@@ -147,7 +153,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       status: 'credited',
-      credited_points: amountLocal,
+      credited_points: pointsToCredit,
       new_balance: creditedBalance,
       completion_id: completion.id,
     })
