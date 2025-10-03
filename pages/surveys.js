@@ -9,7 +9,7 @@ import { supabase } from "../lib/supabaseClient";
 const SURVEY_PROVIDERS = [
   {
     key: "bitlabs",
-    name: "BitLabs",
+    name: "Bit Labs",
     logo: "/icons/bitlabslogo.png",
     color: "#62D6FB",
     apiKey: "2dfb7d19-2974-4085-b686-181bcb681b70",
@@ -25,7 +25,7 @@ const SURVEY_PROVIDERS = [
   },
   {
     key: "theorem",
-    name: "TheoremReach",
+    name: "Theorem Reach",
     logo: "/icons/theoremreachlogo.png",
     color: "#7b6cfb",
     appId: "24198",
