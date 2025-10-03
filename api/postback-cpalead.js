@@ -17,7 +17,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 // CPAlead: payout ratio (1 USD = 100 points)
-const USD_TO_POINTS_RATIO = 100
+const USD_TO_POINTS_RATIO = 700
 
 export default async function handler(req, res) {
   let payload = {}
