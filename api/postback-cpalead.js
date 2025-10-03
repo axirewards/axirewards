@@ -11,7 +11,7 @@
  * - Compatible with AXI Rewards schema.
  * - Idempotency: checks completions by user_id + offer_id_partner (allows new unique offers per user, prevents duplicate for same user).
  * - completions.partner_callback_id = completions.offer_id_partner (always identical).
- * - Always credits points using Supabase RPC (increment_user_points) after successful completion insert!
+ * - **NEKVIEČIA RPC, taškai pridedami per triggerį!**
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -41,16 +41,13 @@ export default async function handler(req, res) {
   // CPAlead macros → parameters
   const userIdRaw = parseInt(payload.subid)
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
-  // partner_callback_id = offer_id_partner (identical, per your instructions)
   const transactionId = offerIdPartner
-  // credited_points: try virtual_currency, else fallback payout * 700
   let amountLocal = 0
   if (payload.virtual_currency !== undefined && payload.virtual_currency !== null && !isNaN(Number(payload.virtual_currency))) {
     amountLocal = Math.floor(Number(payload.virtual_currency))
   } else if (payload.payout !== undefined && !isNaN(Number(payload.payout))) {
     amountLocal = Math.floor(Number(payload.payout) * 700)
   }
-  // If still 0, it's an error (never credit 0 points)
   if (amountLocal <= 0) {
     return res.status(400).json({ error: 'Missing or invalid points (virtual_currency/payout)', payload })
   }
@@ -61,12 +58,10 @@ export default async function handler(req, res) {
   const offerTitle = "CPA Lead"
   const offerDescription = "You completed an offer."
 
-  // Validate required params
   if (!userIdRaw || !offerIdPartner) {
     return res.status(400).json({ error: 'Missing required CPAlead parameters', payload })
   }
 
-  // Log raw postback (never throw error on log)
   try {
     await supabase.from('postback_logs').insert([{
       user_id: userIdRaw,
@@ -82,7 +77,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Idempotency: block only if completions with same user_id + offer_id_partner exists
     const { data: existingCompletions, error: checkError } = await supabase
       .from('completions')
       .select('id')
@@ -97,19 +91,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'already_processed', completion_id: existingCompletions[0].id })
     }
 
-    // Fetch user
     const { data: userData, error: userError } = await supabase
       .from('users').select('id,email').eq('id', userIdRaw)
     const user = Array.isArray(userData) && userData.length > 0 ? userData[0] : null
     if (userError || !user) return res.status(404).json({ error: 'User not found' })
 
-    // Fetch partner (cpalead)
     const { data: partnerData, error: partnerError } = await supabase
       .from('partners').select('id').eq('code', 'cpalead')
     const partner = Array.isArray(partnerData) && partnerData.length > 0 ? partnerData[0] : null
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' })
 
-    // Insert credited completion (credited_points always set correctly)
     const { data: completionInsertData, error: completionError } = await supabase
       .from('completions')
       .insert({
@@ -132,21 +123,16 @@ export default async function handler(req, res) {
       ? completionInsertData[0]
       : completionInsertData
 
-    // ALWAYS credit points with Supabase RPC after completion is inserted!
-    const { data: newBalance, error: rpcError } = await supabase.rpc(
-      'increment_user_points',
-      { uid: user.id, pts: amountLocal, ref_completion: completion.id }
-    )
-    if (rpcError) throw rpcError
-    const creditedBalance =
-      Array.isArray(newBalance) && newBalance.length > 0
-        ? newBalance[0]?.new_balance ?? newBalance[0]?.cur_balance ?? null
-        : null
+    // **NEKVIEČIA increment_user_points** – tai padaro triggeris!
+    // const { data: newBalance, error: rpcError } = await supabase.rpc(
+    //   'increment_user_points',
+    //   { uid: user.id, pts: amountLocal, ref_completion: completion.id }
+    // )
+    // if (rpcError) throw rpcError
 
     return res.status(200).json({
       status: 'credited',
       credited_points: amountLocal,
-      new_balance: creditedBalance,
       completion_id: completion.id,
     })
   } catch (err) {
