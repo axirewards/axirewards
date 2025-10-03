@@ -36,9 +36,9 @@ export default async function handler(req, res) {
   console.log('Payload params:', { userId, creditedPointsRaw, moneyRaw, transactionId, hash });
   console.log('Full payload:', payload);
 
-  // Signature calculation (BitLabs spec: SHA256(user_id + transaction_id + rewards + value + secret))
+  // Signature calculation (BitLabs spec: SHA1(user_id + transaction_id + rewards + value + secret))
   const sigData = `${userId}${transactionId}${creditedPointsRaw}${moneyRaw}${BITLABS_SECRET}`;
-  const expectedHash = crypto.createHash('sha256').update(sigData).digest('hex');
+  const expectedHash = crypto.createHash('sha1').update(sigData).digest('hex');
 
   console.log('Signature debug:', { sigData, expectedHash, hashFromPayload: hash, BITLABS_SECRET });
 
