@@ -100,11 +100,19 @@ export default async function handler(req, res) {
     }
 
     // Fetch user
-    const { data: user, error: userError } = await supabase.from('users').select('*').eq('id', userIdRaw).single();
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userIdRaw)
+      .single();
     if (userError || !user) return res.status(404).json({ error: 'User not found' });
 
     // Fetch partner (cpx)
-    const { data: partner, error: partnerError } = await supabase.from('partners').select('*').eq('code', 'cpx').single();
+    const { data: partner, error: partnerError } = await supabase
+      .from('partners')
+      .select('*')
+      .eq('code', 'cpx')
+      .single();
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' });
 
     // Try to find completion by offer_id_partner and user_id
@@ -116,17 +124,33 @@ export default async function handler(req, res) {
       .single();
 
     if (existingCompletion) {
-      // If found, treat as already processed
       return res.status(200).json({ status: 'already_processed', completion_id: existingCompletion.id });
     }
 
-    // Insert credited completion with user_email, offer_id_partner
+    // Fetch offer for title/description
+    let offerTitle = null;
+    let offerDescription = null;
+    try {
+      const { data: offer, error: offerError } = await supabase
+        .from('offers')
+        .select('title, description')
+        .eq('offer_id_partner', offerIdPartner)
+        .single();
+      if (offer && !offerError) {
+        offerTitle = offer.title || null;
+        offerDescription = offer.description || null;
+      }
+    } catch (e) {
+      console.error('Failed to fetch offer for completions:', e);
+    }
+
+    // Insert credited completion with user_email, offer_id_partner, title, description
     const { data: completion, error: completionError } = await supabase
       .from('completions')
       .insert({
         user_id: user.id,
-        user_email: user.email, // New field for tracking by email
-        offer_id_partner: offerIdPartner, // partner offer id (from CPX)
+        user_email: user.email,
+        offer_id_partner: offerIdPartner,
         partner_id: partner.id,
         partner_callback_id: transactionId,
         credited_points: amountLocal,
@@ -134,6 +158,8 @@ export default async function handler(req, res) {
         ip: ip,
         device_info: {},
         country: country,
+        title: offerTitle,
+        description: offerDescription,
       })
       .select()
       .single();
@@ -150,14 +176,16 @@ export default async function handler(req, res) {
       if (rpcError) throw rpcError;
       return res.status(200).json({ status: 'reversed', completion_id: completion.id });
     } else {
+      // *** SENOJI FUNKCIJA - TIK TAŠKAI, JOKIŲ LEVELPOINTS ***
       const { data: newBalance, error: rpcError } = await supabase.rpc(
         'increment_user_points',
         { uid: user.id, pts: amountLocal, ref_completion: completion.id }
       );
       if (rpcError) throw rpcError;
+      // 'newBalance' yra masyvas su vienu objektu, kuriame yra naujas balansas
       const creditedBalance =
         Array.isArray(newBalance) && newBalance.length > 0
-          ? newBalance[0]?.new_balance
+          ? newBalance[0]?.points_balance || newBalance[0]?.new_balance || newBalance[0]
           : null;
       return res.status(200).json({
         status: 'credited',
