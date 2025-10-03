@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import AyetOfferwall from "../components/AyetOfferwall";
 import { supabase } from "../lib/supabaseClient";
@@ -17,8 +18,20 @@ const OFFERWALL_PROVIDERS = [
 ];
 
 export default function Offerwalls({ setGlobalLoading }) {
+  const router = useRouter();
   const [enabledKeys, setEnabledKeys] = useState([]);
   const [activeOfferwall, setActiveOfferwall] = useState(null);
+
+  // Redirect to /index if not authenticated
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/index');
+      }
+    }
+    checkAuth();
+  }, [router]);
 
   useEffect(() => {
     if (typeof setGlobalLoading === "function") setGlobalLoading(true);
