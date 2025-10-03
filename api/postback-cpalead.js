@@ -9,9 +9,9 @@
  * - Always logs full raw payload for auditing.
  * - Title always "CPA Lead", description always "You completed an offer."
  * - Compatible with AXI Rewards schema.
- * - Idempotency: only by offer_id_partner (campaign_id) -- allows new unique offers per user, even if campaign_id repeats for different users.
+ * - Idempotency: checks completions by offer_id_partner ONLY (allows new unique offers per user, even if campaign_id repeats for different users).
  * - completions.partner_callback_id = completions.offer_id_partner (always identical).
- * - Points credited using increment_user_points RPC, like CPX postback.
+ * - Always credits points using Supabase RPC (increment_user_points) after successful completion insert!
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required CPAlead parameters', payload })
   }
 
-  // Log raw postback (always try, log errors only)
+  // Log raw postback (never throw error on log)
   try {
     await supabase.from('postback_logs').insert([{
       user_id: userIdRaw,
@@ -106,7 +106,7 @@ export default async function handler(req, res) {
         offer_id_partner: offerIdPartner,
         partner_id: partner.id,
         partner_callback_id: transactionId, // identiškai pasiimamas iš offer_id_partner
-        credited_points: amountLocal,
+        credited_points: amountLocal, // BŪTINA kad būtų teisingi taškai
         status: status,
         ip: ip,
         device_info: {},
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
       ? completionInsertData[0]
       : completionInsertData
 
-    // Credit points (using increment_user_points RPC like CPX postback)
+    // ALWAYS credit points with Supabase RPC after completion is inserted!
     const { data: newBalance, error: rpcError } = await supabase.rpc(
       'increment_user_points',
       { uid: user.id, pts: amountLocal, ref_completion: completion.id }
