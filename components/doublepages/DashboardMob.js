@@ -222,7 +222,7 @@ export default function DashboardMob({ setGlobalLoading }) {
         {/* Achievement Wall */}
         <section className="w-full flex flex-col items-center justify-center" style={{ maxWidth: '100vw', marginTop: '5vw', marginBottom: '3vw' }}>
           {user && (
-            <AchievementWall completedOffers={user?.completed_offers || 0} />
+            <AchievementWall userId={user.id} />
           )}
         </section>
 
