@@ -77,7 +77,7 @@ export default function EarnPc({ setGlobalLoading, router }) {
                 padding: "8px 24px",
                 boxShadow: "0 2px 14px #60A5fa22"
               }}>
-              Choose your earning method. Surveys, apps, ads – everything in one place, with a seamless Axirewards experience.
+              Choose your earning method. Surveys, apps, ads – everything in one place, with a seamless Axi Rewards experience.
             </p>
           </div>
           {/* Categories */}
