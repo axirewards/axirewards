@@ -21,14 +21,14 @@ export default async function handler(req, res) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  // Tobulai BitLabs mapping
-  const userId = payload.uid;
-  const creditedPointsRaw = payload.val;
-  const moneyRaw = payload.raw;
-  const transactionId = payload.tx;
+  // BitLabs mapping
+  const userId = payload.user_id;
+  const creditedPointsRaw = payload.rewards;
+  const moneyRaw = payload.value;
+  const transactionId = payload.transaction_id;
   const hash = payload.hash;
 
-  // Signature calculation (BitLabs spec: SHA256(uid + tx + val + raw + secret))
+  // Signature calculation (BitLabs spec: SHA256(user_id + transaction_id + rewards + value + secret))
   const sigData = `${userId}${transactionId}${creditedPointsRaw}${moneyRaw}${BITLABS_SECRET}`;
   const expectedHash = crypto.createHash('sha256').update(sigData).digest('hex');
 
@@ -43,6 +43,12 @@ export default async function handler(req, res) {
   if (!userId || !transactionId || points === null || isNaN(points) || points <= 0) {
     return res.status(400).json({ error: 'Missing or invalid BitLabs parameters', payload });
   }
+
+  // Check for status param for reversal
+  const isReversed = payload.status && (
+    payload.status.toLowerCase() === 'reversed' ||
+    payload.status.toLowerCase() === 'chargeback'
+  );
 
   try {
     // Idempotency
@@ -73,9 +79,9 @@ export default async function handler(req, res) {
         user_id: user.id,
         partner_id: partner.id,
         partner_callback_id: transactionId,
-        credited_points: points,
+        credited_points: isReversed ? -points : points,
         money: moneyRaw,
-        status: 'credited',
+        status: isReversed ? 'reversed' : 'credited',
         title: 'Bit Labs',
         description: 'You completed an offer.'
       })
@@ -83,6 +89,13 @@ export default async function handler(req, res) {
       .single();
 
     if (completionError) throw completionError;
+
+    // Deduct points for reversal events only (increment handled by trigger, do not call increment RPC!)
+    if (isReversed) {
+      await supabase
+        .rpc('debit_user_points_for_payout', { uid: user.id, pts: points, ref_payout: completion.id });
+    }
+    // NOTE: Points increment is handled by a Supabase trigger automatically when a row is inserted into completions. DO NOT call increment RPC here.
 
     // Log postback
     await supabase
