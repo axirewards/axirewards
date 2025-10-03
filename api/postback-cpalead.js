@@ -43,16 +43,14 @@ export default async function handler(req, res) {
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
   // partner_callback_id = offer_id_partner (identical, per your instructions)
   const transactionId = offerIdPartner
-  // credited_points: try virtual_currency, else fallback payout * 700
+  // credited_points ONLY from virtual_currency (NO fallback to payout * 700)
   let amountLocal = 0
   if (payload.virtual_currency !== undefined && payload.virtual_currency !== null && !isNaN(Number(payload.virtual_currency))) {
     amountLocal = Math.floor(Number(payload.virtual_currency))
-  } else if (payload.payout !== undefined && !isNaN(Number(payload.payout))) {
-    amountLocal = Math.floor(Number(payload.payout) * 700)
   }
-  // If still 0, it's an error (never credit 0 points)
+  // If still 0, it's an error (never credit 0 points, and never multiply payout)
   if (amountLocal <= 0) {
-    return res.status(400).json({ error: 'Missing or invalid points (virtual_currency/payout)', payload })
+    return res.status(400).json({ error: 'Missing or invalid points (virtual_currency)', payload })
   }
 
   const ip = payload.ip_address || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || ''
