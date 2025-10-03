@@ -8,7 +8,7 @@ import TheoremOfferwall from "../TheoremOfferwall";
 import CpaLeadOfferwall from "../CpaLeadOfferwall";
 import { supabase } from "../../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
-import UserStatsVipMobile from "../UserStatsVipMobile"; // <-- pakeista!
+import UserStatsVipMobile from "../UserStatsVipMobile";
 import OfferwallCarousel from "../OfferwallCarousel";
 import AchievementWall from "../AchievementWall";
 
@@ -163,40 +163,69 @@ export default function DashboardMob({ setGlobalLoading }) {
           overflowX: 'hidden'
         }}
       >
-        {/* Headline */}
+        {/* Headline - Ultra Upgraded */}
         <div className="w-full flex items-center justify-center mt-5 mb-2 px-2">
           {user && (
-            <span
-              className="font-bold text-2xl text-white drop-shadow text-center py-3 px-6 rounded-xl"
-              style={{
-                background: "linear-gradient(90deg, #60A5FA 0%, #7b6cfb 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-                color: "transparent",
-                letterSpacing: "0.055em",
-                boxShadow: "0 2px 14px #60A5fa22",
-                maxWidth: "98vw",
-                overflowWrap: "break-word"
-              }}
-            >
-              Welcome, <span style={{
-                color: "#FFD700",
-                background: "none",
-                WebkitBackgroundClip: "unset",
-                WebkitTextFillColor: "unset",
-                fontWeight: 800,
-                letterSpacing: "0.07em",
-                textShadow: "0 1px 7px #FFD70066",
-              }}>{user.email}</span>!
-            </span>
+            <div className="flex flex-col items-center w-full">
+              <span
+                className="font-extrabold text-[2.1em] md:text-3xl text-center py-2 px-6 rounded-2xl"
+                style={{
+                  color: "#fff",
+                  letterSpacing: "0.06em",
+                  textShadow: "0 2px 12px #232e40cc",
+                  background: "none",
+                  marginBottom: "2px",
+                  maxWidth: "98vw",
+                  lineHeight: "1.17"
+                }}
+              >
+                Welcome,
+              </span>
+              <span
+                className="block font-extrabold text-xl md:text-2xl text-center px-4 py-2 rounded-full gradient-animate"
+                style={{
+                  background: "linear-gradient(90deg, #7b6cfb 0%, #60A5FA 50%, #FFD700 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  color: "transparent",
+                  letterSpacing: "0.10em",
+                  boxShadow: "0 2px 12px #7b6cfb33",
+                  marginBottom: "2px",
+                  transition: "background 1.2s",
+                  animation: "gradientShift 4s ease-in-out infinite alternate"
+                }}
+              >
+                {user.email}
+              </span>
+              <span
+                className="text-[1em] text-gray-300 font-medium mt-1 mb-2 text-center px-2"
+                style={{
+                  textShadow: "0 1px 8px #60A5fa44",
+                  letterSpacing: "0.04em",
+                  maxWidth: "93vw"
+                }}
+              >
+                Your AXI rewards journey starts here. Unlock achievements, earn points, and level up every day!
+              </span>
+              <style jsx>{`
+                @keyframes gradientShift {
+                  0% {background-position: 0%;}
+                  100% {background-position: 100%;}
+                }
+                .gradient-animate {
+                  background-size: 200% 200%;
+                  animation: gradientShift 4s ease-in-out infinite alternate;
+                }
+              `}</style>
+            </div>
           )}
         </div>
 
         {/* User Stats / VIP */}
         {user && (
           <div className="w-full px-2" style={{ marginTop: '3vw', maxWidth: '100vw' }}>
-            <UserStatsVipMobile /> {/* <-- pakeista! */}
+            <UserStatsVipMobile />
           </div>
         )}
 
