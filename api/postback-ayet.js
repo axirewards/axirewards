@@ -149,11 +149,10 @@ export default async function handler(req, res) {
 
     if (completionError) throw completionError;
 
-    // Increment user points via RPC (atomic)
-    const { data: newBalance, error: rpcError } = await supabase
-      .rpc('increment_user_points', { uid: user.id, pts: points, ref_completion: completion.id });
-
-    if (rpcError) throw rpcError;
+    // REMOVE increment_user_points RPC call, now handled by trigger
+    // const { data: newBalance, error: rpcError } = await supabase
+    //   .rpc('increment_user_points', { uid: user.id, pts: points, ref_completion: completion.id });
+    // if (rpcError) throw rpcError;
 
     // Log postback for audit
     await supabase
@@ -170,7 +169,6 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       status: 'ok',
-      new_balance: newBalance?.[0]?.new_balance,
       completion_id: completion.id
     });
   } catch (err) {
