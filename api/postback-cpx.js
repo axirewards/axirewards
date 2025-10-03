@@ -163,19 +163,9 @@ export default async function handler(req, res) {
       if (rpcError) throw rpcError;
       return res.status(200).json({ status: 'reversed', completion_id: completion.id });
     } else {
-      const { data: newBalance, error: rpcError } = await supabase.rpc(
-        'increment_user_points',
-        { uid: user.id, pts: amountLocal, ref_completion: completion.id }
-      );
-      if (rpcError) throw rpcError;
-      // newBalance is array with user's new points balance
-      const creditedBalance =
-        Array.isArray(newBalance) && newBalance.length > 0
-          ? newBalance[0]?.new_balance ?? newBalance[0]?.cur_balance ?? null
-          : null;
+      // Remove increment_user_points RPC call, points credited via trigger
       return res.status(200).json({
         status: 'credited',
-        new_balance: creditedBalance,
         completion_id: completion.id,
       });
     }
