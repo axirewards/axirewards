@@ -9,20 +9,16 @@ const BITLABS_SECRET = process.env.BITLABS_SECRET;
 
 export default async function handler(req, res) {
   let payload = {};
-  console.log('--- BitLabs Postback Handler ---');
-  console.log('HTTP Method:', req.method);
-  try {
-    if (req.method === 'POST') {
+  if (req.method === 'POST') {
+    try {
       payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    } else if (req.method === 'GET') {
-      payload = req.query;
-    } else {
-      console.log('Method Not Allowed:', req.method);
-      return res.status(405).send('Method Not Allowed');
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid payload format' });
     }
-  } catch (e) {
-    console.log('Payload parse error:', e, req.body);
-    return res.status(400).json({ error: 'Invalid payload format' });
+  } else if (req.method === 'GET') {
+    payload = req.query;
+  } else {
+    return res.status(405).send('Method Not Allowed');
   }
 
   // BitLabs mapping (MUST match exactly as BitLabs docs: uid, tx, val, raw, hash)
@@ -32,27 +28,20 @@ export default async function handler(req, res) {
   const raw = payload.raw;
   const hash = payload.hash;
 
-  console.log('Payload params:', { uid, tx, val, raw, hash });
-  console.log('Full payload:', payload);
-
   // SHA1 hash generation: SHA1(uid + tx + val + raw + secret)
   const sigData = `${uid}${tx}${val}${raw}${BITLABS_SECRET}`;
   const expectedHash = crypto.createHash('sha1').update(sigData).digest('hex');
 
-  console.log('Signature debug:', { sigData, expectedHash, hashFromPayload: hash, BITLABS_SECRET });
-
   if (BITLABS_SECRET) {
     if (hash !== expectedHash) {
-      console.log('Invalid hash! Comparison:', { payload, sigData, expectedHash, hashFromPayload: hash });
-      return res.status(403).json({ error: 'Invalid BitLabs hash', debug: { payload, sigData, expectedHash } });
+      return res.status(403).json({ error: 'Invalid BitLabs hash' });
     }
   }
 
   // Validate required params
   const points = val !== undefined && val !== null ? parseFloat(val) : null;
   if (!uid || !tx || points === null || isNaN(points) || points <= 0) {
-    console.log('Invalid params:', { uid, tx, val, points });
-    return res.status(400).json({ error: 'Missing or invalid BitLabs parameters', payload });
+    return res.status(400).json({ error: 'Missing or invalid BitLabs parameters' });
   }
 
   // Check for status param for reversal
@@ -70,7 +59,6 @@ export default async function handler(req, res) {
       .single();
 
     if (existing) {
-      console.log('Already processed transaction:', tx);
       return res.status(200).json({ status: 'already_processed', completion_id: existing.id });
     }
 
@@ -78,7 +66,6 @@ export default async function handler(req, res) {
     const { data: user } = await supabase
       .from('users').select('*').eq('id', uid).single();
     if (!user) {
-      console.log('User not found:', uid);
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -86,7 +73,6 @@ export default async function handler(req, res) {
     const { data: partner } = await supabase
       .from('partners').select('*').eq('code', 'bitlabs').single();
     if (!partner) {
-      console.log('BitLabs partner not found');
       return res.status(404).json({ error: 'Partner not found' });
     }
 
@@ -107,7 +93,6 @@ export default async function handler(req, res) {
       .single();
 
     if (completionError) {
-      console.log('Completion insert error:', completionError);
       throw completionError;
     }
 
@@ -116,7 +101,7 @@ export default async function handler(req, res) {
       await supabase
         .rpc('debit_user_points_for_payout', { uid: user.id, pts: points, ref_payout: completion.id });
     }
-    // NOTE: Points increment is handled by a Supabase trigger automatically when a row is inserted into completions. DO NOT call increment RPC here.
+    // NOTE: Points increment is handled by a Supabase trigger automatically when a row is inserted into completions.
 
     // Log postback
     await supabase
@@ -128,10 +113,8 @@ export default async function handler(req, res) {
         received_at: new Date().toISOString()
       });
 
-    console.log('Postback processed OK:', tx);
     return res.status(200).json({ status: completion.status, completion_id: completion.id });
   } catch (err) {
-    console.log('Server error:', err);
     return res.status(500).json({ error: 'Internal server error', details: err.message });
   }
 }
