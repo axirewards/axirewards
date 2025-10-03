@@ -201,12 +201,19 @@ export default function AchievementWallMobile({ userId }) {
 
       {/* Achievement Modal */}
       {modal && (
-        <div className="fixed inset-0 z-[1500] bg-black/70 flex items-center justify-center backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-[1500] flex items-center justify-center backdrop-blur-sm achievement-modal-overlay"
+          style={{
+            background: "rgba(18,24,38,0.75)",
+            borderRadius: "1.1rem", // Mini apvalūs kampai visam overlay
+            overflow: "hidden",
+          }}
+        >
           <div className="achievement-modal-pop relative flex flex-col items-center justify-center bg-gradient-to-br from-[#181e38] via-[#232e40] to-[#60A5FA22] rounded-xl border-2 border-accent shadow-xl px-4 py-4 max-w-[92vw] min-w-[82vw] animate-pop-modal"
             style={{
               boxShadow: "0 3px 22px #60A5FA33, 0 2px 10px #FFD70022",
               position: "relative",
-              animation: "popModal 0.31s cubic-bezier(.23,1,.32,1)", // Pop effect on open
+              animation: "popModal 0.31s cubic-bezier(.23,1,.32,1)",
             }}
           >
             <button
@@ -300,6 +307,10 @@ export default function AchievementWallMobile({ userId }) {
           0% { transform: scale(0.89);}
           60% { transform: scale(1.08);}
           100% { transform: scale(1);}
+        }
+        .achievement-modal-overlay {
+          border-radius: 1.1rem;
+          /* matches modal itself, rounded overlay corners */
         }
         .animate-fade-in {
           animation: fadeInModal 0.19s cubic-bezier(.23,1,.32,1);
