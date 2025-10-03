@@ -148,7 +148,6 @@ export default function DashboardMob({ setGlobalLoading }) {
   function handleOpenOfferwall(key) { setActiveOfferwall(key); }
   function getOfferwallParams(key) { return filteredOfferwalls.find(w => w.key === key); }
 
-  // -- MOBILE APPSHELL --
   return (
     <Layout>
       <main
@@ -159,7 +158,7 @@ export default function DashboardMob({ setGlobalLoading }) {
           width: '100vw',
           minHeight: '100dvh',
           boxSizing: 'border-box',
-          background: 'none', // Use project global bg (as per globals.css)
+          background: 'none',
           overflowX: 'hidden'
         }}
       >
@@ -222,14 +221,12 @@ export default function DashboardMob({ setGlobalLoading }) {
           )}
         </div>
 
-        {/* User Stats / VIP */}
         {user && (
           <div className="w-full px-2" style={{ marginTop: '3vw', maxWidth: '100vw' }}>
             <UserStatsVipMobile />
           </div>
         )}
 
-        {/* Offerwalls */}
         <section className="w-full flex flex-col items-center mt-6 mb-3 px-2" style={{ maxWidth: '100vw' }}>
           <h2 className="mb-3 text-xl font-bold text-white text-center tracking-tight"
             style={{
@@ -243,14 +240,12 @@ export default function DashboardMob({ setGlobalLoading }) {
           <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
         </section>
 
-        {/* Achievement Wall */}
         <section className="w-full flex flex-col items-center justify-center" style={{ maxWidth: '100vw', marginTop: '5vw', marginBottom: '3vw' }}>
           {user && (
             <AchievementWall userId={user.id} />
           )}
         </section>
 
-        {/* Offerwall Modal */}
         {activeOfferwall && (
           <div className="fixed inset-0 z-[1001] bg-black/85 flex items-center justify-center backdrop-blur-sm">
             <div
@@ -294,7 +289,6 @@ export default function DashboardMob({ setGlobalLoading }) {
           </div>
         )}
 
-        {/* Error display */}
         {error && (
           <div className="w-full flex items-center justify-center mt-4">
             <span className="text-red-500 font-bold text-center text-sm" style={{ maxWidth: '90vw' }}>{error}</span>
