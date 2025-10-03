@@ -36,7 +36,15 @@ export default async function handler(req, res) {
   const ip = payload.ip_click || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
   const country = payload.country || 'ALL';
 
-  // Validate required CPX params
+  // Extract offer title/description from CPX payload or set fallback
+  const offerTitle = (payload.title && typeof payload.title === "string" && payload.title.trim().length > 0)
+    ? payload.title.trim()
+    : "CPX Offer";
+  const offerDescription = (payload.description && typeof payload.description === "string" && payload.description.trim().length > 0)
+    ? payload.description.trim()
+    : "You completed an offer.";
+
+  // Validate required CPX params (be very strict)
   if (
     !userIdRaw ||
     !transactionId ||
@@ -48,7 +56,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required CPX parameters', payload });
   }
 
-  // Insert into postback_logs
+  // Insert into postback_logs (always try, log errors only)
   try {
     await supabase.from('postback_logs').insert([
       {
@@ -66,7 +74,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Rate limiting
+    // Rate limiting (strict, per user, max 5 per minute)
     const { count: rateCount, error: rateError } = await supabase
       .from('completions')
       .select('id', { count: 'exact', head: true })
@@ -77,14 +85,20 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: 'Rate limit exceeded: max 5 per minute per user.' });
     }
 
-    // Idempotency check
+    // Idempotency: check by partner_callback_id (transactionId)
     const { data: existing, error: checkError } = await supabase
       .from('completions')
       .select('*')
       .eq('partner_callback_id', transactionId)
       .single();
 
+    if (checkError) {
+      console.error('Idempotency check error:', checkError);
+      return res.status(500).json({ error: 'Internal server error', details: checkError.message });
+    }
+
     if (existing && status === '2') {
+      // Reverse completion if status is '2'
       await supabase.from('completions').update({ status: 'reversed' }).eq('id', existing.id);
       const { error: rpcError } = await supabase.rpc('debit_user_points_for_payout', {
         uid: existing.user_id,
@@ -96,18 +110,21 @@ export default async function handler(req, res) {
     }
 
     if (existing) {
+      // Already processed
       return res.status(200).json({ status: 'already_processed', completion_id: existing.id });
     }
 
     // Fetch user
-    const { data: user, error: userError } = await supabase.from('users').select('*').eq('id', userIdRaw).single();
+    const { data: user, error: userError } = await supabase
+      .from('users').select('*').eq('id', userIdRaw).single();
     if (userError || !user) return res.status(404).json({ error: 'User not found' });
 
     // Fetch partner (cpx)
-    const { data: partner, error: partnerError } = await supabase.from('partners').select('*').eq('code', 'cpx').single();
+    const { data: partner, error: partnerError } = await supabase
+      .from('partners').select('*').eq('code', 'cpx').single();
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' });
 
-    // Try to find completion by offer_id_partner and user_id
+    // Try to find completion by offer_id_partner and user_id (extra safety)
     const { data: existingCompletion, error: completionFindError } = await supabase
       .from('completions')
       .select('*')
@@ -115,18 +132,23 @@ export default async function handler(req, res) {
       .eq('offer_id_partner', offerIdPartner)
       .single();
 
+    if (completionFindError && completionFindError.message !== 'Multiple rows returned for a single row query.') {
+      console.error('Completion find error:', completionFindError);
+      return res.status(500).json({ error: 'Internal server error', details: completionFindError.message });
+    }
+
     if (existingCompletion) {
-      // If found, treat as already processed
+      // Already processed (by offer_id_partner + user_id)
       return res.status(200).json({ status: 'already_processed', completion_id: existingCompletion.id });
     }
 
-    // Insert credited completion with user_email, offer_id_partner
+    // Insert credited completion (always fill title/description from CPX or fallback)
     const { data: completion, error: completionError } = await supabase
       .from('completions')
       .insert({
         user_id: user.id,
-        user_email: user.email, // New field for tracking by email
-        offer_id_partner: offerIdPartner, // partner offer id (from CPX)
+        user_email: user.email,
+        offer_id_partner: offerIdPartner,
         partner_id: partner.id,
         partner_callback_id: transactionId,
         credited_points: amountLocal,
@@ -134,13 +156,15 @@ export default async function handler(req, res) {
         ip: ip,
         device_info: {},
         country: country,
+        title: offerTitle,
+        description: offerDescription,
       })
       .select()
       .single();
 
     if (completionError) throw completionError;
 
-    // Credit or deduct points
+    // Credit or deduct points (levelpoints ir total_balance logika palikta kaip buvo)
     if (status === '2') {
       const { error: rpcError } = await supabase.rpc('debit_user_points_for_payout', {
         uid: user.id,
@@ -155,9 +179,10 @@ export default async function handler(req, res) {
         { uid: user.id, pts: amountLocal, ref_completion: completion.id }
       );
       if (rpcError) throw rpcError;
+      // newBalance is array with user's new points balance
       const creditedBalance =
         Array.isArray(newBalance) && newBalance.length > 0
-          ? newBalance[0]?.new_balance
+          ? newBalance[0]?.new_balance ?? newBalance[0]
           : null;
       return res.status(200).json({
         status: 'credited',
