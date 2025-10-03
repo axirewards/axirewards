@@ -35,6 +35,9 @@ export default async function handler(req, res) {
   const status = String(payload.status);
   const ip = payload.ip_click || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
   const country = payload.country || 'ALL';
+  // New: Extract title/description from payload or fallback
+  const offerTitle = (payload.title && typeof payload.title === 'string' && payload.title.trim()) ? payload.title.trim() : 'CPX OFFER';
+  const offerDesc = (payload.description && typeof payload.description === 'string' && payload.description.trim()) ? payload.description.trim() : 'You completed an offer';
 
   // Validate required CPX params
   if (
@@ -120,7 +123,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'already_processed', completion_id: existingCompletion.id });
     }
 
-    // Insert credited completion with user_email, offer_id_partner
+    // Insert credited completion with user_email, offer_id_partner, title, description
     const { data: completion, error: completionError } = await supabase
       .from('completions')
       .insert({
@@ -134,6 +137,8 @@ export default async function handler(req, res) {
         ip: ip,
         device_info: {},
         country: country,
+        title: offerTitle,           // <-- CPX info or fallback
+        description: offerDesc,      // <-- CPX info or fallback
       })
       .select()
       .single();
