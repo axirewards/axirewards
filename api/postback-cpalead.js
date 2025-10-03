@@ -4,14 +4,13 @@
  * - Maps CPAlead macros to parameters:
  *   subid           → userId,
  *   virtual_currency → points,
- *   payout          → USD amount,
- *   campaign_id     → offer_id_partner,
- *   campaign_name   → partner_callback_id (to avoid duplicate constraint issues),
+ *   campaign_id     → offer_id_partner (and partner_callback_id, both identical),
  *   country_iso     → country.
  * - Always logs full raw payload for auditing.
  * - Title always "CPA Lead", description always "You completed an offer."
  * - Compatible with AXI Rewards schema.
- * - Idempotency: checks completions by offer_id_partner only (allows new unique offers per user, blocks only exact same offer_id_partner for user).
+ * - Idempotency: checks completions by offer_id_partner ONLY (allows new unique offers per user, even if campaign_id repeats for different users).
+ * - completions.partner_callback_id = completions.offer_id_partner (always identical).
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -40,10 +39,9 @@ export default async function handler(req, res) {
 
   // CPAlead macros → parameters
   const userIdRaw = parseInt(payload.subid)
-  // Use campaign_name as partner_callback_id to avoid DB constraint errors (never use subid/user id!)
-  const transactionId = (payload.campaign_name || '').toString()
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
-  const payoutUsd = Number(payload.payout) || 0
+  // partner_callback_id = offer_id_partner (identical)
+  const transactionId = offerIdPartner
   const amountLocal = Math.floor(Number(payload.virtual_currency) || 0)
   const ip = payload.ip_address || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || ''
   const country = payload.country_iso || payload.country || payload.geo || 'ALL'
@@ -52,7 +50,7 @@ export default async function handler(req, res) {
   const offerDescription = "You completed an offer."
 
   // Validate required params
-  if (!userIdRaw || !transactionId || !offerIdPartner || isNaN(amountLocal)) {
+  if (!userIdRaw || !offerIdPartner || isNaN(amountLocal)) {
     return res.status(400).json({ error: 'Missing required CPAlead parameters', payload })
   }
 
@@ -72,11 +70,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Idempotency: block only if same user_id and same offer_id_partner exists
+    // Idempotency: block only if completions with same offer_id_partner exists
     const { data: existingCompletions, error: checkError } = await supabase
       .from('completions')
       .select('id')
-      .eq('user_id', userIdRaw)
       .eq('offer_id_partner', offerIdPartner)
 
     if (checkError) {
@@ -107,7 +104,7 @@ export default async function handler(req, res) {
         user_email: user.email,
         offer_id_partner: offerIdPartner,
         partner_id: partner.id,
-        partner_callback_id: transactionId,
+        partner_callback_id: transactionId, // identiškai pasiimamas iš offer_id_partner
         credited_points: amountLocal,
         status: status,
         ip: ip,
