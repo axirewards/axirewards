@@ -10,7 +10,6 @@ import { v4 as uuidv4 } from "uuid";
 import UserStatsVip from "../UserStatsVip";
 import OfferwallCarousel from "../OfferwallCarousel";
 import AchievementWall from "../AchievementWall";
-import FloatingActionButton from "../FloatingActionButton";
 
 const OFFERWALLS = [
   {
