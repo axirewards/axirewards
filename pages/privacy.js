@@ -1,7 +1,22 @@
 import { useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { supabase } from '../lib/supabaseClient'
 import Layout from '../components/Layout'
 
 export default function Privacy({ setGlobalLoading }) {
+  const router = useRouter()
+
+  useEffect(() => {
+    // Redirect if not authenticated
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/index')
+      }
+    }
+    checkAuth()
+  }, [router])
+
   // Enable global loading spinner on mount for UX consistency
   useEffect(() => {
     if (typeof setGlobalLoading === "function") setGlobalLoading(true)
