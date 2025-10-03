@@ -8,7 +8,7 @@ import TheoremOfferwall from "../TheoremOfferwall";
 import CpaLeadOfferwall from "../CpaLeadOfferwall";
 import { supabase } from "../../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
-import UserStatsVipMobile from "../UserStatsVipMobile";
+import UserStatsVipMobile from "../UserStatsVipMobile"; // <-- pakeista!
 import OfferwallCarousel from "../OfferwallCarousel";
 import AchievementWall from "../AchievementWall";
 
@@ -148,6 +148,7 @@ export default function DashboardMob({ setGlobalLoading }) {
   function handleOpenOfferwall(key) { setActiveOfferwall(key); }
   function getOfferwallParams(key) { return filteredOfferwalls.find(w => w.key === key); }
 
+  // -- MOBILE APPSHELL --
   return (
     <Layout>
       <main
@@ -158,75 +159,48 @@ export default function DashboardMob({ setGlobalLoading }) {
           width: '100vw',
           minHeight: '100dvh',
           boxSizing: 'border-box',
-          background: 'none',
+          background: 'none', // Use project global bg (as per globals.css)
           overflowX: 'hidden'
         }}
       >
-        {/* Headline - Ultra Upgraded */}
+        {/* Headline */}
         <div className="w-full flex items-center justify-center mt-5 mb-2 px-2">
           {user && (
-            <div className="flex flex-col items-center w-full">
-              <span
-                className="font-extrabold text-[2.1em] md:text-3xl text-center py-2 px-6 rounded-2xl"
-                style={{
-                  color: "#fff",
-                  letterSpacing: "0.06em",
-                  textShadow: "0 2px 12px #232e40cc",
-                  background: "none",
-                  marginBottom: "2px",
-                  maxWidth: "98vw",
-                  lineHeight: "1.17"
-                }}
-              >
-                Welcome,
-              </span>
-              <span
-                className="block font-extrabold text-xl md:text-2xl text-center px-4 py-2 rounded-full gradient-animate"
-                style={{
-                  background: "linear-gradient(90deg, #7b6cfb 0%, #60A5FA 50%, #FFD700 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  color: "transparent",
-                  letterSpacing: "0.10em",
-                  boxShadow: "0 2px 12px #7b6cfb33",
-                  marginBottom: "2px",
-                  transition: "background 1.2s",
-                  animation: "gradientShift 4s ease-in-out infinite alternate"
-                }}
-              >
-                {user.email}
-              </span>
-              <span
-                className="text-[1em] text-gray-300 font-medium mt-1 mb-2 text-center px-2"
-                style={{
-                  textShadow: "0 1px 8px #60A5fa44",
-                  letterSpacing: "0.04em",
-                  maxWidth: "93vw"
-                }}
-              >
-                Your AXI rewards journey starts here. Unlock achievements, earn points, and level up every day!
-              </span>
-              <style jsx>{`
-                @keyframes gradientShift {
-                  0% {background-position: 0%;}
-                  100% {background-position: 100%;}
-                }
-                .gradient-animate {
-                  background-size: 200% 200%;
-                  animation: gradientShift 4s ease-in-out infinite alternate;
-                }
-              `}</style>
-            </div>
+            <span
+              className="font-bold text-2xl text-white drop-shadow text-center py-3 px-6 rounded-xl"
+              style={{
+                background: "linear-gradient(90deg, #60A5FA 0%, #7b6cfb 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                color: "transparent",
+                letterSpacing: "0.055em",
+                boxShadow: "0 2px 14px #60A5fa22",
+                maxWidth: "98vw",
+                overflowWrap: "break-word"
+              }}
+            >
+              Welcome, <span style={{
+                color: "#FFD700",
+                background: "none",
+                WebkitBackgroundClip: "unset",
+                WebkitTextFillColor: "unset",
+                fontWeight: 800,
+                letterSpacing: "0.07em",
+                textShadow: "0 1px 7px #FFD70066",
+              }}>{user.email}</span>!
+            </span>
           )}
         </div>
 
+        {/* User Stats / VIP */}
         {user && (
           <div className="w-full px-2" style={{ marginTop: '3vw', maxWidth: '100vw' }}>
-            <UserStatsVipMobile />
+            <UserStatsVipMobile /> {/* <-- pakeista! */}
           </div>
         )}
 
+        {/* Offerwalls */}
         <section className="w-full flex flex-col items-center mt-6 mb-3 px-2" style={{ maxWidth: '100vw' }}>
           <h2 className="mb-3 text-xl font-bold text-white text-center tracking-tight"
             style={{
@@ -240,12 +214,14 @@ export default function DashboardMob({ setGlobalLoading }) {
           <OfferwallCarousel offerwalls={filteredOfferwalls} onOpen={handleOpenOfferwall} />
         </section>
 
+        {/* Achievement Wall */}
         <section className="w-full flex flex-col items-center justify-center" style={{ maxWidth: '100vw', marginTop: '5vw', marginBottom: '3vw' }}>
           {user && (
             <AchievementWall userId={user.id} />
           )}
         </section>
 
+        {/* Offerwall Modal */}
         {activeOfferwall && (
           <div className="fixed inset-0 z-[1001] bg-black/85 flex items-center justify-center backdrop-blur-sm">
             <div
@@ -289,6 +265,7 @@ export default function DashboardMob({ setGlobalLoading }) {
           </div>
         )}
 
+        {/* Error display */}
         {error && (
           <div className="w-full flex items-center justify-center mt-4">
             <span className="text-red-500 font-bold text-center text-sm" style={{ maxWidth: '90vw' }}>{error}</span>
