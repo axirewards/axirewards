@@ -8,6 +8,7 @@ export default function PayoutPc({ setGlobalLoading, router }) {
   const [wallet, setWallet] = useState('')
   const [pointsToRedeem, setPointsToRedeem] = useState('')
   const [payouts, setPayouts] = useState([])
+  const [completions, setCompletions] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [walletMsg, setWalletMsg] = useState('')
@@ -26,7 +27,6 @@ export default function PayoutPc({ setGlobalLoading, router }) {
         .select('*')
         .eq('email', currentUser.email)
         .single()
-
       if (userError) {
         console.error(userError)
         setLoading(false)
@@ -48,9 +48,18 @@ export default function PayoutPc({ setGlobalLoading, router }) {
         .eq('user_id', userData.id)
         .order('requested_at', { ascending: false })
         .limit(10)
-
       if (payoutError) console.error(payoutError)
       else setPayouts(payoutData)
+
+      // Fetch completions for pending paypoints (for countdown)
+      const { data: completionsData, error: completionsError } = await supabase
+        .from('completions')
+        .select('*')
+        .eq('user_id', userData.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (completionsError) console.error(completionsError)
+      else setCompletions(completionsData || [])
 
       setLoading(false)
       if (typeof setGlobalLoading === "function") setGlobalLoading(false)
@@ -115,6 +124,11 @@ export default function PayoutPc({ setGlobalLoading, router }) {
   const pointsInputNum = parseFloat(pointsToRedeem) || 0
   const { usd: inputUsd, eur: inputEur } = pointsToCurrency(pointsInputNum)
   const { usd: balanceUsd, eur: balanceEur } = pointsToCurrency(user?.points_balance || 0)
+  const { usd: readyUsd, eur: readyEur } = pointsToCurrency(user?.paypoints || 0)
+
+  // Pending completions for countdown
+  const pendingCompletions = completions.filter(c => !c.released && c.release_date)
+  const now = new Date()
 
   if (loading)
     return (
@@ -127,18 +141,15 @@ export default function PayoutPc({ setGlobalLoading, router }) {
 
   return (
     <Layout>
-      {/* More premium ZOOM OUT effect for PC */}
+      {/* Premium zoom-out and lifted content for PC */}
       <div className="min-h-[80vh] flex flex-col justify-between" style={{ zoom: 0.88 }}>
         <div className="max-w-5xl mx-auto w-full px-8 py-12 space-y-12 relative">
           <h1 className="text-5xl font-extrabold text-white text-center mb-10 drop-shadow">Payout</h1>
-          <div className="bg-card shadow-2xl rounded-3xl p-10 space-y-10 relative">
-            {/* Minimum withdrawal badge - INSIDE CONTAINER */}
-            <div className="absolute top-5 right-6 z-10">
-              <span className="bg-white px-4 py-2 rounded-xl shadow text-sm font-bold text-red-600 border border-red-300 select-none">
-                Minimum withdrawal amount = 10000 points
-              </span>
-            </div>
-            <div>
+
+          {/* Points Info Card: Two columns */}
+          <div className="bg-card shadow-2xl rounded-3xl p-10 flex flex-row items-center justify-between gap-12 mb-10">
+            {/* Left: Your Points Balance */}
+            <div className="flex flex-col items-start flex-1">
               <p className="text-2xl font-semibold text-accent mb-3">Your Points Balance</p>
               <div className="flex items-baseline gap-5">
                 <span className="text-5xl font-extrabold text-white">{user.points_balance || 0}</span>
@@ -148,55 +159,103 @@ export default function PayoutPc({ setGlobalLoading, router }) {
                 ≈ <span className="font-bold">{balanceUsd} USD</span> / <span className="font-bold">{balanceEur} EUR</span>
               </div>
             </div>
-            <div className="flex flex-col gap-5">
-              <div>
-                <label className="text-lg font-semibold text-white mb-2 block">Your Wallet (POLYGON network payouts)</label>
-                <input
-                  type="text"
-                  value={wallet}
-                  readOnly
-                  disabled
-                  className="w-full border border-gray-700 rounded-xl p-3 bg-black text-white opacity-80 cursor-not-allowed text-lg"
-                  placeholder="Save your Polygon wallet in Profile"
-                />
-                {walletMsg && (
-                  <span className="text-red-500 text-sm mt-2 block">{walletMsg}</span>
-                )}
+            {/* Right: Points Ready for Payout */}
+            <div className="flex flex-col items-end flex-1">
+              <p className="text-2xl font-semibold text-green-400 mb-3">Points Ready for Payout</p>
+              <div className="flex items-baseline gap-5">
+                <span className="text-5xl font-extrabold text-green-400">{user.paypoints || 0}</span>
+                <span className="text-lg text-gray-300">points</span>
               </div>
-              <div>
-                <label className="text-lg font-semibold text-white mb-2 block">Points to Redeem</label>
-                <input
-                  type="number"
-                  min={10000}
-                  max={user.points_balance || 0}
-                  placeholder="Enter points amount"
-                  className="w-full border border-gray-700 rounded-xl p-3 bg-black text-white text-lg"
-                  value={pointsToRedeem}
-                  onChange={(e) => setPointsToRedeem(e.target.value)}
-                  disabled={!wallet}
-                  autoComplete="off"
-                />
-                {pointsError && (
-                  <span className="text-red-500 text-sm mt-2 block">{pointsError}</span>
-                )}
-                <div className="mt-3 text-md text-accent">
-                  {pointsInputNum > 0 && (
-                    <>
-                      ≈ <span className="font-bold">{inputUsd} USD</span> / <span className="font-bold">{inputEur} EUR</span>
-                    </>
-                  )}
-                </div>
+              <div className="mt-2 text-lg text-green-300">
+                ≈ <span className="font-bold">{readyUsd} USD</span> / <span className="font-bold">{readyEur} EUR</span>
               </div>
-              <button
-                className={`bg-accent text-white px-8 py-3 rounded-xl font-bold shadow-lg transition hover:bg-blue-700 disabled:opacity-50 mt-2 text-lg`}
-                onClick={handleRequestPayout}
-                disabled={submitting || !wallet || !user?.points_balance || !pointsToRedeem}
-              >
-                {submitting ? 'Sending...' : 'Request Payout'}
-              </button>
             </div>
           </div>
 
+          {/* Wallet and Redeem */}
+          <div className="bg-card shadow-2xl rounded-3xl p-10 space-y-10 relative">
+            <div className="absolute top-5 right-6 z-10">
+              <span className="bg-white px-4 py-2 rounded-xl shadow text-sm font-bold text-red-600 border border-red-300 select-none">
+                Minimum withdrawal amount = 10000 points
+              </span>
+            </div>
+            <div>
+              <label className="text-lg font-semibold text-white mb-2 block">Your Wallet (POLYGON network payouts)</label>
+              <input
+                type="text"
+                value={wallet}
+                readOnly
+                disabled
+                className="w-full border border-gray-700 rounded-xl p-3 bg-black text-white opacity-80 cursor-not-allowed text-lg"
+                placeholder="Save your Polygon wallet in Profile"
+              />
+              {walletMsg && (
+                <span className="text-red-500 text-sm mt-2 block">{walletMsg}</span>
+              )}
+            </div>
+            <div>
+              <label className="text-lg font-semibold text-white mb-2 block">Points to Redeem</label>
+              <input
+                type="number"
+                min={10000}
+                max={user.points_balance || 0}
+                placeholder="Enter points amount"
+                className="w-full border border-gray-700 rounded-xl p-3 bg-black text-white text-lg"
+                value={pointsToRedeem}
+                onChange={(e) => setPointsToRedeem(e.target.value)}
+                disabled={!wallet}
+                autoComplete="off"
+              />
+              {pointsError && (
+                <span className="text-red-500 text-sm mt-2 block">{pointsError}</span>
+              )}
+              <div className="mt-3 text-md text-accent">
+                {pointsInputNum > 0 && (
+                  <>
+                    ≈ <span className="font-bold">{inputUsd} USD</span> / <span className="font-bold">{inputEur} EUR</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <button
+              className={`bg-accent text-white px-8 py-3 rounded-xl font-bold shadow-lg transition hover:bg-blue-700 disabled:opacity-50 mt-2 text-lg`}
+              onClick={handleRequestPayout}
+              disabled={submitting || !wallet || !user?.points_balance || !pointsToRedeem}
+            >
+              {submitting ? 'Sending...' : 'Request Payout'}
+            </button>
+          </div>
+
+          {/* Countdown for Pending Completions */}
+          <div className="bg-card shadow-2xl rounded-3xl p-8 mb-2">
+            <h2 className="text-2xl font-bold mb-5 text-accent">Points Releasing Soon</h2>
+            {pendingCompletions.length === 0 ? (
+              <p className="text-gray-400">No pending points are awaiting release.</p>
+            ) : (
+              <ul className="space-y-3">
+                {pendingCompletions.map((c) => {
+                  const daysLeft = Math.max(0, Math.ceil((new Date(c.release_date) - now) / (1000 * 60 * 60 * 24)))
+                  return (
+                    <li key={c.id} className="border-b border-gray-900 py-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-semibold text-lg">{c.credited_points} points</p>
+                        <p className="text-gray-400 text-md">
+                          Release date: <span className="font-bold text-accent">{new Date(c.release_date).toLocaleDateString()}</span>
+                        </p>
+                      </div>
+                      <div>
+                        <span className="bg-accent text-white px-4 py-1 rounded-lg font-bold text-md">
+                          {daysLeft} days left
+                        </span>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Recent Payout Requests */}
           <div className="bg-card shadow-2xl rounded-3xl p-10">
             <h2 className="text-2xl font-bold mb-6 text-white">Recent Payout Requests</h2>
             {payouts.length === 0 ? (
