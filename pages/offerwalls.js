@@ -17,7 +17,7 @@ const OFFERWALL_PROVIDERS = [
   },
   {
     key: "cpalead",
-    name: "CPAlead",
+    name: "CPA Lead",
     logo: "/icons/cpalead.png",
     color: "#5AF599",
     iframeUrl: "https://www.mobtrk.link/list/Zkc2uVm",
