@@ -127,22 +127,20 @@ export default function PayoutPc({ setGlobalLoading, router }) {
 
   return (
     <Layout>
-      {/* Desktop payout shell */}
-      <div className="min-h-[90vh] flex flex-col items-center justify-center w-full bg-card" style={{}}>
-        <div className="max-w-4xl w-full px-10 py-14 space-y-16 relative scale-payout-pc">
-          <h1 className="text-5xl font-extrabold text-white text-center mb-12 drop-shadow-lg tracking-tight">
-            Payout
-          </h1>
-          <div className="bg-card shadow-2xl rounded-2xl p-10 space-y-10 relative border border-blue-900/70">
+      {/* ZOOM OUT effect for PC */}
+      <div className="min-h-[80vh] flex flex-col justify-between" style={{ zoom: 0.93 }}>
+        <div className="max-w-5xl mx-auto w-full px-8 py-12 space-y-12 relative">
+          <h1 className="text-5xl font-extrabold text-white text-center mb-10 drop-shadow">Payout</h1>
+          <div className="bg-card shadow-2xl rounded-3xl p-10 space-y-10 relative">
             {/* Minimum withdrawal badge - INSIDE CONTAINER */}
-            <div className="absolute top-6 right-8 z-10">
-              <span className="bg-white px-5 py-2 rounded-xl shadow text-base font-bold text-red-600 border border-red-300 select-none">
+            <div className="absolute top-5 right-6 z-10">
+              <span className="bg-white px-4 py-2 rounded-xl shadow text-sm font-bold text-red-600 border border-red-300 select-none">
                 Minimum withdrawal amount = 10000 points
               </span>
             </div>
             <div>
-              <p className="text-2xl font-semibold text-accent mb-4">Your Points Balance</p>
-              <div className="flex items-baseline gap-4">
+              <p className="text-2xl font-semibold text-accent mb-3">Your Points Balance</p>
+              <div className="flex items-baseline gap-5">
                 <span className="text-5xl font-extrabold text-white">{user.points_balance || 0}</span>
                 <span className="text-lg text-gray-300">points</span>
               </div>
@@ -150,7 +148,7 @@ export default function PayoutPc({ setGlobalLoading, router }) {
                 ≈ <span className="font-bold">{balanceUsd} USD</span> / <span className="font-bold">{balanceEur} EUR</span>
               </div>
             </div>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5">
               <div>
                 <label className="text-lg font-semibold text-white mb-2 block">Your Wallet (POLYGON network payouts)</label>
                 <input
@@ -190,7 +188,7 @@ export default function PayoutPc({ setGlobalLoading, router }) {
                 </div>
               </div>
               <button
-                className={`bg-accent text-white px-10 py-3 rounded-xl font-bold shadow-lg transition hover:bg-blue-700 disabled:opacity-50 mt-2 text-lg`}
+                className={`bg-accent text-white px-8 py-3 rounded-xl font-bold shadow-lg transition hover:bg-blue-700 disabled:opacity-50 mt-2 text-lg`}
                 onClick={handleRequestPayout}
                 disabled={submitting || !wallet || !user?.points_balance || !pointsToRedeem}
               >
@@ -199,28 +197,26 @@ export default function PayoutPc({ setGlobalLoading, router }) {
             </div>
           </div>
 
-          <div className="bg-card shadow-xl rounded-2xl p-10 border border-blue-900/70">
+          <div className="bg-card shadow-2xl rounded-3xl p-10">
             <h2 className="text-2xl font-bold mb-6 text-white">Recent Payout Requests</h2>
             {payouts.length === 0 ? (
               <p className="text-gray-400">No records found.</p>
             ) : (
-              <ul className="space-y-4">
+              <ul className="space-y-3">
                 {payouts.map((p) => {
                   const { usd, eur } = pointsToCurrency(p.points_amount)
                   return (
-                    <li key={p.id} className="border-b border-gray-900 py-4">
-                      <p className="text-white font-semibold text-lg flex flex-row items-center">
-                        <span>{p.points_amount} points</span>
-                        <span className="text-sm text-accent ml-4">
+                    <li key={p.id} className="border-b border-gray-900 py-3">
+                      <p className="text-white font-semibold text-lg">
+                        {p.points_amount} points
+                        <span className="text-sm text-accent ml-3">
                           (≈ {usd} USD / {eur} EUR)
                         </span>
-                        <span className="text-sm text-white/70 ml-4">| Crypto: {p.crypto_currency}</span>
+                        {" | Crypto: "}{p.crypto_currency}
                       </p>
-                      <div className="flex gap-6 mt-2 flex-wrap">
-                        <span className="text-accent text-md">Status: <span className="capitalize">{p.status}</span></span>
-                        <span className="text-gray-300 text-md">Wallet: {p.wallet_address}</span>
-                        <span className="text-xs text-gray-500">{new Date(p.requested_at).toLocaleString()}</span>
-                      </div>
+                      <p className="text-accent text-md">Status: <span className="capitalize">{p.status}</span></p>
+                      <p className="text-gray-300 text-md">Wallet: {p.wallet_address}</p>
+                      <p className="text-xs text-gray-500">{new Date(p.requested_at).toLocaleString()}</p>
                     </li>
                   )
                 })}
@@ -231,22 +227,6 @@ export default function PayoutPc({ setGlobalLoading, router }) {
       </div>
       <style jsx>{`
         .bg-card { background-color: #0B0B0B; }
-        .scale-payout-pc {
-          transform: scale(0.96);
-          transform-origin: top center;
-        }
-        @media (max-width: 1200px) {
-          .scale-payout-pc {
-            transform: scale(0.99);
-          }
-        }
-        @media (max-width: 950px) {
-          .scale-payout-pc {
-            transform: scale(1);
-            padding-left: 0px !important;
-            padding-right: 0px !important;
-          }
-        }
       `}</style>
     </Layout>
   )
