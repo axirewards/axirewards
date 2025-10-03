@@ -1,17 +1,12 @@
 /**
  * CPAlead Offerwall Postback Handler for AXI Rewards
  * - Handles CPAlead offerwall conversions and credits user points in Supabase/Postgres DB.
- * - Maps CPAlead macros to parameters:
- *   subid      → userId,
- *   virtual_currency → points,
- *   payout     → USD amount,
- *   campaign_id → offer_id_partner,
- *   campaign_name → title,
- *   country_iso → country.
+ * - Maps CPAlead macros to parameters: subid → userId, payout → USD amount, campaign_id → offer_id_partner.
+ * - Tracks each conversion by partner_callback_id (unique).
  * - Always logs full raw payload for auditing.
+ * - Strict idempotency: same partner_callback_id cannot be processed twice.
  * - Fallbacks for missing title/description: title = "CPAlead Offer", description = "You completed an offer."
  * - Compatible with AXI Rewards schema.
- * - NO idempotency check: always inserts a new completion.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -44,27 +39,30 @@ export default async function handler(req, res) {
   }
 
   // CPAlead macros → parameters
-  const userIdRaw = parseInt(payload.subid)
-  const transactionId = (payload.lead_id || payload.click_id || payload.transaction_id || payload.transactionid || payload.subid || '').toString()
+  const userIdRaw = parseInt(payload.subid) // subid from CPAlead is our userId
+  const transactionId = (payload.transaction_id || payload.transactionid || payload.click_id || payload.subid || '').toString() // fallback: use subid as partner_callback_id if no click_id/transaction_id
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
   const payoutUsd = Number(payload.payout) || 0
-  const amountLocal = Math.floor(Number(payload.virtual_currency) || 0)
+  const amountLocal = Math.floor(Number(payload.amount_local) || payoutUsd * 700) // CPAlead controls payout→points ratio in their settings; default fallback: 700 points/1 USD
   const ip = payload.ip_address || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || ''
-  const country = payload.country_iso || payload.country || payload.geo || 'ALL'
+  const country = payload.country || payload.geo || 'ALL'
   const status = 'credited'
 
-  // Offer info: use campaign_name, fallback to CPAlead Offer
-  const offerTitle = (payload.campaign_name && typeof payload.campaign_name === "string" && payload.campaign_name.trim().length > 0)
-    ? payload.campaign_name.trim()
+  // Offer info (use CPAlead info, fallback if missing)
+  const offerTitle = (payload.offer_title && typeof payload.offer_title === "string" && payload.offer_title.trim().length > 0)
+    ? payload.offer_title.trim()
     : "CPAlead Offer"
-  const offerDescription = "You completed an offer."
+  const offerDescription = (payload.offer_description && typeof payload.offer_description === "string" && payload.offer_description.trim().length > 0)
+    ? payload.offer_description.trim()
+    : "You completed an offer."
 
   // Validate required params
   if (
     !userIdRaw ||
     !transactionId ||
     !offerIdPartner ||
-    isNaN(amountLocal)
+    isNaN(amountLocal) ||
+    isNaN(payoutUsd)
   ) {
     return res.status(400).json({ error: 'Missing required CPAlead parameters', payload })
   }
@@ -87,6 +85,22 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Strict idempotency: check by partner_callback_id (transactionId)
+    const { data: existing, error: checkError } = await supabase
+      .from('completions')
+      .select('*')
+      .eq('partner_callback_id', transactionId)
+    const existingCompletion = Array.isArray(existing) && existing.length > 0 ? existing[0] : null
+
+    if (checkError) {
+      console.error('Idempotency check error:', checkError)
+      return res.status(500).json({ error: 'Internal server error', details: checkError.message })
+    }
+
+    if (existingCompletion) {
+      return res.status(200).json({ status: 'already_processed', completion_id: existingCompletion.id })
+    }
+
     // Fetch user
     const { data: userData, error: userError } = await supabase
       .from('users').select('id,email').eq('id', userIdRaw)
@@ -99,7 +113,7 @@ export default async function handler(req, res) {
     const partner = Array.isArray(partnerData) && partnerData.length > 0 ? partnerData[0] : null
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' })
 
-    // Insert credited completion (NO idempotency check!)
+    // Insert credited completion
     const { data: completionInsertData, error: completionError } = await supabase
       .from('completions')
       .insert({
