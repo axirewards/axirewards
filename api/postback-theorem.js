@@ -164,23 +164,23 @@ export default async function handler(req, res) {
         partner_id_external: partnerId,
         router,
         total_payment: totalPayment,
-        // ADDED FIELDS
-        title: "Theorem Reach",
-        description: "You completed an offer."
+        title: 'Theorem Reach',
+        description: 'You completed an offer.'
       })
       .select()
       .single();
 
     if (completionError) throw completionError;
 
-    // Increment user points atomically via RPC (skip if reversal)
-    if (!reversal) {
-      await supabase.rpc('increment_user_points', {
-        uid: user.id,
-        pts: reward,
-        ref_completion: completion.id
-      });
-    } else {
+    // Remove increment_user_points RPC call, this now handled by trigger
+    // if (!reversal) {
+    //   await supabase.rpc('increment_user_points', {
+    //     uid: user.id,
+    //     pts: reward,
+    //     ref_completion: completion.id
+    //   });
+    // } else {
+    if (reversal) {
       await supabase.rpc('debit_user_points_for_payout', {
         uid: user.id,
         pts: reward,
