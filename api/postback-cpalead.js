@@ -3,7 +3,7 @@
  * - Handles CPAlead offerwall conversions and credits user points in Supabase/Postgres DB.
  * - Maps CPAlead macros to parameters:
  *   subid           → userId,
- *   virtual_currency → points (divided by 2 for correct AXI sum),
+ *   virtual_currency → points,
  *   campaign_id     → offer_id_partner (and partner_callback_id, both identical),
  *   country_iso     → country.
  * - Always logs full raw payload for auditing.
@@ -12,7 +12,6 @@
  * - Idempotency: checks completions by user_id + offer_id_partner (allows new unique offers per user, prevents duplicate for same user).
  * - completions.partner_callback_id = completions.offer_id_partner (always identical).
  * - Always credits points using Supabase RPC (increment_user_points) after successful completion insert!
- * - Always divides credited points by 2 for correct AXI sum.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -42,6 +41,7 @@ export default async function handler(req, res) {
   // CPAlead macros → parameters
   const userIdRaw = parseInt(payload.subid)
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
+  // partner_callback_id = offer_id_partner (identical, per your instructions)
   const transactionId = offerIdPartner
   // credited_points: try virtual_currency, else fallback payout * 700
   let amountLocal = 0
@@ -50,8 +50,7 @@ export default async function handler(req, res) {
   } else if (payload.payout !== undefined && !isNaN(Number(payload.payout))) {
     amountLocal = Math.floor(Number(payload.payout) * 700)
   }
-  // Padalinti iš 2, kad visada būtų teisinga suma (CPALead dažnai atsiunčia dvigubą)
-  amountLocal = Math.floor(amountLocal / 2)
+  // If still 0, it's an error (never credit 0 points)
   if (amountLocal <= 0) {
     return res.status(400).json({ error: 'Missing or invalid points (virtual_currency/payout)', payload })
   }
