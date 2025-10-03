@@ -23,7 +23,7 @@ const OFFERWALLS = [
   },
   {
     key: "bitlabs",
-    name: "BitLabs",
+    name: "Bit Labs",
     logo: "/icons/bitlabslogo.png",
     color: "#62D6FB",
     apiKey: "2dfb7d19-2974-4085-b686-181bcb681b70",
@@ -39,7 +39,7 @@ const OFFERWALLS = [
   },
   {
     key: "theorem",
-    name: "TheoremReach",
+    name: "Theorem Reach",
     logo: "/icons/theoremreachlogo.png",
     color: "#7b6cfb",
     appId: "24198",
@@ -47,7 +47,7 @@ const OFFERWALLS = [
   },
   {
     key: "cpalead",
-    name: "CPAlead",
+    name: "CPA Lead",
     logo: "/icons/cpalead.png",
     color: "#5AF599",
     iframeUrl: "https://www.mobtrk.link/list/Zkc2uVm",
