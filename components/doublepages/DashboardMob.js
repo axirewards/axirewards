@@ -220,7 +220,6 @@ export default function DashboardMob({ setGlobalLoading }) {
                     fontSize: "1.08rem",
                   }}
                 >
-                  !
                 </span>
               </div>
               {/* Subtitle */}
