@@ -8,7 +8,7 @@ import TheoremOfferwall from "../TheoremOfferwall";
 import CpaLeadOfferwall from "../CpaLeadOfferwall";
 import { supabase } from "../../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
-import UserStatsVipMobile from "../UserStatsVipMobile"; // <-- pakeista!
+import UserStatsVipMobile from "../UserStatsVipMobile";
 import OfferwallCarousel from "../OfferwallCarousel";
 import AchievementWall from "../AchievementWall";
 
@@ -164,39 +164,82 @@ export default function DashboardMob({ setGlobalLoading }) {
         }}
       >
         {/* Headline */}
-        <div className="w-full flex items-center justify-center mt-5 mb-2 px-2">
+        <div className="w-full flex flex-col items-center justify-center mt-6 mb-2 px-2">
           {user && (
-            <span
-              className="font-bold text-2xl text-white drop-shadow text-center py-3 px-6 rounded-xl"
-              style={{
-                background: "linear-gradient(90deg, #60A5FA 0%, #7b6cfb 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-                color: "transparent",
-                letterSpacing: "0.055em",
-                boxShadow: "0 2px 14px #60A5fa22",
-                maxWidth: "98vw",
-                overflowWrap: "break-word"
-              }}
-            >
-              Welcome, <span style={{
-                color: "#FFD700",
-                background: "none",
-                WebkitBackgroundClip: "unset",
-                WebkitTextFillColor: "unset",
-                fontWeight: 800,
-                letterSpacing: "0.07em",
-                textShadow: "0 1px 7px #FFD70066",
-              }}>{user.email}</span>!
-            </span>
+            <div className="w-full flex flex-col items-center justify-center">
+              <div
+                className="font-bold text-[2.05rem] md:text-3xl flex items-center justify-center"
+                style={{
+                  maxWidth: "98vw",
+                  letterSpacing: "0.04em",
+                  fontFamily: "inherit",
+                  fontWeight: 900,
+                  lineHeight: "1.17",
+                  textAlign: "center",
+                }}
+              >
+                <span
+                  style={{
+                    color: "#fff",
+                    textShadow: "0 2px 18px #7b6cfb33, 0 1px 6px #181e3888",
+                    background: "none",
+                    WebkitTextStroke: "0.5px #fff",
+                    paddingRight: "4px",
+                    paddingLeft: "2px",
+                  }}
+                  className="drop-shadow"
+                >
+                  Welcome,
+                </span>
+                <span
+                  style={{
+                    background: "linear-gradient(90deg,#60A5FA 0%,#7b6cfb 50%,#FFD700 85%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    fontWeight: 800,
+                    paddingLeft: "7px",
+                    letterSpacing: "0.07em",
+                    textShadow: "0 1px 10px #FFD70033, 0 2px 8px #60A5fa33",
+                  }}
+                  className="ml-1"
+                >
+                  {user.email}
+                </span>
+                <span
+                  style={{
+                    color: "#fff",
+                    fontWeight: 800,
+                    paddingLeft: "7px",
+                    textShadow: "0 1px 10px #60A5FA33",
+                    fontSize: "1.45rem",
+                  }}
+                >
+                  !
+                </span>
+              </div>
+              {/* extra professional welcome subtitle */}
+              <div className="w-full flex flex-col items-center mt-2 mb-0">
+                <span
+                  className="text-base md:text-lg text-[#e5e7eb] font-semibold text-center px-2"
+                  style={{
+                    letterSpacing: "0.018em",
+                    textShadow: "0 2px 8px #1e3a8a22",
+                    fontFamily: "inherit",
+                    maxWidth: "95vw"
+                  }}
+                >
+                  Your AXI journey starts here. Unlock rewards, complete offers, level up, and join the ranks of top earners. Every action moves you closer to legendary status!
+                </span>
+              </div>
+            </div>
           )}
         </div>
 
         {/* User Stats / VIP */}
         {user && (
           <div className="w-full px-2" style={{ marginTop: '3vw', maxWidth: '100vw' }}>
-            <UserStatsVipMobile /> {/* <-- pakeista! */}
+            <UserStatsVipMobile />
           </div>
         )}
 
