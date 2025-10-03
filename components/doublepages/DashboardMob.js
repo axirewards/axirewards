@@ -8,7 +8,7 @@ import TheoremOfferwall from "../TheoremOfferwall";
 import CpaLeadOfferwall from "../CpaLeadOfferwall";
 import { supabase } from "../../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
-import UserStatsVip from "../UserStatsVip";
+import UserStatsVipMobile from "../UserStatsVipMobile"; // <-- pakeista!
 import OfferwallCarousel from "../OfferwallCarousel";
 import AchievementWall from "../AchievementWall";
 
@@ -196,12 +196,7 @@ export default function DashboardMob({ setGlobalLoading }) {
         {/* User Stats / VIP */}
         {user && (
           <div className="w-full px-2" style={{ marginTop: '3vw', maxWidth: '100vw' }}>
-            <UserStatsVip
-              tier={user?.tier || 1}
-              points={user?.points_balance || 0}
-              streak={streak}
-              completedOffers={user?.completed_offers || 0}
-            />
+            <UserStatsVipMobile /> {/* <-- pakeista! */}
           </div>
         )}
 
