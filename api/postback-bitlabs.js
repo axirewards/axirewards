@@ -131,7 +131,7 @@ export default async function handler(req, res) {
       offer = createdOffer;
     }
 
-    // Insert into completions
+    // Insert into completions (add title/description)
     const { data: completion, error: completionError } = await supabase
       .from('completions')
       .insert({
@@ -147,7 +147,9 @@ export default async function handler(req, res) {
         country,
         completion_steps: surveyId || offerType
           ? JSON.stringify({ survey_id: surveyId, offer_type: offerType })
-          : null
+          : null,
+        title: 'Bit Labs',
+        description: 'You completed an offer.'
       })
       .select()
       .single();
@@ -157,12 +159,13 @@ export default async function handler(req, res) {
       throw completionError;
     }
 
-    // Increment/deduct user points
-    if (completion.status === 'credited') {
-      await supabase
-        .rpc('increment_user_points', { uid: user.id, pts: points, ref_completion: completion.id });
-      console.log(`Credited ${points} points to user ${user.id}`);
-    } else if (completion.status === 'reversed') {
+    // REMOVE increment_user_points RPC call, now handled by trigger
+    // if (completion.status === 'credited') {
+    //   await supabase
+    //     .rpc('increment_user_points', { uid: user.id, pts: points, ref_completion: completion.id });
+    //   console.log(`Credited ${points} points to user ${user.id}`);
+    // } else 
+    if (completion.status === 'reversed') {
       await supabase
         .rpc('debit_user_points_for_payout', { uid: user.id, pts: points, ref_payout: completion.id });
       console.log(`Reversed ${points} points from user ${user.id}`);
