@@ -159,7 +159,7 @@ export default function DashboardMob({ setGlobalLoading }) {
           width: '100vw',
           minHeight: '100dvh',
           boxSizing: 'border-box',
-          background: 'none', // Use project global bg (as per globals.css)
+          background: 'none',
           overflowX: 'hidden'
         }}
       >
@@ -167,42 +167,47 @@ export default function DashboardMob({ setGlobalLoading }) {
         <div className="w-full flex flex-col items-center justify-center mt-6 mb-2 px-2">
           {user && (
             <div className="w-full flex flex-col items-center justify-center">
+              {/* Welcome row */}
               <div
-                className="font-bold text-[2.05rem] md:text-3xl flex items-center justify-center"
-                style={{
-                  maxWidth: "98vw",
-                  letterSpacing: "0.04em",
-                  fontFamily: "inherit",
-                  fontWeight: 900,
-                  lineHeight: "1.17",
-                  textAlign: "center",
-                }}
+                className="w-full flex items-center justify-center"
+                style={{ marginBottom: "0.3rem" }}
               >
                 <span
+                  className="font-bold text-[2.05rem] md:text-3xl"
                   style={{
                     color: "#fff",
                     textShadow: "0 2px 18px #7b6cfb33, 0 1px 6px #181e3888",
-                    background: "none",
                     WebkitTextStroke: "0.5px #fff",
-                    paddingRight: "4px",
-                    paddingLeft: "2px",
+                    letterSpacing: "0.04em",
+                    fontWeight: 900,
+                    lineHeight: "1.17",
+                    fontFamily: "inherit",
+                    textAlign: "center",
+                    width: "100%",
                   }}
-                  className="drop-shadow"
                 >
                   Welcome,
                 </span>
+              </div>
+              {/* Email row */}
+              <div
+                className="w-full flex items-center justify-center"
+                style={{ marginBottom: "0.22rem" }}
+              >
                 <span
+                  className="font-bold"
                   style={{
+                    fontSize: "1.43rem",
                     background: "linear-gradient(90deg,#60A5FA 0%,#7b6cfb 50%,#FFD700 85%)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
                     fontWeight: 800,
-                    paddingLeft: "7px",
                     letterSpacing: "0.07em",
                     textShadow: "0 1px 10px #FFD70033, 0 2px 8px #60A5fa33",
+                    textAlign: "center",
+                    width: "100%",
                   }}
-                  className="ml-1"
                 >
                   {user.email}
                 </span>
@@ -212,21 +217,23 @@ export default function DashboardMob({ setGlobalLoading }) {
                     fontWeight: 800,
                     paddingLeft: "7px",
                     textShadow: "0 1px 10px #60A5FA33",
-                    fontSize: "1.45rem",
+                    fontSize: "1.08rem",
                   }}
                 >
                   !
                 </span>
               </div>
-              {/* extra professional welcome subtitle */}
-              <div className="w-full flex flex-col items-center mt-2 mb-0">
+              {/* Subtitle */}
+              <div className="w-full flex flex-col items-center mt-1 mb-0">
                 <span
-                  className="text-base md:text-lg text-[#e5e7eb] font-semibold text-center px-2"
+                  className="font-semibold text-center px-2"
                   style={{
-                    letterSpacing: "0.018em",
+                    fontSize: "0.88rem",
+                    color: "#e5e7eb",
+                    letterSpacing: "0.015em",
                     textShadow: "0 2px 8px #1e3a8a22",
                     fontFamily: "inherit",
-                    maxWidth: "95vw"
+                    maxWidth: "95vw",
                   }}
                 >
                   Your AXI journey starts here. Unlock rewards, complete offers, level up, and join the ranks of top earners. Every action moves you closer to legendary status!
