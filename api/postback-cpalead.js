@@ -43,13 +43,9 @@ export default async function handler(req, res) {
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
   // partner_callback_id = offer_id_partner (identical, per your instructions)
   const transactionId = offerIdPartner
-  // credited_points ONLY from virtual_currency (NO fallback to payout * 700)
-  let amountLocal = 0
-  if (payload.virtual_currency !== undefined && payload.virtual_currency !== null && !isNaN(Number(payload.virtual_currency))) {
-    amountLocal = Math.floor(Number(payload.virtual_currency))
-  }
-  // If still 0, it's an error (never credit 0 points, and never multiply payout)
-  if (amountLocal <= 0) {
+  // credited_points: ALWAYS use virtual_currency from CPAlead (NEVER recalculate payout!)
+  const amountLocal = Math.floor(Number(payload.virtual_currency) || 0)
+  if (!amountLocal || isNaN(amountLocal) || amountLocal <= 0) {
     return res.status(400).json({ error: 'Missing or invalid points (virtual_currency)', payload })
   }
 
