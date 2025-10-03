@@ -11,7 +11,7 @@
  * - Always logs full raw payload for auditing.
  * - Title always "CPA Lead", description always "You completed an offer."
  * - Compatible with AXI Rewards schema.
- * - Idempotency: checks completions by partner_callback_id only (matches DB constraint).
+ * - Idempotency: checks by user_id + offer_id_partner (allows new unique offers per user, but prevents duplicate offers for same user).
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -71,11 +71,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Idempotency: match DB unique constraint
+    // Idempotency: block only if same user_id and same offer_id_partner exists
     const { data: existingCompletions, error: checkError } = await supabase
       .from('completions')
       .select('id')
-      .eq('partner_callback_id', transactionId)
+      .eq('user_id', userIdRaw)
+      .eq('offer_id_partner', offerIdPartner)
 
     if (checkError) {
       console.error('Completions check error:', checkError)
