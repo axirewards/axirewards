@@ -25,18 +25,17 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid payload format' });
   }
 
-  // BitLabs callback mapping (for uid, tx, val, raw, hash)
+  // BitLabs mapping (MUST match exactly as BitLabs docs: uid, tx, val, raw, hash)
   const uid = payload.uid;
   const tx = payload.tx;
   const val = payload.val;
   const raw = payload.raw;
   const hash = payload.hash;
 
-  // Debug: parodyk visas reikšmes
   console.log('Payload params:', { uid, tx, val, raw, hash });
   console.log('Full payload:', payload);
 
-  // Signature calculation (BitLabs spec: SHA1(uid + tx + val + raw + secret))
+  // SHA1 hash generation: SHA1(uid + tx + val + raw + secret)
   const sigData = `${uid}${tx}${val}${raw}${BITLABS_SECRET}`;
   const expectedHash = crypto.createHash('sha1').update(sigData).digest('hex');
 
