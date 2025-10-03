@@ -21,14 +21,14 @@ export default async function handler(req, res) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  // Map all BitLabs + legacy params to completions table fields
+  // Map params to completions fields
   const userId = payload.user_id || payload.uid;
   const transactionId = payload.transaction_id || payload.tx;
   const creditedPointsRaw = payload.reward || payload.val;
-  const moneyRaw = payload.raw || null; // jei nori papildomai saugoti money lauką
-  const status = payload.status; // "completed", "chargeback", etc.
+  const moneyRaw = payload.value || payload.raw; // USD value, can be null
+  const status = payload.status;
   const currency = payload.currency;
-  const offerId = payload.offer_id; // tik jeigu nori saugoti
+  const offerId = payload.offer_id;
   const surveyId = payload.survey_id;
   const offerType = payload.offer_type;
   const country = payload.country || payload.geo || 'ALL';
@@ -37,39 +37,23 @@ export default async function handler(req, res) {
   const deviceInfo = payload.device_info || {};
   const signature = payload.signature;
 
-  // DEBUG LOGS FOR SIGNATURE
-  console.log("------ BitLabs Callback Debug ------");
-  console.log("user_id:", userId);
-  console.log("transaction_id:", transactionId);
-  console.log("credited_points:", creditedPointsRaw);
-  console.log("BITLABS_SECRET:", BITLABS_SECRET ? "(hidden)" : "(missing)");
-  console.log("signature from BitLabs:", signature);
-
-  // Signature calculation as per BitLabs documentation
-  const sigData = `${userId}${transactionId}${creditedPointsRaw}${BITLABS_SECRET}`;
+  // Signature calculation (user_id + transaction_id + reward + value + secret)
+  const sigData = `${userId}${transactionId}${creditedPointsRaw}${moneyRaw}${BITLABS_SECRET}`;
   const expectedSignature = crypto.createHash('sha256').update(sigData).digest('hex');
-  console.log("sigData string (for SHA256):", sigData);
-  console.log("expected signature (local):", expectedSignature);
-
-  // Signature validation
   if (BITLABS_SECRET) {
     if (signature !== expectedSignature) {
-      console.log("Signature mismatch: REJECTED");
       return res.status(403).json({ error: 'Invalid BitLabs signature', debug: { payload, sigData, expectedSignature } });
-    } else {
-      console.log("Signature match: ACCEPTED");
     }
   }
 
   // Validate required params
   const points = creditedPointsRaw !== undefined && creditedPointsRaw !== null ? parseFloat(creditedPointsRaw) : null;
   if (!userId || !transactionId || points === null || isNaN(points) || points <= 0) {
-    console.log("Missing or invalid BitLabs parameters");
     return res.status(400).json({ error: 'Missing or invalid BitLabs parameters', payload });
   }
 
   try {
-    // Idempotency: don't double process
+    // Idempotency
     const { data: existing } = await supabase
       .from('completions')
       .select('id')
@@ -77,31 +61,18 @@ export default async function handler(req, res) {
       .single();
 
     if (existing) {
-      console.log("Already processed transaction:", transactionId);
       return res.status(200).json({ status: 'already_processed', completion_id: existing.id });
     }
 
     // Fetch user
     const { data: user } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    if (!user) {
-      console.log("User not found:", userId);
-      return res.status(404).json({ error: 'User not found' });
-    }
+      .from('users').select('*').eq('id', userId).single();
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
     // Fetch BitLabs partner
     const { data: partner } = await supabase
-      .from('partners')
-      .select('*')
-      .eq('code', 'bitlabs')
-      .single();
-    if (!partner) {
-      console.log("BitLabs partner not found");
-      return res.status(404).json({ error: 'Partner not found' });
-    }
+      .from('partners').select('*').eq('code', 'bitlabs').single();
+    if (!partner) return res.status(404).json({ error: 'Partner not found' });
 
     // Insert into completions
     const { data: completion, error: completionError } = await supabase
@@ -127,19 +98,15 @@ export default async function handler(req, res) {
       .select()
       .single();
 
-    if (completionError) {
-      console.log("Failed to insert completion:", completionError);
-      throw completionError;
-    }
+    if (completionError) throw completionError;
 
-    // Remove increment_user_points call, handled by trigger.
+    // Only deduct points if reversed, increment handled by trigger
     if (completion.status === 'reversed') {
       await supabase
         .rpc('debit_user_points_for_payout', { uid: user.id, pts: points, ref_payout: completion.id });
-      console.log(`Reversed ${points} points from user ${user.id}`);
     }
 
-    // Log postback for audit
+    // Log postback
     await supabase
       .from('postback_logs')
       .insert({
@@ -152,10 +119,8 @@ export default async function handler(req, res) {
         received_at: new Date().toISOString()
       });
 
-    console.log("Postback processed OK:", transactionId);
     return res.status(200).json({ status: completion.status, completion_id: completion.id });
   } catch (err) {
-    console.error('BitLabs postback error:', err);
     return res.status(500).json({ error: 'Internal server error', details: err.message });
   }
 }
