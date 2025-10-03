@@ -163,7 +163,10 @@ export default async function handler(req, res) {
         placement_id: placementId,
         partner_id_external: partnerId,
         router,
-        total_payment: totalPayment
+        total_payment: totalPayment,
+        // ADDED FIELDS
+        title: "Theorem Reach",
+        description: "You completed an offer."
       })
       .select()
       .single();
