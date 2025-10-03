@@ -1,10 +1,17 @@
 /**
  * CPAlead Offerwall Postback Handler for AXI Rewards
  * - Handles CPAlead offerwall conversions and credits user points in Supabase/Postgres DB.
- * - Taškai visada imami iš virtual_currency (jei yra), arba payout * 700 (jei nėra virtual_currency).
- * - Idempotency: tikrina pagal user_id + offer_id_partner.
- * - completions.partner_callback_id = completions.offer_id_partner.
- * - credited_points LENTELEJE NEDĖK RANKA! Taškai pridedami TIK per Supabase RPC (increment_user_points).
+ * - Maps CPAlead macros to parameters:
+ *   subid           → userId,
+ *   virtual_currency → points,
+ *   campaign_id     → offer_id_partner (and partner_callback_id, both identical),
+ *   country_iso     → country.
+ * - Always logs full raw payload for auditing.
+ * - Title always "CPA Lead", description always "You completed an offer."
+ * - Compatible with AXI Rewards schema.
+ * - Idempotency: checks completions by user_id + offer_id_partner (allows new unique offers per user, prevents duplicate for same user).
+ * - completions.partner_callback_id = completions.offer_id_partner (always identical).
+ * - Always credits points using Supabase RPC (increment_user_points) after successful completion insert!
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -34,26 +41,17 @@ export default async function handler(req, res) {
   // CPAlead macros → parameters
   const userIdRaw = parseInt(payload.subid)
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
+  // partner_callback_id = offer_id_partner (identical, per your instructions)
   const transactionId = offerIdPartner
-
-  // Taškai: virtual_currency, o payout naudoti TIK jei virtual_currency NĖRA, payout * 700!
-  let pointsToCredit = 0
-  if (
-    payload.virtual_currency !== undefined &&
-    payload.virtual_currency !== null &&
-    !isNaN(Number(payload.virtual_currency)) &&
-    Number(payload.virtual_currency) > 0
-  ) {
-    pointsToCredit = Math.floor(Number(payload.virtual_currency))
-  } else if (
-    payload.payout !== undefined &&
-    payload.payout !== null &&
-    !isNaN(Number(payload.payout)) &&
-    Number(payload.payout) > 0
-  ) {
-    pointsToCredit = Math.floor(Number(payload.payout) * 700)
+  // credited_points: try virtual_currency, else fallback payout * 700
+  let amountLocal = 0
+  if (payload.virtual_currency !== undefined && payload.virtual_currency !== null && !isNaN(Number(payload.virtual_currency))) {
+    amountLocal = Math.floor(Number(payload.virtual_currency))
+  } else if (payload.payout !== undefined && !isNaN(Number(payload.payout))) {
+    amountLocal = Math.floor(Number(payload.payout) * 700)
   }
-  if (pointsToCredit <= 0) {
+  // If still 0, it's an error (never credit 0 points)
+  if (amountLocal <= 0) {
     return res.status(400).json({ error: 'Missing or invalid points (virtual_currency/payout)', payload })
   }
 
@@ -111,7 +109,7 @@ export default async function handler(req, res) {
     const partner = Array.isArray(partnerData) && partnerData.length > 0 ? partnerData[0] : null
     if (partnerError || !partner) return res.status(404).json({ error: 'Partner not found' })
 
-    // Insert completion (credited_points NEDĖTI ranka, bus priskirta per RPC funkciją!)
+    // Insert credited completion (credited_points always set correctly)
     const { data: completionInsertData, error: completionError } = await supabase
       .from('completions')
       .insert({
@@ -120,7 +118,7 @@ export default async function handler(req, res) {
         offer_id_partner: offerIdPartner,
         partner_id: partner.id,
         partner_callback_id: transactionId,
-        // credited_points: pointsToCredit, <-- NEPRIDEDAM RANKA!
+        credited_points: amountLocal,
         status: status,
         ip: ip,
         device_info: {},
@@ -134,18 +132,12 @@ export default async function handler(req, res) {
       ? completionInsertData[0]
       : completionInsertData
 
-    // Credit points ONLY via Supabase RPC after completion is inserted!
+    // ALWAYS credit points with Supabase RPC after completion is inserted!
     const { data: newBalance, error: rpcError } = await supabase.rpc(
       'increment_user_points',
-      { uid: user.id, pts: pointsToCredit, ref_completion: completion.id }
+      { uid: user.id, pts: amountLocal, ref_completion: completion.id }
     )
     if (rpcError) throw rpcError
-
-    // Optionally, update credited_points in completions table after RPC
-    await supabase.from('completions')
-      .update({ credited_points: pointsToCredit })
-      .eq('id', completion.id)
-
     const creditedBalance =
       Array.isArray(newBalance) && newBalance.length > 0
         ? newBalance[0]?.new_balance ?? newBalance[0]?.cur_balance ?? null
@@ -153,7 +145,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       status: 'credited',
-      credited_points: pointsToCredit,
+      credited_points: amountLocal,
       new_balance: creditedBalance,
       completion_id: completion.id,
     })
