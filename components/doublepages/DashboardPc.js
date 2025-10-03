@@ -5,6 +5,7 @@ import AyetOfferwall from "../AyetOfferwall";
 import BitLabsOfferwall from "../BitLabsOfferwall";
 import CpxOfferwall from "../CpxOfferwall";
 import TheoremOfferwall from "../TheoremOfferwall";
+import CpaLeadOfferwall from "../CpaLeadOfferwall";
 import { supabase } from "../../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
 import UserStatsVip from "../UserStatsVip";
@@ -43,6 +44,14 @@ const OFFERWALLS = [
     color: "#7b6cfb",
     appId: "24198",
     description: "Complete surveys and earn AXI points with TheoremReach.",
+  },
+  {
+    key: "cpalead",
+    name: "CPAlead",
+    logo: "/icons/cpalead.png",
+    color: "#5AF599",
+    iframeUrl: "https://www.mobtrk.link/list/Zkc2uVm",
+    description: "Exclusive offers, apps & bonuses.",
   },
 ];
 
@@ -241,6 +250,9 @@ export default function DashboardPc({ setGlobalLoading }) {
               )}
               {activeOfferwall === "theorem" && (
                 <TheoremOfferwall appId={getOfferwallParams("theorem")?.appId} height="700px" />
+              )}
+              {activeOfferwall === "cpalead" && (
+                <CpaLeadOfferwall height="700px" iframeUrl={getOfferwallParams("cpalead")?.iframeUrl} />
               )}
             </div>
           </div>
