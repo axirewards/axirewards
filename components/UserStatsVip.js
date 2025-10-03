@@ -11,7 +11,11 @@ const TIER_INFO = [
 
 const thresholds = [0, 10000, 50000, 150000, 500000, 9999999];
 
-export default function UserStatsVip() {
+/**
+ * Props:
+ * size: "compact-premium" – for mobile reduced version (PC default untouched)
+ */
+export default function UserStatsVip({ size }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -89,42 +93,55 @@ export default function UserStatsVip() {
     ? Math.min(100, ((levelpoints - thresholds[tier - 1]) / (thresholds[tier] - thresholds[tier - 1])) * 100)
     : 100;
 
-  const isMobile = typeof window !== "undefined" ? window.innerWidth < 700 : false;
-  const cubeSize = isMobile ? "90vw" : "220px";
-  const iconSize = isMobile ? 32 : 44;
-  const barWidth = isMobile ? "74vw" : "160px";
-  const barHeight = isMobile ? "7px" : "9px";
+  // Compact mode for mobile (size="compact-premium")
+  const isCompact = size === "compact-premium";
+  const cubeSize = isCompact ? "61vw" : (typeof window !== "undefined" && window.innerWidth < 700 ? "90vw" : "220px");
+  const iconSize = isCompact ? 22 : (typeof window !== "undefined" && window.innerWidth < 700 ? 32 : 44);
+  const barWidth = isCompact ? "48vw" : (typeof window !== "undefined" && window.innerWidth < 700 ? "74vw" : "160px");
+  const barHeight = isCompact ? "4px" : (typeof window !== "undefined" && window.innerWidth < 700 ? "7px" : "9px");
+  const gapSize = isCompact ? "9px" : "18px";
+  const fontTitle = isCompact ? "1.01rem" : "1.17rem";
+  const fontMain = isCompact ? "1.68rem" : "2.3rem";
+  const fontSub = isCompact ? "0.65rem" : "0.84rem";
+  const cubeRadius = isCompact ? "1.03rem" : "1.4rem";
 
   return (
     <div
-      className="userstatsvip-row w-full flex flex-col md:flex-row items-center justify-center gap-7 md:gap-9"
-      style={{ maxWidth: isMobile ? "97vw" : "900px", margin: "0 auto" }}
+      className="userstatsvip-row w-full flex flex-col md:flex-row items-center justify-center"
+      style={{
+        maxWidth: isCompact ? "99vw" : (typeof window !== "undefined" && window.innerWidth < 700 ? "97vw" : "900px"),
+        margin: "0 auto",
+        gap: gapSize,
+        marginBottom: gapSize
+      }}
     >
       {/* VIP Tier Cube */}
       <div
-        className="userstatsvip-cube glass-card flex flex-col items-center justify-center py-6 px-3 shadow-xl border-2 transition-all"
+        className="userstatsvip-cube glass-card flex flex-col items-center justify-center shadow-xl border-2 transition-all"
         style={{
           minWidth: cubeSize,
           maxWidth: cubeSize,
           background: currentTier.bg,
           borderColor: currentTier.color,
-          borderRadius: "1.4rem",
+          borderRadius: cubeRadius,
           boxShadow: `0 0 24px 0 ${currentTier.color}44`,
+          padding: isCompact ? "1.1em 0.55em" : "2.2em 1.1em"
         }}
       >
         <span
-          className="font-extrabold text-lg mb-2"
+          className="font-extrabold mb-2"
           style={{
             color: currentTier.color,
             textShadow: `0 1px 6px ${currentTier.color}88, 0 1px 1px #181e38`,
-            letterSpacing: "0.06em"
+            letterSpacing: "0.06em",
+            fontSize: fontTitle
           }}
         >
           {currentTier.name} VIP
         </span>
         {/* Progress bar */}
         <div
-          className="relative rounded-full w-full shadow-inner mt-2 mb-1"
+          className="relative rounded-full w-full shadow-inner mt-1 mb-0"
           style={{
             width: barWidth,
             height: barHeight,
@@ -142,8 +159,8 @@ export default function UserStatsVip() {
             }}
           />
         </div>
-        <span className="text-xs text-white mt-2 font-semibold">{levelpoints} AXI (All-Time)</span>
-        <span className="text-xs text-gray-400 mt-2 font-semibold text-center">
+        <span className="mt-2 font-semibold" style={{ fontSize: fontSub, color: "#fff" }}>{levelpoints} AXI (All-Time)</span>
+        <span className="mt-2 font-semibold text-center" style={{ fontSize: fontSub, color: "#bbb" }}>
           {nextTier
             ? `Next: ${nextTier.name} at ${thresholds[tier]} AXI`
             : "Max VIP reached"}
@@ -151,54 +168,57 @@ export default function UserStatsVip() {
       </div>
       {/* Points Balance Cube */}
       <div
-        className="userstatsvip-cube glass-card flex flex-col items-center justify-center py-6 px-3 shadow-xl border-2 transition-all"
+        className="userstatsvip-cube glass-card flex flex-col items-center justify-center shadow-xl border-2 transition-all"
         style={{
           minWidth: cubeSize,
           maxWidth: cubeSize,
           borderColor: "#60A5FA",
-          borderRadius: "1.4rem",
+          borderRadius: cubeRadius,
           background: "linear-gradient(135deg,#232e40 0%,#60A5FA 120%)",
           boxShadow: "0 0 24px 0 #60A5FA44",
+          padding: isCompact ? "1.1em 0.55em" : "2.2em 1.1em"
         }}
       >
-        <img src="/icons/axicoin.svg" alt="Points" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
-        <span className="font-extrabold text-lg mb-2 text-accent">Points Balance</span>
-        <span className="text-3xl font-extrabold text-white">{points_balance}</span>
-        <span className="text-xs text-accent font-semibold mt-2">AXI</span>
+        <img src="/icons/axicoin.svg" alt="Points" style={{ width: iconSize, height: iconSize, marginBottom: isCompact ? 7 : 12 }} />
+        <span className="font-extrabold mb-2 text-accent" style={{ fontSize: fontTitle }}>Points Balance</span>
+        <span className="font-extrabold text-white" style={{ fontSize: fontMain }}>{points_balance}</span>
+        <span className="mt-2 font-semibold text-accent" style={{ fontSize: fontSub }}>AXI</span>
       </div>
       {/* Daily Streak Cube */}
       <div
-        className="userstatsvip-cube glass-card flex flex-col items-center justify-center py-6 px-3 shadow-xl border-2 transition-all"
+        className="userstatsvip-cube glass-card flex flex-col items-center justify-center shadow-xl border-2 transition-all"
         style={{
           minWidth: cubeSize,
           maxWidth: cubeSize,
           borderColor: "#FF6A3D",
-          borderRadius: "1.4rem",
+          borderRadius: cubeRadius,
           background: "linear-gradient(135deg,#232e40 0%,#FF6A3D 120%)",
           boxShadow: "0 0 24px 0 #FF6A3D44",
+          padding: isCompact ? "1.1em 0.55em" : "2.2em 1.1em"
         }}
       >
-        <img src="/icons/fire.png" alt="Streak" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
-        <span className="font-extrabold text-lg mb-2" style={{ color: "#FF6A3D" }}>Daily Streak</span>
-        <span className="text-3xl font-extrabold text-white">{strikeDays}</span>
-        <span className="text-xs text-orange-300 font-semibold mt-2">🔥 Days</span>
+        <img src="/icons/fire.png" alt="Streak" style={{ width: iconSize, height: iconSize, marginBottom: isCompact ? 7 : 12 }} />
+        <span className="font-extrabold mb-2" style={{ color: "#FF6A3D", fontSize: fontTitle }}>Daily Streak</span>
+        <span className="font-extrabold text-white" style={{ fontSize: fontMain }}>{strikeDays}</span>
+        <span className="mt-2 font-semibold text-orange-300" style={{ fontSize: fontSub }}>🔥 Days</span>
       </div>
       {/* Completed Offers Cube */}
       <div
-        className="userstatsvip-cube glass-card flex flex-col items-center justify-center py-6 px-3 shadow-xl border-2 transition-all"
+        className="userstatsvip-cube glass-card flex flex-col items-center justify-center shadow-xl border-2 transition-all"
         style={{
           minWidth: cubeSize,
           maxWidth: cubeSize,
           borderColor: "#5AF599",
-          borderRadius: "1.4rem",
+          borderRadius: cubeRadius,
           background: "linear-gradient(135deg,#232e40 0%,#5AF599 120%)",
           boxShadow: "0 0 24px 0 #5AF59944",
+          padding: isCompact ? "1.1em 0.55em" : "2.2em 1.1em"
         }}
       >
-        <img src="/icons/check.svg" alt="Completed" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
-        <span className="font-extrabold text-lg mb-2" style={{ color: "#5AF599" }}>Completed Offers</span>
-        <span className="text-3xl font-extrabold text-white">{user?.total_completions ?? 0}</span>
-        <span className="text-xs text-green-300 font-semibold mt-2">Offers</span>
+        <img src="/icons/check.svg" alt="Completed" style={{ width: iconSize, height: iconSize, marginBottom: isCompact ? 7 : 12 }} />
+        <span className="font-extrabold mb-2" style={{ color: "#5AF599", fontSize: fontTitle }}>Completed Offers</span>
+        <span className="font-extrabold text-white" style={{ fontSize: fontMain }}>{user?.total_completions ?? 0}</span>
+        <span className="mt-2 font-semibold text-green-300" style={{ fontSize: fontSub }}>Offers</span>
       </div>
       <style jsx>{`
         .glass-card {
