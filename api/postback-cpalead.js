@@ -2,11 +2,10 @@
  * CPAlead Offerwall Postback Handler for AXI Rewards
  * - Handles CPAlead offerwall conversions and credits user points in Supabase/Postgres DB.
  * - Maps CPAlead macros to parameters: subid → userId, payout → USD amount, campaign_id → offer_id_partner.
- * - Credits points at 100 points per $1 (configurable).
- * - Tracks each conversion by partner_callback_id (unique).
+ * - Tracks each conversion by offer_id_partner (unique per offer).
  * - Always logs full raw payload for auditing.
- * - Strict idempotency: same partner_callback_id cannot be processed twice.
- * - Fallbacks for missing title/description.
+ * - Strict idempotency: same user_id + offer_id_partner cannot be processed twice.
+ * - Fallbacks for missing title/description: title = "CPAlead Offer", description = "You completed an offer."
  * - Compatible with AXI Rewards schema.
  */
 
@@ -15,9 +14,6 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const supabase = createClient(supabaseUrl, supabaseKey)
-
-// CPAlead: payout ratio (1 USD = 700 points)
-const USD_TO_POINTS_RATIO = 700
 
 export default async function handler(req, res) {
   let payload = {}
@@ -44,10 +40,10 @@ export default async function handler(req, res) {
 
   // CPAlead macros → parameters
   const userIdRaw = parseInt(payload.subid) // subid from CPAlead is our userId
-  const transactionId = (payload.transaction_id || payload.transactionid || payload.click_id || payload.subid || '').toString() // fallback: use subid as partner_callback_id if no click_id/transaction_id
+  const transactionId = (payload.transaction_id || payload.transactionid || payload.click_id || payload.subid || '').toString() // fallback: use subid if no click_id/transaction_id
   const offerIdPartner = (payload.campaign_id || payload.offer_id || '').toString()
   const payoutUsd = Number(payload.payout) || 0
-  const amountLocal = Math.floor(payoutUsd * USD_TO_POINTS_RATIO)
+  const amountLocal = Math.floor(Number(payload.amount_local) || payoutUsd * 700) // CPAlead controls payout→points ratio in their settings; default fallback: 700 points/1 USD
   const ip = payload.ip_address || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || ''
   const country = payload.country || payload.geo || 'ALL'
   const status = 'credited'
@@ -58,12 +54,11 @@ export default async function handler(req, res) {
     : "CPAlead Offer"
   const offerDescription = (payload.offer_description && typeof payload.offer_description === "string" && payload.offer_description.trim().length > 0)
     ? payload.offer_description.trim()
-    : "You completed a CPAlead offer."
+    : "You completed an offer."
 
   // Validate required params
   if (
     !userIdRaw ||
-    !transactionId ||
     !offerIdPartner ||
     isNaN(amountLocal) ||
     isNaN(payoutUsd)
@@ -89,11 +84,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Strict idempotency: check by partner_callback_id (transactionId)
+    // Idempotency: check by user_id + offer_id_partner (offerio numeris keisis pastoviai)
     const { data: existing, error: checkError } = await supabase
       .from('completions')
       .select('*')
-      .eq('partner_callback_id', transactionId)
+      .eq('user_id', userIdRaw)
+      .eq('offer_id_partner', offerIdPartner)
     const existingCompletion = Array.isArray(existing) && existing.length > 0 ? existing[0] : null
 
     if (checkError) {
