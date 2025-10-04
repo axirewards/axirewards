@@ -181,7 +181,7 @@ export default function UserStatsVip() {
         <img src="/icons/fire.png" alt="Streak" style={{ width: iconSize, height: iconSize, marginBottom: 12 }} />
         <span className="font-extrabold text-lg mb-2" style={{ color: "#FF6A3D" }}>Daily Streak</span>
         <span className="text-3xl font-extrabold text-white">{strikeDays}</span>
-        <span className="text-xs text-orange-300 font-semibold mt-2">🔥 Days</span>
+        <span className="text-xs text-orange-300 font-semibold mt-2">Days</span>
       </div>
       {/* Completed Offers Cube */}
       <div
