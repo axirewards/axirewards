@@ -163,34 +163,52 @@ export default function DashboardPc({ setGlobalLoading }) {
     <Layout>
       <div className="relative flex flex-col items-center justify-start min-h-screen w-full" style={{maxWidth:'100vw'}}>
         {/* Greeting Header */}
-        <div className="flex flex-col md:flex-row items-center justify-center w-full mb-3 gap-4">
+        <div className="flex flex-col items-center justify-center w-full mb-3 gap-2">
           {user && (
-            <div className="w-full flex items-center justify-center">
+            <div className="w-full flex flex-col items-center justify-center">
+              {/* Welcome text - first line */}
               <span
-                className="greeting-header font-extrabold text-3xl md:text-4xl text-white text-center drop-shadow"
+                className="dashboard-welcome-title"
                 style={{
-                  background: "linear-gradient(90deg, #60A5FA 0%, #7b6cfb 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  color: "transparent",
-                  padding: "6px 24px",
-                  borderRadius: "1.2rem",
-                  fontFamily: "inherit",
-                  letterSpacing: "0.04em",
-                  marginBottom: "2px",
-                  boxShadow: "0 2px 24px #60A5fa22",
+                  fontWeight: 900,
+                  fontSize: '3.4rem',
+                  color: '#fff',
+                  textAlign: 'center',
+                  lineHeight: 1.08,
+                  letterSpacing: '0.04em',
+                  fontFamily: 'inherit',
+                  marginBottom: '0.3rem',
+                  textShadow: '0 4px 44px #0EA5E9aa, 0 1px 24px #fff2, 0 0px 2px #fff',
+                  filter: 'brightness(1.06)',
                 }}
               >
-                Welcome, <span style={{
-                  color: "#FFD700",
-                  background: "none",
-                  WebkitBackgroundClip: "unset",
-                  WebkitTextFillColor: "unset",
+                Welcome,
+              </span>
+              {/* User email - second line with perfect gradient */}
+              <span
+                className="dashboard-email-gradient"
+                style={{
                   fontWeight: 800,
-                  letterSpacing: "0.07em",
-                  textShadow: "0 1px 12px #FFD70066",
-                }}>{user.email}</span>!
+                  fontSize: '2.2rem',
+                  textAlign: 'center',
+                  letterSpacing: '0.09em',
+                  background: 'linear-gradient(90deg,#ffd700 0%, #60A5FA 41%, #7b6cfb 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  color: 'transparent',
+                  padding: '0.13em 0.8em',
+                  borderRadius: '2rem',
+                  boxShadow: '0 2px 32px #7b6cfb33, 0 1.5px 12px #ffd70033',
+                  marginBottom: '1px',
+                  fontFamily: 'inherit',
+                  textShadow: '0 2px 22px #7b6cfb66, 0 1px 8px #FFD70080, 0 0px 2px #fff',
+                  filter: 'brightness(1.09)',
+                  transition: 'background 0.3s cubic-bezier(.23,1,.32,1)',
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {user.email}
               </span>
             </div>
           )}
@@ -278,6 +296,12 @@ export default function DashboardPc({ setGlobalLoading }) {
         @keyframes fadeInModal {
           from { opacity: 0; transform: scale(0.98);}
           to { opacity: 1; transform: scale(1);}
+        }
+        .dashboard-welcome-title {
+          /* For possible future custom CSS tweaks */
+        }
+        .dashboard-email-gradient {
+          /* For possible future custom CSS tweaks */
         }
       `}</style>
     </Layout>
